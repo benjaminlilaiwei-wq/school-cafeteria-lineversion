@@ -235,7 +235,7 @@ function getAIConfig() {
             $config = [
                 'api_priority' => ['huggingface'],
                 'groq' => ['enabled' => false, 'api_key' => '', 'model' => 'llama-3.1-8b-instant'],
-                'openai' => ['enabled' => false, 'api_key' => '', 'model' => 'gpt-3.5-turbo'],
+                'openai' => ['enabled' => false, 'api_key' => '', 'model' => 'gpt-4o-mini', 'base_url' => 'https://api.openai.com/v1'],
                 'gemini' => ['enabled' => false, 'api_key' => '', 'model' => 'gemini-pro'],
                 'ollama' => ['enabled' => false, 'production_url' => '', 'production_model' => 'llama3'],
                 'huggingface' => ['enabled' => true],
@@ -809,18 +809,26 @@ function callOpenAIAPI($userMessage, $messages, $apiConfig, $timeout, $connectTi
     error_log("Base URL: " . ($apiConfig['base_url'] ?? 'N/A'));
     error_log("APIキー: " . (empty($apiConfig['api_key']) ? '未設定' : substr($apiConfig['api_key'], 0, 10) . '...'));
     
+    $model = (string) ($apiConfig['model'] ?? 'gpt-4o-mini');
+    if ($model === '' || strpos($model, 'gpt-3.5') === 0) {
+        $model = 'gpt-4o-mini';
+    }
+    $baseUrl = rtrim((string) ($apiConfig['base_url'] ?? ''), '/');
+    if ($baseUrl === '') {
+        $baseUrl = 'https://api.openai.com/v1';
+    }
     $ch = curl_init();
-    $url = $apiConfig['base_url'] . '/chat/completions';
+    $url = $baseUrl . '/chat/completions';
     addDebugLog("リクエストURL: " . $url);
     error_log("リクエストURL: " . $url);
     
     curl_setopt($ch, CURLOPT_URL, $url);
     curl_setopt($ch, CURLOPT_POST, true);
     $requestBody = [
-        'model' => $apiConfig['model'],
+        'model' => $model,
         'messages' => $messages,
         'temperature' => 0.8,
-        'max_tokens' => 3000,
+        'max_tokens' => 1200,
     ];
     $requestBodyJson = json_encode($requestBody, JSON_UNESCAPED_UNICODE);
     addDebugLog("リクエストボディ: " . substr($requestBodyJson, 0, 200) . "...");
@@ -930,8 +938,9 @@ function callOpenAIAPI($userMessage, $messages, $apiConfig, $timeout, $connectTi
             $errorResponse = json_encode($errorData, JSON_UNESCAPED_UNICODE);
             addDebugLog("エラーレスポンス: " . substr($errorResponse, 0, 500));
             error_log("エラーレスポンス: " . json_encode($errorData, JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT));
-            if (isset($errorData['error']['message'])) {
+                if (isset($errorData['error']['message'])) {
                 $errorMessage = $errorData['error']['message'];
+                $GLOBALS['openai_last_error'] = $errorMessage;
                 addDebugLog("エラーメッセージ: " . $errorMessage);
                 error_log("エラーメッセージ: " . $errorMessage);
                 
@@ -948,7 +957,19 @@ function callOpenAIAPI($userMessage, $messages, $apiConfig, $timeout, $connectTi
         } else {
             addDebugLog("レスポンス本文: " . substr($response, 0, 500));
             error_log("レスポンス本文: " . substr($response, 0, 1000));
+            $GLOBALS['openai_last_error'] = 'HTTP ' . $httpCode;
         }
+    }
+
+    $errorCode = '';
+    if (isset($errorData) && is_array($errorData)) {
+        $errorCode = (string) ($errorData['error']['code'] ?? '');
+    }
+    if ($model !== 'gpt-4.1-mini' && ($httpCode === 404 || $errorCode === 'model_not_found')) {
+        $retryConfig = $apiConfig;
+        $retryConfig['model'] = 'gpt-4.1-mini';
+        $retryConfig['base_url'] = $baseUrl;
+        return callOpenAIAPI($userMessage, $messages, $retryConfig, $timeout, $connectTimeout);
     }
     
     return false;
@@ -1294,12 +1315,12 @@ function generateAIResponse($userMessage, $useOllama = true, $ollamaAvailable = 
         if (is_array($ollamaResponse) && isset($ollamaResponse['response'])) {
             $responseText = $ollamaResponse['response'];
             $usedApi = $ollamaResponse['api'] ?? 'unknown';
-            if (trim($responseText) !== '' && mb_strlen($responseText) > 10) {
+            if (trim($responseText) !== '') {
                 // グローバル変数に使用されたAPIを保存（デバッグ用）
                 $GLOBALS['used_ai_api'] = $usedApi;
                 return $responseText;
             }
-        } elseif ($ollamaResponse !== false && trim($ollamaResponse) !== '' && mb_strlen($ollamaResponse) > 10) {
+        } elseif ($ollamaResponse !== false && trim($ollamaResponse) !== '') {
             return $ollamaResponse;
         }
         
@@ -1450,27 +1471,14 @@ function generateAIResponse($userMessage, $useOllama = true, $ollamaAvailable = 
         return $cafeteriaAnswer;
     }
 
+    $openaiDetail = trim((string) ($GLOBALS['openai_last_error'] ?? ''));
+    $detailLine = $openaiDetail !== '' ? ("\n\n**OpenAIからの返答**:\n" . $openaiDetail) : '';
     return "❌ **AI API呼び出しが失敗しました**\n\n" .
            "**システム情報**:\n" .
            "- cURL機能: $curlAvailable\n" .
-           "- ホスト: " . ($_SERVER['HTTP_HOST'] ?? '不明') . "\n" .
-           "- 本番環境: " . (isProductionEnvironment() ? "はい" : "いいえ") . "\n\n" .
-           "**試行されたAPI**:\n- " . $apisList . "\n\n" .
-           "**考えられる原因**:\n" .
-           "1. ⚠️ **InfinityFreeのセキュリティ設定により外部APIへの接続がブロックされている可能性が高いです**\n" .
-           "   - InfinityFreeの無料プランでは外部APIへの接続が制限されている場合があります\n" .
-           "   - cURLによる外部接続が許可されていない可能性があります\n\n" .
-           "2. APIキーが無効または期限切れ\n" .
-           "3. ネットワーク接続の問題\n" .
-           "4. APIサービスの一時的な障害\n\n" .
-           "**解決策**:\n" .
-           "1. InfinityFreeの有料プランにアップグレードする（外部API接続が許可される可能性）\n" .
-           "2. 別のホスティングサービス（例: 000webhost、Freehostia）を試す\n" .
-           "3. サーバーのエラーログを確認する（InfinityFreeのコントロールパネルから）\n" .
-           "4. ブラウザの開発者ツール（F12）のコンソールで詳細なエラーを確認する\n\n" .
-           "**デバッグ情報**:\n" .
-           "- 上記の「テスト」結果を確認してください\n" .
-           "- 「接続タイムアウト」や「接続エラー」が表示されている場合、InfinityFreeの制限が原因の可能性が高いです";
+           "- ホスト: " . ($_SERVER['HTTP_HOST'] ?? '不明') . "\n\n" .
+           "**試行されたAPI**:\n- " . $apisList .
+           $detailLine;
 }
 
 // インテリジェントなフォールバック応答を生成（削除済み）

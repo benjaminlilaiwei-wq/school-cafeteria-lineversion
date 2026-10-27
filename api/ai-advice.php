@@ -23,7 +23,7 @@ function getAIConfig() {
             $config = require $configPath;
         } else {
             $config = [
-                'openai' => ['enabled' => false, 'api_key' => '', 'model' => 'gpt-3.5-turbo', 'base_url' => 'https://api.openai.com/v1'],
+                'openai' => ['enabled' => false, 'api_key' => '', 'model' => 'gpt-4o-mini', 'base_url' => 'https://api.openai.com/v1'],
                 'gemini' => ['enabled' => false, 'api_key' => '', 'model' => 'gemini-1.5-flash', 'base_url' => 'https://generativelanguage.googleapis.com/v1beta'],
                 'timeout' => 120,
                 'connect_timeout' => 15,
@@ -274,7 +274,7 @@ function callOpenAIAPI($messages, $apiConfig, $timeout = 120, $connectTimeout = 
     curl_setopt($ch, CURLOPT_URL, $url);
     curl_setopt($ch, CURLOPT_POST, true);
     $requestBody = [
-        'model' => $apiConfig['model'] ?? 'gpt-3.5-turbo',
+        'model' => (($apiConfig['model'] ?? '') === '' || strpos((string) ($apiConfig['model'] ?? ''), 'gpt-3.5') === 0) ? 'gpt-4o-mini' : $apiConfig['model'],
         'messages' => $messages,
         'temperature' => $temperature !== null ? (float) $temperature : 0.7,
         'max_tokens' => 2000,
@@ -318,7 +318,7 @@ function callOpenAIAPIWithStatus($messages, $apiConfig, $timeout = 120, $connect
     curl_setopt($ch, CURLOPT_URL, $url);
     curl_setopt($ch, CURLOPT_POST, true);
     $requestBody = [
-        'model' => $apiConfig['model'] ?? 'gpt-3.5-turbo',
+        'model' => (($apiConfig['model'] ?? '') === '' || strpos((string) ($apiConfig['model'] ?? ''), 'gpt-3.5') === 0) ? 'gpt-4o-mini' : $apiConfig['model'],
         'messages' => $messages,
         'temperature' => 0.7,
         'max_tokens' => max(256, min(8000, (int) $maxTokens)),

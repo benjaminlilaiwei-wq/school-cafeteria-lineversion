@@ -27,12 +27,9 @@ function apply_openai_env($config) {
     }
     $config['openai']['enabled'] = true;
     $config['openai']['api_key'] = $key;
-    if (empty($config['openai']['model'])) {
-        $config['openai']['model'] = 'gpt-3.5-turbo';
-    }
-    if (empty($config['openai']['base_url'])) {
-        $config['openai']['base_url'] = 'https://api.openai.com/v1';
-    }
+    $config['openai']['model'] = 'gpt-4o-mini';
+    $config['openai']['base_url'] = 'https://api.openai.com/v1';
+    $config['huggingface']['enabled'] = false;
     if (!isset($config['gemini']) || !is_array($config['gemini'])) {
         $config['gemini'] = [];
     }

@@ -19,7 +19,7 @@ return [
     'openai' => [
         'enabled' => true,
         'api_key' => '',
-        'model' => 'gpt-3.5-turbo',
+        'model' => 'gpt-4o-mini',
         'base_url' => 'https://api.openai.com/v1',
     ],
 
