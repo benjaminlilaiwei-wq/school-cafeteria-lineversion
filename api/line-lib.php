@@ -560,7 +560,7 @@ function line_uri_button($label, $url) {
 
 function line_rich_menu_ready() {
     $saved = line_read_json(line_data_dir() . '/rich-menu.json', []);
-    return is_array($saved) && ($saved['version'] ?? '') === 'v1' && ($saved['id'] ?? '') !== '';
+    return is_array($saved) && ($saved['version'] ?? '') === 'v2' && ($saved['id'] ?? '') !== '';
 }
 
 function line_http($url, $method, $body, $contentType) {
@@ -603,14 +603,40 @@ function line_ensure_rich_menu() {
     if (is_array($saved) && (int) ($saved['retryAfter'] ?? 0) > time()) {
         return;
     }
+    $list = line_http('https://api.line.me/v2/bot/richmenu/list', 'GET', null, '');
+    $existing = '';
+    if ($list[0]) {
+        $decoded = json_decode($list[1], true);
+        foreach (($decoded['richmenus'] ?? []) as $menu) {
+            if (is_array($menu) && ($menu['name'] ?? '') === 'cafeteria-v2' && !empty($menu['richMenuId'])) {
+                $existing = (string) $menu['richMenuId'];
+                break;
+            }
+        }
+    }
+    if ($existing !== '') {
+        $current = line_http('https://api.line.me/v2/bot/user/all/richmenu', 'GET', null, '');
+        $currentId = '';
+        if ($current[0]) {
+            $cur = json_decode($current[1], true);
+            $currentId = is_array($cur) ? (string) ($cur['richMenuId'] ?? '') : '';
+        }
+        if ($currentId !== $existing) {
+            line_http('https://api.line.me/v2/bot/user/all/richmenu/' . rawurlencode($existing), 'POST', '{}', 'application/json');
+        }
+        line_write_json(line_data_dir() . '/rich-menu.json', ['version' => 'v2', 'id' => $existing]);
+        return;
+    }
     $image = __DIR__ . '/../images/rich-menu.png';
     if (!is_file($image)) {
         return;
     }
-    $pad = 28;
-    $gap = 18;
+    $padX = 24;
+    $gapX = 23;
+    $padY = 24;
+    $gapY = 15;
     $cellW = 802;
-    $cellH = 806;
+    $cellH = 390;
     $actions = [
         ['home:reserve', '予約する'],
         ['home:check', '予約を確認'],
@@ -625,8 +651,8 @@ function line_ensure_rich_menu() {
         $row = intdiv($i, 3);
         $areas[] = [
             'bounds' => [
-                'x' => $pad + $col * ($cellW + $gap),
-                'y' => $pad + $row * ($cellH + $gap),
+                'x' => $padX + $col * ($cellW + $gapX),
+                'y' => $padY + $row * ($cellH + $gapY),
                 'width' => $cellW,
                 'height' => $cellH,
             ],
@@ -638,9 +664,9 @@ function line_ensure_rich_menu() {
         ];
     }
     $created = line_api('https://api.line.me/v2/bot/richmenu', [
-        'size' => ['width' => 2500, 'height' => 1686],
+        'size' => ['width' => 2500, 'height' => 843],
         'selected' => true,
-        'name' => 'cafeteria-v1',
+        'name' => 'cafeteria-v2',
         'chatBarText' => 'メニュー',
         'areas' => $areas,
     ]);
@@ -665,11 +691,16 @@ function line_ensure_rich_menu() {
         line_write_json(line_data_dir() . '/rich-menu.json', ['version' => '', 'id' => '', 'retryAfter' => time() + 600]);
         return;
     }
-    $old = line_read_json(line_data_dir() . '/rich-menu.json', []);
-    if (is_array($old) && !empty($old['id']) && $old['id'] !== $id) {
-        line_http('https://api.line.me/v2/bot/richmenu/' . rawurlencode((string) $old['id']), 'DELETE', null, '');
+    if ($list[0]) {
+        $decoded = json_decode($list[1], true);
+        foreach (($decoded['richmenus'] ?? []) as $menu) {
+            $oldId = is_array($menu) ? (string) ($menu['richMenuId'] ?? '') : '';
+            if ($oldId !== '' && $oldId !== $id) {
+                line_http('https://api.line.me/v2/bot/richmenu/' . rawurlencode($oldId), 'DELETE', null, '');
+            }
+        }
     }
-    line_write_json(line_data_dir() . '/rich-menu.json', ['version' => 'v1', 'id' => $id]);
+    line_write_json(line_data_dir() . '/rich-menu.json', ['version' => 'v2', 'id' => $id]);
 }
 
 function line_api($url, $payload) {
