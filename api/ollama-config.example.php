@@ -2,8 +2,8 @@
 /**
  * AI API設定ファイル
  *
- * このファイルを api/ollama-config.php にコピーし、使うAPIのキーだけを入れてください。
- * 本物のキーはGitHubに置かないでください。
+ * Renderではこのファイルは不要です。OPENAI_API_KEY を環境変数に入れてください。
+ * Geminiは使いません。
  */
 
 return [

@@ -1,4 +1,5 @@
 <?php
+require_once __DIR__ . '/env.php';
 // エラー出力を抑制（JSON出力を汚染しないように）
 error_reporting(E_ALL);
 ini_set('display_errors', 0);
@@ -243,6 +244,7 @@ function getAIConfig() {
                 'local_url' => 'http://localhost:11434',
             ];
         }
+        $config = apply_openai_env($config);
     }
     return $config;
 }

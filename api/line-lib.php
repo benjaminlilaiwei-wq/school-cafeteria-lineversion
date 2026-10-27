@@ -1,4 +1,5 @@
 <?php
+require_once __DIR__ . '/env.php';
 date_default_timezone_set('Asia/Tokyo');
 
 if (!function_exists('mb_strpos')) {
@@ -86,7 +87,7 @@ function line_save_settings($settings) {
     return line_write_json(line_data_dir() . '/line-settings.json', $next);
 }
 
-function line_secret() {
+function line_secret_from_file() {
     $file = __DIR__ . '/line-secret.php';
     $data = file_exists($file) ? include $file : [];
     if (!is_array($data)) {
@@ -98,8 +99,24 @@ function line_secret() {
     ];
 }
 
+function line_secret() {
+    $data = line_secret_from_file();
+    $token = app_env('LINE_CHANNEL_ACCESS_TOKEN');
+    $secret = app_env('LINE_CHANNEL_SECRET');
+    if ($token === '') {
+        $token = $data['channelAccessToken'];
+    }
+    if ($secret === '') {
+        $secret = $data['channelSecret'];
+    }
+    return [
+        'channelAccessToken' => $token,
+        'channelSecret' => $secret,
+    ];
+}
+
 function line_save_secret($token, $secret) {
-    $current = line_secret();
+    $current = line_secret_from_file();
     $token = trim((string) $token);
     $secret = trim((string) $secret);
     if ($token !== '' && $token !== '********') {
