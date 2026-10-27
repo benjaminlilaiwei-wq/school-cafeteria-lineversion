@@ -560,7 +560,55 @@ function line_uri_button($label, $url) {
 
 function line_rich_menu_ready() {
     $saved = line_read_json(line_data_dir() . '/rich-menu.json', []);
-    return is_array($saved) && ($saved['version'] ?? '') === 'v2' && ($saved['id'] ?? '') !== '';
+    return is_array($saved) && ($saved['version'] ?? '') === 'v2' && ($saved['id'] ?? '') !== '' && !empty($saved['defaultCleared']);
+}
+
+function line_clear_default_menu() {
+    $res = line_http('https://api.line.me/v2/bot/user/all/richmenu', 'DELETE', null, '');
+    return $res[0] || (int) ($res[2] ?? 0) === 404;
+}
+
+function line_remember_menu($id) {
+    line_write_json(line_data_dir() . '/rich-menu.json', [
+        'version' => 'v2',
+        'id' => $id,
+        'defaultCleared' => line_clear_default_menu(),
+    ]);
+}
+
+function line_survey_finished($user) {
+    return in_array((string) ($user['step'] ?? ''), ['done', 'pick', 'confirm'], true);
+}
+
+function line_sync_user_menu($user) {
+    $saved = line_read_json(line_data_dir() . '/rich-menu.json', []);
+    $menuId = is_array($saved) ? (string) ($saved['id'] ?? '') : '';
+    $userId = (string) ($user['userId'] ?? '');
+    if ($menuId === '' || $userId === '' || ($saved['version'] ?? '') !== 'v2') {
+        return;
+    }
+    $want = line_survey_finished($user);
+    if (!empty($user['menuOn']) === $want) {
+        return;
+    }
+    $base = 'https://api.line.me/v2/bot/user/' . rawurlencode($userId) . '/richmenu';
+    if ($want) {
+        $res = line_http($base . '/' . rawurlencode($menuId), 'POST', '{}', 'application/json');
+        if (!$res[0]) {
+            return;
+        }
+    } else {
+        $res = line_http($base, 'DELETE', null, '');
+        if (!$res[0] && (int) ($res[2] ?? 0) !== 404) {
+            return;
+        }
+    }
+    $users = line_users();
+    if (!isset($users[$userId]) || !is_array($users[$userId])) {
+        return;
+    }
+    $users[$userId]['menuOn'] = $want;
+    line_save_users($users);
 }
 
 function line_http($url, $method, $body, $contentType) {
@@ -615,16 +663,7 @@ function line_ensure_rich_menu() {
         }
     }
     if ($existing !== '') {
-        $current = line_http('https://api.line.me/v2/bot/user/all/richmenu', 'GET', null, '');
-        $currentId = '';
-        if ($current[0]) {
-            $cur = json_decode($current[1], true);
-            $currentId = is_array($cur) ? (string) ($cur['richMenuId'] ?? '') : '';
-        }
-        if ($currentId !== $existing) {
-            line_http('https://api.line.me/v2/bot/user/all/richmenu/' . rawurlencode($existing), 'POST', '{}', 'application/json');
-        }
-        line_write_json(line_data_dir() . '/rich-menu.json', ['version' => 'v2', 'id' => $existing]);
+        line_remember_menu($existing);
         return;
     }
     $image = __DIR__ . '/../images/rich-menu.png';
@@ -686,11 +725,6 @@ function line_ensure_rich_menu() {
         line_write_json(line_data_dir() . '/rich-menu.json', ['version' => '', 'id' => '', 'retryAfter' => time() + 600]);
         return;
     }
-    $linked = line_http('https://api.line.me/v2/bot/user/all/richmenu/' . rawurlencode($id), 'POST', '{}', 'application/json');
-    if (!$linked[0]) {
-        line_write_json(line_data_dir() . '/rich-menu.json', ['version' => '', 'id' => '', 'retryAfter' => time() + 600]);
-        return;
-    }
     if ($list[0]) {
         $decoded = json_decode($list[1], true);
         foreach (($decoded['richmenus'] ?? []) as $menu) {
@@ -700,7 +734,7 @@ function line_ensure_rich_menu() {
             }
         }
     }
-    line_write_json(line_data_dir() . '/rich-menu.json', ['version' => 'v2', 'id' => $id]);
+    line_remember_menu($id);
 }
 
 function line_api($url, $payload) {
@@ -1516,7 +1550,7 @@ function line_finish_survey($user) {
     $user['active'] = true;
     line_store_user($user);
     $name = (string) ($user['name'] ?? '');
-    $note = "登録できたよ。\n好きそうな日は、カレンダーで星がつくよ。\n予約は、画面下の緑「予約する」から。";
+    $note = "登録できたよ。\n好きそうな日は、カレンダーで星がつくよ。\n下にメニューが出るよ。予約は、そこからできる。";
     $url = line_calendar_url($user);
     if ($url === '') {
         return [line_text(($name !== '' ? $name . "さん\n" : '') . $note)];
@@ -1545,6 +1579,12 @@ function line_resume_prompt($user) {
         return [line_home_menu('メニュー', 'カードのボタンから選んでね。')];
     }
     return line_name_prompt();
+}
+
+function line_locked_prompt($user) {
+    $messages = line_resume_prompt($user);
+    array_unshift($messages, line_text('先にアンケートを終わらせてね。'));
+    return $messages;
 }
 
 function line_handle_text($user, $text) {
@@ -1727,6 +1767,9 @@ function line_handle_postback($user, $data) {
         line_store_user($user);
         return line_avoid_prompt($user);
     }
+    if (!line_survey_finished($user)) {
+        return line_locked_prompt($user);
+    }
     if ($data === 'home:redo') {
         $user['step'] = 'name';
         $user['likes'] = [];
@@ -1800,23 +1843,26 @@ function line_handle_event($event) {
         line_save_budget($budget);
     }
     if ($type === 'unfollow') {
+        line_http('https://api.line.me/v2/bot/user/' . rawurlencode($userId) . '/richmenu', 'DELETE', null, '');
         $users = line_users();
-        if (isset($users[$userId])) {
-            $users[$userId]['active'] = false;
-            line_save_users($users);
-        }
+        unset($users[$userId]);
+        line_save_users($users);
         return;
     }
     $user = line_load_user($userId, '');
     $messages = [];
     if ($type === 'follow') {
-        if (($user['step'] ?? '') === 'done') {
-            $messages = [line_text(($user['name'] ?? '') . 'さん、また来てくれてありがとう。')];
-        } else {
-            $messages = line_start_survey($user);
-            $user['step'] = 'name';
-            line_store_user($user);
-        }
+        $user['name'] = '';
+        $user['likes'] = [];
+        $user['avoids'] = [];
+        $user['timesPerWeek'] = '';
+        $user['pendingFood'] = '';
+        $user['choices'] = [];
+        $user['menuOn'] = false;
+        $user['active'] = true;
+        $user['step'] = 'name';
+        line_store_user($user);
+        $messages = line_start_survey($user);
     } elseif ($type === 'message') {
         $msgType = $event['message']['type'] ?? '';
         if ($msgType === 'text') {
@@ -1827,6 +1873,8 @@ function line_handle_event($event) {
     } elseif ($type === 'postback') {
         $messages = line_handle_postback(line_load_user($userId, ''), (string) ($event['postback']['data'] ?? ''));
     }
+    $fresh = line_load_user($userId, '');
+    line_sync_user_menu($fresh);
     if (count($messages)) {
         $fresh = line_load_user($userId, '');
         line_deliver($replyToken, $userId, line_attach_home($messages, $fresh), $type === 'follow');
