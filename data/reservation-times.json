@@ -1,0 +1,14 @@
+{
+    "timeSlots": [
+        {
+            "startTime": "00:00",
+            "endTime": "18:45"
+        },
+        {
+            "startTime": "20:15",
+            "endTime": "23:42"
+        }
+    ],
+    "enabled": true,
+    "message": "予約時間: 00:00~18:45,20:15~23:42"
+}

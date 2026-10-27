@@ -1,0 +1,1428 @@
+<!DOCTYPE html>
+<html lang="ja">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>食堂に質問する - OliMeal</title>
+    <link rel="stylesheet" href="styles.css">
+    <style>
+        .page-bg {
+            background: #f3eee4;
+        }
+
+        .page-bg::before,
+        .page-bg-image-overlay {
+            display: none;
+        }
+
+        .page-bg>* {
+            position: relative;
+            z-index: 2;
+        }
+
+        .container {
+            background-color: rgba(255, 255, 255, 0.98);
+            max-width: 920px;
+            margin: 0 auto;
+            padding: 28px;
+            box-shadow: 0 8px 40px rgba(107, 124, 58, 0.12);
+            border-radius: 28px;
+        }
+
+        /* チャットコンテナ：やさしい雰囲気で見やすく */
+        .chat-container {
+            background: #fafbfc;
+            border-radius: 24px;
+            box-shadow: 0 4px 24px rgba(107, 124, 58, 0.08);
+            overflow: hidden;
+            margin-bottom: 28px;
+            border: 2px solid #e8ebe6;
+        }
+
+        /* チャットメッセージエリア：一番上まで確実にスクロールできるように */
+        .chat-messages {
+            height: 520px;
+            min-height: 320px;
+            overflow-y: auto;
+            overflow-x: hidden;
+            padding: 0;
+            background: linear-gradient(to bottom, #f0f4f8 0%, #ffffff 100%);
+            scroll-behavior: smooth;
+            -webkit-overflow-scrolling: touch;
+            display: block;
+        }
+
+        .chat-messages-inner {
+            padding: 20px 20px 24px;
+            min-height: 100%;
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+
+        .chat-messages-inner .message {
+            margin-bottom: 0;
+        }
+
+        .chat-messages::-webkit-scrollbar {
+            width: 10px; /* スクロールバーを少し太くして見やすく */
+        }
+
+        .chat-messages::-webkit-scrollbar-track {
+            background: #f1f1f1;
+            border-radius: 5px;
+            margin: 5px 0; /* 上下に余白を追加 */
+        }
+
+        .chat-messages::-webkit-scrollbar-thumb {
+            background: #8B9A46;
+            border-radius: 6px;
+            border: 2px solid #f1f1f1;
+            min-height: 36px;
+        }
+
+        .chat-messages::-webkit-scrollbar-thumb:hover {
+            background: #6B7C3A;
+        }
+
+        /* Firefox用のスクロールバースタイル */
+        .chat-messages {
+            scrollbar-width: thin;
+            scrollbar-color: #8B9A46 #e8ebe6;
+        }
+
+        /* メッセージのデザイン改善 */
+        .message {
+            margin-bottom: 20px;
+            animation: fadeIn 0.3s ease-in;
+            display: flex;
+            align-items: flex-start;
+            width: 100%;
+            min-height: auto;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .user-message {
+            flex-direction: row-reverse;
+        }
+
+        .message .avatar {
+            width: 42px;
+            height: 42px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+            flex-shrink: 0;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        .assistant-message .avatar,
+        .assistant-message-avatar {
+            background: linear-gradient(135deg, #8B9A46 0%, #6B7C3A 100%);
+            color: white;
+            background: #2f6b4f;
+        }
+
+        .assistant-message .avatar::before,
+        .assistant-message-avatar::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(139, 154, 70, 0.5);
+            border-radius: 50%;
+            z-index: 1;
+        }
+
+        .assistant-message .avatar>span,
+        .assistant-message-avatar>span {
+            position: relative;
+            z-index: 2;
+        }
+
+        .user-message .avatar {
+            background: linear-gradient(135deg, #6B7C3A 0%, #8B9A46 100%);
+            color: white;
+        }
+
+        .message .content {
+            max-width: 75%;
+            margin: 0 12px;
+            min-width: 200px;
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            overflow: visible;
+            overflow-wrap: break-word;
+            word-wrap: break-word;
+        }
+
+        .message-header {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 8px;
+            font-size: 0.9rem;
+            color: #5c6348;
+            font-weight: 600;
+        }
+
+        .message-time {
+            margin-left: auto;
+            font-size: 0.75rem;
+            opacity: 0.7;
+        }
+
+        .message-content {
+            padding: 14px 18px;
+            border-radius: 20px;
+            line-height: 1.75;
+            font-size: 1.02rem;
+            word-wrap: break-word;
+            word-break: break-word;
+            box-shadow: 0 2px 12px rgba(0, 0, 0, 0.06);
+            white-space: pre-wrap;
+            overflow: visible;
+            overflow-wrap: break-word;
+            min-height: auto;
+            width: 100%;
+            max-width: 100%;
+            display: block;
+            box-sizing: border-box;
+        }
+
+        .assistant-message .message-content {
+            background: white;
+            color: #2d3436;
+            border: 1px solid #e8ebe6;
+            border-top-left-radius: 6px;
+        }
+
+        .user-message .message-content {
+            background: linear-gradient(135deg, #6B7C3A 0%, #8B9A46 100%);
+            color: white;
+            border-top-right-radius: 6px;
+        }
+
+        /* チャット入力：押しやすく見やすい */
+        .chat-input-container {
+            display: flex;
+            gap: 14px;
+            padding: 20px 22px;
+            background: linear-gradient(to bottom, #ffffff 0%, #f6f8f2 100%);
+            border-top: 2px solid #e8ebe6;
+        }
+
+        #chatInput {
+            flex: 1;
+            padding: 16px 22px;
+            border: 2px solid #e0e4dc;
+            border-radius: 28px;
+            font-size: 1.06rem;
+            transition: all 0.25s ease;
+            background: #fff;
+            color: #2d3436;
+        }
+
+        #chatInput::placeholder {
+            color: #7d8b6e;
+            opacity: 0.85;
+        }
+
+        #chatInput:focus {
+            outline: none;
+            border-color: #2f6b4f;
+            background: #fff;
+            box-shadow: 0 0 0 4px rgba(47, 107, 79, 0.18);
+        }
+
+        #sendBtn {
+            padding: 16px 28px;
+            background: #2f6b4f;
+            color: white;
+            border: none;
+            border-radius: 14px;
+            font-size: 1.06rem;
+            font-weight: 700;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-width: 120px;
+            min-height: 52px;
+        }
+
+        #sendBtn:hover {
+            background: #234f3a;
+        }
+
+        #sendBtn:active {
+            transform: translateY(0);
+            box-shadow: 0 2px 12px rgba(107, 124, 58, 0.3);
+        }
+
+        #sendBtn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        /* クイック質問：押しやすく見やすい */
+        .quick-questions {
+            margin-top: 28px;
+            padding: 24px;
+            background: linear-gradient(135deg, #f6f8f2 0%, #ffffff 100%);
+            border-radius: 24px;
+            box-shadow: 0 4px 20px rgba(107, 124, 58, 0.06);
+            border: 2px solid #e8ebe6;
+        }
+
+        .quick-questions h3 {
+            margin: 0 0 18px 0;
+            color: #3d4629;
+            font-size: 1.35rem;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding-bottom: 14px;
+            border-bottom: 2px solid #e0e4dc;
+        }
+
+        .quick-buttons {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+            gap: 14px;
+            margin-bottom: 18px;
+        }
+
+        .quick-btn {
+            padding: 16px 18px;
+            background: white;
+            border: 2px solid #e0e4dc;
+            border-radius: 18px;
+            cursor: pointer;
+            transition: all 0.25s ease;
+            font-size: 1rem;
+            font-weight: 600;
+            color: #4a5535;
+            text-align: center;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.04);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .quick-btn::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, #6B7C3A 0%, #8B9A46 100%);
+            transition: left 0.28s ease;
+            z-index: 0;
+        }
+
+        .quick-btn span {
+            position: relative;
+            z-index: 1;
+        }
+
+        .quick-btn:hover {
+            color: white;
+            border-color: transparent;
+            transform: translateY(-2px);
+            box-shadow: 0 6px 18px rgba(107, 124, 58, 0.3);
+        }
+
+        .quick-btn:hover::before {
+            left: 0;
+        }
+
+        .quick-btn:active {
+            transform: translateY(0);
+            box-shadow: 0 2px 10px rgba(107, 124, 58, 0.2);
+        }
+
+        /* AI設定：見やすく */
+        .ai-settings {
+            margin-top: 22px;
+            padding: 22px;
+            background: linear-gradient(135deg, #f6f8f2 0%, #ffffff 100%);
+            border-radius: 18px;
+            border: 2px solid #e8ebe6;
+            box-shadow: 0 2px 12px rgba(107, 124, 58, 0.05);
+        }
+
+        .ai-settings h4 {
+            margin: 0 0 16px 0;
+            color: #3d4629;
+            font-size: 1.2rem;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .ai-settings label {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            font-size: 1.02rem;
+            color: #4a5535;
+            padding: 10px 12px;
+            border-radius: 12px;
+            transition: background-color 0.2s ease;
+        }
+
+        .ai-settings label:hover {
+            background-color: rgba(139, 154, 70, 0.08);
+        }
+
+        .ai-settings input[type="checkbox"] {
+            width: 22px;
+            height: 22px;
+            cursor: pointer;
+            accent-color: #8B9A46;
+        }
+
+        .status-indicator {
+            padding: 12px 20px;
+            border-radius: 10px;
+            font-size: 1rem;
+            font-weight: 600;
+            display: inline-block;
+            margin-top: 10px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        .status-indicator.available {
+            background: linear-gradient(135deg, #e8f0e0 0%, #d4e6c8 100%);
+            color: #2d5a1c;
+            border: 2px solid #8B9A46;
+        }
+
+        .status-indicator.unavailable {
+            background: linear-gradient(135deg, #f8d7da 0%, #f5c6cb 100%);
+            color: #721c24;
+            border: 2px solid #dc3545;
+        }
+
+        /* デバッグ情報表示用のスタイル */
+        .debug-info {
+            margin-top: 10px;
+            padding: 12px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-radius: 8px;
+            color: white;
+            font-size: 13px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        .debug-info.gemini {
+            background: linear-gradient(135deg, #4285f4 0%, #34a853 100%);
+        }
+
+        .debug-info.groq {
+            background: linear-gradient(135deg, #00d4ff 0%, #090979 100%);
+        }
+
+        .debug-info.openai {
+            background: linear-gradient(135deg, #10a37f 0%, #1a7f64 100%);
+        }
+
+        .debug-info.huggingface {
+            background: linear-gradient(135deg, #ffd700 0%, #ff8c00 100%);
+        }
+
+        .debug-info.ollama {
+            background: linear-gradient(135deg, #3b82f6 0%, #1e40af 100%);
+        }
+
+        .debug-info-title {
+            font-weight: bold;
+            font-size: 14px;
+            margin-bottom: 6px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .debug-info-detail {
+            font-size: 12px;
+            opacity: 0.9;
+            margin-top: 4px;
+        }
+
+        .api-badge {
+            display: inline-block;
+            padding: 4px 10px;
+            border-radius: 12px;
+            font-size: 11px;
+            font-weight: bold;
+            background: rgba(255, 255, 255, 0.3);
+            margin-left: 8px;
+        }
+
+        /* 追加: アバターとメッセージレイアウト */
+        .message {
+            display: flex;
+            gap: 10px;
+            align-items: flex-start;
+        }
+
+        .message .avatar {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+            background: #f0f0f0;
+            flex-shrink: 0;
+            border: 1px solid #e0e0e0;
+        }
+
+        .message .content {
+            flex: 1;
+        }
+
+        .assistant-message .avatar {
+            background: #e8f5e9;
+            border-color: #c8e6c9;
+        }
+
+        .user-message .avatar {
+            background: #eef2f7;
+            border-color: #d5deea;
+        }
+
+        /* ヒーロービジュアル */
+        .ai-hero {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 16px;
+            border-radius: 999px;
+            background: rgba(255, 255, 255, 0.2);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            font-size: 18px;
+            margin-top: 15px;
+        }
+
+        /* 運営情報セクションの改善 */
+        .info-section {
+            margin-top: 35px;
+        }
+
+        .info-section h2 {
+            font-size: 1.5rem;
+            color: #3d4629;
+            margin-bottom: 18px;
+            padding-left: 14px;
+            border-left: 5px solid #8B9A46;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .info-card {
+            background: linear-gradient(135deg, #ffffff 0%, #f6f8f2 100%);
+            padding: 24px;
+            border-radius: 20px;
+            box-shadow: 0 4px 18px rgba(107, 124, 58, 0.08);
+            line-height: 1.85;
+            border: 2px solid #e8ebe6;
+            font-size: 1.02rem;
+            color: #2d3436;
+        }
+
+        /* レスポンシブデザイン */
+        @media (max-width: 768px) {
+            .container {
+                padding: 20px;
+                border-radius: 20px;
+            }
+
+            header h1 {
+                font-size: 1.6rem;
+            }
+
+            .chat-messages {
+                height: 420px;
+                min-height: 280px;
+                overflow-y: auto;
+            }
+
+            .chat-messages-inner {
+                padding: 16px;
+            }
+
+            .message .content {
+                max-width: 85%;
+            }
+
+            .quick-buttons {
+                grid-template-columns: 1fr;
+                gap: 12px;
+            }
+
+            .quick-btn {
+                padding: 14px 18px;
+                font-size: 0.95rem;
+            }
+
+            .chat-input-container {
+                flex-direction: column;
+                padding: 16px;
+                gap: 12px;
+            }
+
+            #chatInput {
+                padding: 14px 20px;
+                font-size: 1rem;
+            }
+
+            #sendBtn {
+                width: 100%;
+                padding: 14px 24px;
+            }
+
+            .quick-questions {
+                padding: 20px;
+            }
+
+            .ai-settings {
+                padding: 20px;
+            }
+
+            .info-card {
+                padding: 20px;
+            }
+        }
+
+        /* ローディングアニメーション */
+        .typing-indicator {
+            display: inline-flex;
+            gap: 4px;
+            padding: 12px 16px;
+            background: #e9ecef;
+            border-radius: 18px;
+        }
+
+        .typing-indicator span {
+            width: 8px;
+            height: 8px;
+            background: #8B9A46;
+            border-radius: 50%;
+            animation: typing 1.4s infinite;
+        }
+
+        .typing-indicator span:nth-child(2) {
+            animation-delay: 0.2s;
+        }
+
+        .typing-indicator span:nth-child(3) {
+            animation-delay: 0.4s;
+        }
+
+        @keyframes typing {
+
+            0%,
+            60%,
+            100% {
+                transform: translateY(0);
+                opacity: 0.7;
+            }
+
+            30% {
+                transform: translateY(-10px);
+                opacity: 1;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <nav class="site-nav" aria-label="主なメニュー">
+            <a class="site-nav-brand" href="index.html">OliMeal</a>
+            <div class="site-nav-links">
+                <a href="index.html">ホーム</a>
+                <a href="book.html">予約する</a>
+                <a href="verification.html">予約を確認</a>
+                <a href="allergy.html">アレルギー</a>
+                <a href="ai-assistant-php.html" class="is-here">質問する</a>
+            </div>
+        </nav>
+        <header class="page-intro">
+            <h1>食堂に質問する</h1>
+            <p class="lead">メニュー、営業時間、予約のことなど、下の欄に書いて「送信」を押してください。よくある質問は、ボタンを押すだけで聞けます。</p>
+        </header>
+
+        <div class="chat-container">
+            <div id="chatMessages" class="chat-messages">
+                <div id="chatMessagesInner" class="chat-messages-inner"></div>
+            </div>
+
+            <div class="chat-input-container">
+                <input type="text" id="chatInput" placeholder="例：きょうのメニューは？　営業時間を教えて" maxlength="500">
+                <button id="sendBtn">
+                    送信
+                </button>
+            </div>
+        </div>
+
+        <div class="quick-questions">
+            <h3>よくある質問（ボタンを押すと聞けます）</h3>
+            <div class="quick-buttons">
+                <button class="quick-btn" data-question="今日のメニューは何ですか？"><span>きょうのメニュー</span></button>
+                <button class="quick-btn" data-question="営業時間を教えてください"><span>営業時間</span></button>
+                <button class="quick-btn" data-question="予約はできますか？"><span>予約のしかた</span></button>
+                <button class="quick-btn" data-question="食道AIアレルギー対応: メニュー全部のアレルギー物質を、アレルギー情報一覧として全件表示してください。"><span>アレルギー一覧</span></button>
+                <button class="quick-btn" data-question="パンか食堂かどっちがおすすめ？"><span>パンと食堂</span></button>
+                <button class="quick-btn" data-question="今日は混雑しそうですか？"><span>混みぐあい</span></button>
+            </div>
+        </div>
+
+        <section class="info-section">
+            <h2>営業の情報</h2>
+            <div id="ops-info" class="info-card"></div>
+        </section>
+
+        <div class="back-link" style="text-align: center; margin-top: 32px; padding: 24px;">
+            <a href="index.html" id="backLink"
+                style="display: inline-flex; align-items: center; gap: 8px; padding: 14px 26px; background: white; color: #6B7C3A; text-decoration: none; border-radius: 28px; font-weight: 700; font-size: 1.05rem; border: 2px solid #8B9A46; transition: all 0.25s ease; box-shadow: 0 4px 14px rgba(107, 124, 58, 0.18);">
+                <span>←</span>
+                <span>ホームに戻る</span>
+            </a>
+        </div>
+        
+        <style>
+            #backLink:hover {
+                background: linear-gradient(135deg, #6B7C3A 0%, #8B9A46 100%);
+                color: white;
+                border-color: transparent;
+                transform: translateY(-2px);
+                box-shadow: 0 6px 20px rgba(107, 124, 58, 0.35);
+            }
+        </style>
+    </div>
+
+    <script>
+        // チャット履歴を保存
+        let chatHistory = [];
+
+        // 本番環境かどうかを判定
+        function isProductionEnvironment() {
+            const host = window.location.hostname;
+            const isLocalhost = host === 'localhost' ||
+                host === '127.0.0.1' ||
+                host === '::1' ||
+                host.includes('localhost');
+            return !isLocalhost;
+        }
+
+        // ページ読み込み完了時に実行
+        document.addEventListener('DOMContentLoaded', function () {
+            console.log('AIアシスタント（PHP版）が読み込まれました');
+
+            // チャットメッセージエリアのスクロールを初期化（一番上までスクロール可能）
+            const chatMessages = document.getElementById('chatMessages');
+            if (chatMessages) {
+                chatMessages.style.overflowY = 'auto';
+                console.log('チャットメッセージエリアのスクロールを有効化しました');
+            }
+
+            // チャットを始める
+            runInitialQuestion();
+
+            // 送信ボタンのイベントリスナー
+            const sendBtn = document.getElementById('sendBtn');
+            console.log('送信ボタン要素:', sendBtn);
+            if (sendBtn) {
+                sendBtn.addEventListener('click', function () {
+                    console.log('送信ボタンがクリックされました');
+                    sendMessage();
+                });
+                console.log('送信ボタンのイベントリスナーを設定しました');
+            } else {
+                console.error('送信ボタンが見つかりません');
+            }
+
+            // 入力フィールドのEnterキーイベント
+            const chatInput = document.getElementById('chatInput');
+            console.log('入力フィールド要素:', chatInput);
+            if (chatInput) {
+                // 入力フィールドを有効化（念のため）
+                chatInput.disabled = false;
+                chatInput.readOnly = false;
+
+                chatInput.addEventListener('keypress', function (e) {
+                    console.log('キーが押されました:', e.key);
+                    if (e.key === 'Enter') {
+                        console.log('Enterキーが押されました');
+                        sendMessage();
+                    }
+                });
+                console.log('入力フィールドのイベントリスナーを設定しました');
+
+                // 初期化後にフォーカスを設定
+                setTimeout(() => {
+                    chatInput.focus();
+                }, 100);
+            } else {
+                console.error('入力フィールドが見つかりません');
+            }
+
+            // クイック質問ボタンのイベントリスナー
+            const quickButtons = document.querySelectorAll('.quick-btn');
+            console.log('クイック質問ボタンの数:', quickButtons.length);
+            quickButtons.forEach((button, index) => {
+                console.log(`クイックボタン${index + 1}:`, button);
+                button.addEventListener('click', function () {
+                    console.log('クイックボタンがクリックされました:', this.textContent);
+                    const question = this.getAttribute('data-question');
+                    console.log('質問内容:', question);
+                    document.getElementById('chatInput').value = question;
+                    sendMessage();
+                });
+            });
+
+            // 運営情報を読み込み
+            loadOpsInfo();
+        });
+
+        // 起動時：営業時間の質問を送信し、AIの返答からチャットをスタート（APIは常に利用）
+        async function runInitialQuestion() {
+            const initialQuestion = '営業時間を教えてください';
+            const chatMessagesInner = document.getElementById('chatMessagesInner');
+            const chatMessages = document.getElementById('chatMessages');
+            const appendTo = chatMessagesInner || chatMessages;
+            if (!appendTo || !chatMessages) return;
+
+            addMessageToChat('user', initialQuestion);
+            chatHistory.push({ sender: 'user', message: initialQuestion });
+
+            const typingDiv = document.createElement('div');
+            typingDiv.className = 'message assistant-message';
+            typingDiv.id = 'typing-indicator';
+            typingDiv.innerHTML = `
+                <div class="avatar assistant-message-avatar" style="background-image: url('images/olive.jpg'); background-size: cover; background-position: center; position: relative;"></div>
+                <div class="content">
+                    <div class="typing-indicator">
+                        <span></span>
+                        <span></span>
+                        <span></span>
+                    </div>
+                </div>
+            `;
+            appendTo.appendChild(typingDiv);
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+
+            try {
+                const response = await fetch('api/ai-response.php', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        message: initialQuestion,
+                        history: [],
+                        useOllama: true
+                    })
+                });
+                const responseText = await response.text();
+                let data = null;
+                try {
+                    data = response.ok ? JSON.parse(responseText) : null;
+                } catch (_) {}
+
+                const typingIndicator = document.getElementById('typing-indicator');
+                if (typingIndicator) typingIndicator.remove();
+
+                if (data && data.response) {
+                    addMessageToChat('assistant', data.response, data.debug || { usedApi: data.usedApi || data.apiType });
+                    chatHistory.push({ sender: 'assistant', message: data.response });
+                } else {
+                    const errMsg = '営業時間の取得中にエラーが発生しました。もう一度お試しください。';
+                    addMessageToChat('assistant', errMsg);
+                    chatHistory.push({ sender: 'assistant', message: errMsg });
+                }
+            } catch (err) {
+                console.error('初期質問エラー:', err);
+                const typingIndicator = document.getElementById('typing-indicator');
+                if (typingIndicator) typingIndicator.remove();
+                const errMsg = '接続エラーが発生しました。しばらくしてからお試しください。';
+                addMessageToChat('assistant', errMsg);
+                chatHistory.push({ sender: 'assistant', message: errMsg });
+            }
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+        }
+
+        // 運営情報（定食・休業日・予約時間・予約人数/混雑予測）
+        async function loadOpsInfo() {
+            const opsDiv = document.getElementById('ops-info');
+            if (!opsDiv) return;
+
+            const API_BASE = 'api/';
+            async function apiGet(path) {
+                const res = await fetch(API_BASE + path, { cache: 'no-store' });
+                if (!res.ok) throw new Error('GET failed: ' + path);
+                return await res.json();
+            }
+
+            try {
+                const [holidays, dailyMenus, reservationTimes, reservations] = await Promise.all([
+                    apiGet('holidays.php'),
+                    apiGet('daily-menu.php'),
+                    apiGet('reservation-times.php'),
+                    fetch(API_BASE + 'sales-data.php?reservations=true', { cache: 'no-store' }).then(r => r.json())
+                ]);
+
+                const today = new Date().toISOString().split('T')[0];
+                const todayMenu = (dailyMenus || []).find(m => m.date === today);
+                const todayHoliday = (holidays || []).find(h => h.date === today);
+
+                // 予約人数（本日）
+                const todaysReservations = (reservations || []).filter(r => (r.createdAt || '').startsWith(today));
+                const reservationCount = todaysReservations.length;
+
+                // 来客数予測を取得（ai-advice.phpから）
+                let predictionNumber = null;
+                let congestion = 'データ不足';
+                let congestionColor = '#6c757d';
+
+                try {
+                    const predictionResponse = await fetch('api/ai-advice.php?action=prediction-number');
+                    if (predictionResponse.ok) {
+                        const predictionData = await predictionResponse.json();
+                        if (predictionData.prediction !== null && predictionData.prediction !== undefined) {
+                            predictionNumber = predictionData.prediction;
+                            if (predictionData.congestion) {
+                                congestion = predictionData.congestion.text;
+                                congestionColor = predictionData.congestion.color;
+                            }
+                        }
+                    }
+                } catch (e) {
+                    console.error('来客数予測の取得に失敗:', e);
+                }
+
+                // 予測データがない場合は予約人数ベースの混雑予測を使用
+                if (predictionNumber === null) {
+                    congestion = '空いています';
+                    if (reservationCount >= 30) congestion = '非常に混雑';
+                    else if (reservationCount >= 15) congestion = 'やや混雑';
+                }
+
+                // 予約時間表示（複数時間帯対応）
+                let timeHtml = '';
+                if (reservationTimes && reservationTimes.enabled) {
+                    // 後方互換性: 古い形式（startTime/endTime）と新しい形式（timeSlots）の両方に対応
+                    let timeSlots = [];
+                    if (reservationTimes.timeSlots && Array.isArray(reservationTimes.timeSlots) && reservationTimes.timeSlots.length > 0) {
+                        timeSlots = reservationTimes.timeSlots;
+                    } else if (reservationTimes.startTime && reservationTimes.endTime) {
+                        // 古い形式の場合
+                        timeSlots = [{ startTime: reservationTimes.startTime, endTime: reservationTimes.endTime }];
+                    }
+
+                    if (timeSlots.length > 0) {
+                        const timeStrings = timeSlots.map(slot => `${slot.startTime} - ${slot.endTime}`).join('、');
+                        timeHtml = `⏰ 予約時間: ${timeStrings}<br>`;
+                        if (reservationTimes.message) {
+                            timeHtml += `<span style="font-size: 0.9rem; color: #6c757d;">${reservationTimes.message}</span><br>`;
+                        }
+                    } else {
+                        timeHtml = '⏰ 予約時間: 制限なし（いつでも予約可能）<br>';
+                    }
+                } else {
+                    timeHtml = '⏰ 予約時間: 制限なし（いつでも予約可能）<br>';
+                }
+
+                opsDiv.innerHTML = `
+                    <div style="line-height:1.8;">
+                        <p><strong>📅 本日の営業状況:</strong> ${todayHoliday ? `🚫 休業（理由: ${todayHoliday.reason}）` : '✅ 営業予定'}</p>
+                        <p><strong>🍽️ 本日の定食:</strong> ${todayMenu ? todayMenu.food : '未設定'}</p>
+                        <p>${timeHtml}<strong>👥 本日の予約人数:</strong> ${reservationCount}人<br>
+                        ${predictionNumber !== null ? `<strong>📊 予測来客数:</strong> 約${predictionNumber}人<br>` : ''}
+                        <strong>📈 混雑予測:</strong> <span style="color: ${congestionColor}; font-weight: bold;">${congestion}</span></p>
+                    </div>
+                `;
+            } catch (e) {
+                console.error('運営情報の読み込みに失敗:', e);
+                opsDiv.innerHTML = '<p style="color:#dc3545;">運営情報の読み込みに失敗しました。</p>';
+            }
+        }
+
+        // メッセージをチャットに追加
+        function addMessageToChat(sender, message, debugInfo = null) {
+            // メッセージが正しく渡されているか確認
+            if (!message || typeof message !== 'string') {
+                console.error('addMessageToChat: 無効なメッセージ', message);
+                return;
+            }
+            
+            const chatMessages = document.getElementById('chatMessages');
+            const chatMessagesInner = document.getElementById('chatMessagesInner');
+            const scrollContainer = chatMessages;
+            const appendTarget = chatMessagesInner || chatMessages;
+            if (!appendTarget) {
+                console.error('addMessageToChat: チャット要素が見つかりません');
+                return;
+            }
+            
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `message ${sender}-message`;
+
+            const senderName = sender === 'user' ? 'あなた' : 'AIアシスタント';
+            const avatarEmoji = sender === 'user' ? '👤' : '';
+            
+            // デバッグ情報がある場合、AI名を表示
+            let apiNameDisplay = '';
+            if (debugInfo && debugInfo.usedApi) {
+                const apiNames = {
+                    'gemini': '🤖 Gemini',
+                    'groq': '⚡ Groq',
+                    'openai': '🧠 OpenAI',
+                    'huggingface': '🤗 Hugging Face',
+                    'ollama': '🤖 Ollama'
+                };
+                apiNameDisplay = `<span class="api-badge">${apiNames[debugInfo.usedApi] || debugInfo.usedApi}</span>`;
+            }
+            
+            // アバターのスタイル設定（AIアシスタントの場合、オリーブ画像のみを使用）
+            let avatarHtml = `<div class="avatar" aria-hidden="true">${avatarEmoji}</div>`;
+            if (sender === 'assistant') {
+                avatarHtml = `<div class="avatar assistant-message-avatar" aria-hidden="true" style="background-image: url('images/olive.jpg'); background-size: cover; background-position: center; position: relative;"></div>`;
+            }
+            
+            // メッセージを安全に処理
+            const rawMessage = String(message).trim();
+            
+            // デバッグログ（処理前）
+            console.log('=== メッセージ処理開始 ===');
+            console.log('送信者:', sender);
+            console.log('元のメッセージ長:', rawMessage.length);
+            console.log('元のメッセージ全文:', rawMessage);
+            console.log('メッセージの各文字:', Array.from(rawMessage).slice(0, 50).map(c => `'${c}'(${c.charCodeAt(0)})`).join(' '));
+            
+            // HTMLエスケープ処理（&を最初に処理）
+            let escapedMessage = rawMessage
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#039;');
+            
+            // 改行を<br>に変換
+            escapedMessage = escapedMessage.replace(/\n/g, '<br>');
+            
+            console.log('エスケープ後メッセージ長:', escapedMessage.length);
+            console.log('エスケープ後メッセージ全文:', escapedMessage);
+            
+            // メッセージコンテンツを安全に作成
+            const contentDiv = document.createElement('div');
+            contentDiv.className = 'content';
+            contentDiv.style.cssText = 'flex: 1; min-width: 0; overflow: visible;';
+            
+            const headerDiv = document.createElement('div');
+            headerDiv.className = 'message-header';
+            const headerStrong = document.createElement('strong');
+            headerStrong.textContent = senderName;
+            headerDiv.appendChild(headerStrong);
+            if (apiNameDisplay) {
+                const apiBadge = document.createElement('span');
+                apiBadge.innerHTML = apiNameDisplay;
+                headerDiv.appendChild(apiBadge);
+            }
+            const timeSpan = document.createElement('span');
+            timeSpan.className = 'message-time';
+            timeSpan.textContent = new Date().toLocaleTimeString('ja-JP');
+            headerDiv.appendChild(timeSpan);
+            
+            const messageContentDiv = document.createElement('div');
+            messageContentDiv.className = 'message-content';
+            messageContentDiv.style.cssText = 'display: block; width: 100%; max-width: 100%; word-wrap: break-word; overflow-wrap: break-word; white-space: pre-wrap; overflow: visible; box-sizing: border-box;';
+            
+            // メッセージを直接設定（innerHTMLを使用）
+            messageContentDiv.innerHTML = escapedMessage;
+            
+            // 設定後に確認
+            const setMessage = () => {
+                const actualText = messageContentDiv.textContent || messageContentDiv.innerText || '';
+                const actualHTML = messageContentDiv.innerHTML || '';
+                console.log('=== メッセージ設定確認 ===');
+                console.log('設定されたテキスト長:', actualText.length);
+                console.log('設定されたHTML長:', actualHTML.length);
+                console.log('設定されたテキスト全文:', actualText);
+                console.log('設定されたHTML全文:', actualHTML);
+                
+                // メッセージが不完全な場合、強制的に再設定
+                if (actualText.length < rawMessage.length * 0.8) {
+                    console.warn('⚠️ メッセージが不完全です。強制的に再設定します。');
+                    messageContentDiv.innerHTML = escapedMessage;
+                    // もう一度確認
+                    setTimeout(() => {
+                        const recheckText = messageContentDiv.textContent || messageContentDiv.innerText || '';
+                        console.log('再設定後のテキスト長:', recheckText.length);
+                        console.log('再設定後のテキスト全文:', recheckText);
+                    }, 50);
+                }
+            };
+            
+            // 即座に確認
+            setTimeout(setMessage, 0);
+            
+            contentDiv.appendChild(headerDiv);
+            contentDiv.appendChild(messageContentDiv);
+            
+            if (debugInfo && debugInfo.usedApi) {
+                const debugDiv = document.createElement('div');
+                debugDiv.innerHTML = createDebugInfoHTML(debugInfo);
+                contentDiv.appendChild(debugDiv);
+            }
+            
+            // アバターを追加
+            const avatarElement = document.createElement('div');
+            avatarElement.className = sender === 'assistant' ? 'avatar assistant-message-avatar' : 'avatar';
+            avatarElement.setAttribute('aria-hidden', 'true');
+            if (sender === 'assistant') {
+                avatarElement.style.cssText = "background-image: url('images/olive.jpg'); background-size: cover; background-position: center; position: relative;";
+            } else {
+                avatarElement.textContent = avatarEmoji;
+            }
+            
+            messageDiv.appendChild(avatarElement);
+            messageDiv.appendChild(contentDiv);
+
+            appendTarget.appendChild(messageDiv);
+            
+            // 追加後にメッセージが正しく表示されているか確認（複数回チェック）
+            const checkMessageDisplay = (attempt = 1) => {
+                const addedContent = messageDiv.querySelector('.message-content');
+                if (addedContent) {
+                    const displayedText = addedContent.textContent || addedContent.innerText || '';
+                    const displayedHTML = addedContent.innerHTML || '';
+                    const originalText = String(message).trim();
+                    
+                    console.log(`=== メッセージ表示確認 (試行 ${attempt}) ===`);
+                    console.log('表示されたテキスト長:', displayedText.length);
+                    console.log('元のメッセージ長:', originalText.length);
+                    console.log('表示率:', ((displayedText.length / originalText.length) * 100).toFixed(1) + '%');
+                    console.log('表示されたテキスト全文:', displayedText);
+                    console.log('元のメッセージ全文:', originalText);
+                    console.log('表示されたHTML全文:', displayedHTML);
+                    
+                    // メッセージが不完全な場合、強制的に再設定
+                    if (displayedText.length < originalText.length * 0.8 && originalText.length > 10 && attempt <= 3) {
+                        console.warn(`⚠️ メッセージが不完全です（${attempt}回目の試行）。再設定します。`);
+                        
+                        // 改行を保持して再設定
+                        const safeMessage = originalText
+                            .replace(/&/g, '&amp;')
+                            .replace(/</g, '&lt;')
+                            .replace(/>/g, '&gt;')
+                            .replace(/"/g, '&quot;')
+                            .replace(/'/g, '&#039;')
+                            .replace(/\n/g, '<br>');
+                        
+                        // 一度クリアしてから再設定
+                        addedContent.innerHTML = '';
+                        setTimeout(() => {
+                            addedContent.innerHTML = safeMessage;
+                            console.log('メッセージを再設定しました（試行 ' + attempt + '）');
+                            // 再確認
+                            setTimeout(() => checkMessageDisplay(attempt + 1), 100);
+                        }, 10);
+                    } else if (displayedText.length >= originalText.length * 0.8) {
+                        console.log('✅ メッセージが正しく表示されました');
+                    } else {
+                        console.error('❌ メッセージの表示に失敗しました（3回試行後も不完全）');
+                    }
+                } else {
+                    console.error('メッセージコンテンツ要素が見つかりません');
+                }
+            };
+            
+            // 複数回チェック（即座、100ms後、500ms後）
+            setTimeout(() => checkMessageDisplay(1), 0);
+            setTimeout(() => checkMessageDisplay(2), 100);
+            setTimeout(() => checkMessageDisplay(3), 500);
+            
+            // ユーザーがすでに下の方を見ているときだけ最下部へスクロール（上まで読めるようにする）
+            setTimeout(() => {
+                const el = scrollContainer;
+                const wasNearBottom = el.scrollHeight - el.scrollTop - el.clientHeight < 120;
+                if (wasNearBottom) {
+                    el.scrollTop = el.scrollHeight;
+                }
+            }, 50);
+        }
+
+        // デバッグ情報のHTMLを生成
+        function createDebugInfoHTML(debugInfo) {
+            if (!debugInfo || !debugInfo.usedApi) return '';
+
+            const apiName = debugInfo.usedApi;
+            const apiEmojis = {
+                'gemini': '🤖',
+                'groq': '⚡',
+                'openai': '🧠',
+                'huggingface': '🤗',
+                'ollama': '🤖'
+            };
+
+            const apiNames = {
+                'gemini': 'Google Gemini',
+                'groq': 'Groq',
+                'openai': 'OpenAI',
+                'huggingface': 'Hugging Face',
+                'ollama': 'Ollama'
+            };
+
+            let details = [];
+
+            if (apiName === 'gemini' && debugInfo.geminiEnabled !== undefined) {
+                details.push(`Gemini有効: ${debugInfo.geminiEnabled ? '✅' : '❌'}`);
+                details.push(`APIキー設定: ${debugInfo.geminiApiKeySet ? '✅' : '❌'}`);
+            }
+
+            return `
+                <div class="debug-info ${apiName}">
+                    <div class="debug-info-title">
+                        ${apiEmojis[apiName] || '🤖'} 使用AI: <strong>${apiNames[apiName] || apiName}</strong>
+                    </div>
+                    ${details.length > 0 ? `<div class="debug-info-detail">${details.join(' | ')}</div>` : ''}
+                </div>
+            `;
+        }
+
+        // メッセージを送信
+        async function sendMessage() {
+            console.log('sendMessage関数が呼び出されました');
+            const chatInput = document.getElementById('chatInput');
+            const userMessage = chatInput.value.trim();
+
+            console.log('入力されたメッセージ:', userMessage);
+
+            if (!userMessage) {
+                console.log('メッセージが空のため送信をキャンセル');
+                return;
+            }
+
+            console.log('ユーザーメッセージを表示中...');
+            // ユーザーメッセージを表示
+            addMessageToChat('user', userMessage);
+            chatInput.value = '';
+
+            // 送信中は入力フィールドとボタンを無効化
+            const sendBtn = document.getElementById('sendBtn');
+            chatInput.disabled = true;
+            sendBtn.disabled = true;
+            sendBtn.textContent = '送信中...';
+
+            // チャット履歴に追加
+            chatHistory.push({ sender: 'user', message: userMessage });
+
+            // タイピングインジケーターを表示
+            const chatMessagesInner = document.getElementById('chatMessagesInner');
+            const chatMessages = document.getElementById('chatMessages');
+            const appendTo = chatMessagesInner || chatMessages;
+            const typingDiv = document.createElement('div');
+            typingDiv.className = 'message assistant-message';
+            typingDiv.id = 'typing-indicator';
+            typingDiv.innerHTML = `
+                <div class="avatar assistant-message-avatar" style="background-image: url('images/olive.jpg'); background-size: cover; background-position: center; position: relative;"></div>
+                <div class="content">
+                    <div class="typing-indicator">
+                        <span></span>
+                        <span></span>
+                        <span></span>
+                    </div>
+                </div>
+            `;
+            appendTo.appendChild(typingDiv);
+            if (chatMessages) {
+                chatMessages.scrollTop = chatMessages.scrollHeight;
+            }
+
+            // AIの応答を生成（PHP API経由）
+            try {
+                console.log('PHP APIにリクエストを送信中...');
+
+                // APIは常に利用（設定欄は廃止）
+                const useOllama = true;
+
+                // チャット履歴をAPI形式に変換（直近6ターンまで）
+                const historyForAPI = chatHistory.slice(-6).map(msg => ({
+                    role: msg.sender === 'user' ? 'user' : 'assistant',
+                    content: msg.message
+                }));
+
+                const response = await fetch('api/ai-response.php', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        message: userMessage,
+                        history: historyForAPI,
+                        useOllama: useOllama
+                    })
+                });
+
+                if (!response.ok) {
+                    const errorText = await response.text();
+                    console.error('PHP API HTTPエラー:', response.status, response.statusText);
+                    console.error('エラーレスポンス:', errorText);
+                    throw new Error(`PHP API Error: ${response.status} ${response.statusText}\nレスポンス: ${errorText.substring(0, 500)}`);
+                }
+
+                // レスポンステキストを取得してからJSON解析
+                const responseText = await response.text();
+                console.log('PHP APIからの生レスポンス（最初の500文字）:', responseText.substring(0, 500));
+
+                let data;
+                try {
+                    data = JSON.parse(responseText);
+                    console.log('PHP APIからの応答（解析成功）:', data);
+                } catch (jsonError) {
+                    console.error('=== JSON解析エラー ===');
+                    console.error('エラー:', jsonError);
+                    console.error('レスポンステキスト（全文）:', responseText);
+                    console.error('レスポンス長:', responseText.length);
+                    throw new Error(`JSON解析エラー: ${jsonError.message}\nレスポンス（最初の1000文字）: ${responseText.substring(0, 1000)}`);
+                }
+
+                // デバッグ情報をコンソールに表示（改善版）
+                const usedApi = data.usedApi || data.apiType || 'unknown';
+                const apiEmojis = {
+                    'gemini': '🤖',
+                    'groq': '⚡',
+                    'openai': '🧠',
+                    'huggingface': '🤗',
+                    'ollama': '🤖'
+                };
+                const apiNames = {
+                    'gemini': 'Google Gemini',
+                    'groq': 'Groq',
+                    'openai': 'OpenAI',
+                    'huggingface': 'Hugging Face',
+                    'ollama': 'Ollama'
+                };
+
+                console.log('%c=== AI API 使用状況 ===', 'font-size: 16px; font-weight: bold; color: #667eea;');
+                console.log(`%c${apiEmojis[usedApi] || '🤖'} 使用されたAI: ${apiNames[usedApi] || usedApi}`,
+                    'font-size: 14px; font-weight: bold; color: #4285f4; background: #e8f0fe; padding: 4px 8px; border-radius: 4px;');
+                console.log('Gemini有効:', data.debug?.geminiEnabled ? '✅' : '❌');
+                console.log('Gemini APIキー設定:', data.debug?.geminiApiKeySet ? '✅' : '❌');
+                console.log('OpenAI有効:', data.debug?.openaiEnabled ? '✅' : '❌');
+                console.log('OpenAI APIキー設定:', data.debug?.openaiApiKeySet ? '✅' : '❌');
+
+                // デバッグログを表示（開発者ツールで確認可能）
+                if (data.debug?.debugLogs && data.debug.debugLogs.length > 0) {
+                    console.log('%c=== デバッグログ（サーバー側） ===', 'font-size: 14px; font-weight: bold; color: #ff6b6b;');
+                    data.debug.debugLogs.forEach((log, index) => {
+                        const isError = log.includes('エラー') || log.includes('失敗') || log.includes('HTTP エラー');
+                        const isSuccess = log.includes('成功');
+                        const style = isError
+                            ? 'color: #ff6b6b; font-weight: bold;'
+                            : isSuccess
+                                ? 'color: #51cf66; font-weight: bold;'
+                                : 'color: #495057;';
+                        console.log(`%c[${index + 1}] ${log}`, style);
+                    });
+                    console.log('========================');
+                }
+
+                if (data.debug) {
+                    console.log('詳細デバッグ情報:', data.debug);
+                }
+                console.log('========================');
+
+                if (data && data.response) {
+                    // エラーメッセージが含まれている場合、より詳細な情報を表示
+                    let responseText = data.response;
+
+                    // デバッグ情報がある場合、コンソールに詳細を表示
+                    if (data.debug && !data.ollamaUsed && usedApi === 'unknown') {
+                        console.warn('⚠️ AI APIが使用されていません。');
+                        console.warn('デバッグ情報:', data.debug);
+
+                        // ユーザーに分かりやすいメッセージを追加
+                        if (!data.ollamaAvailable) {
+                            responseText += '\n\n💡 ヒント: AI APIが利用できない可能性があります。設定を確認してください。';
+                        }
+                    }
+
+                    // タイピングインジケーターを削除
+                    const typingIndicator = document.getElementById('typing-indicator');
+                    if (typingIndicator) {
+                        typingIndicator.remove();
+                    }
+
+                    // AIの応答を表示（デバッグ情報を含む）
+                    addMessageToChat('assistant', responseText, data.debug || { usedApi: usedApi });
+                    chatHistory.push({ sender: 'assistant', message: data.response });
+
+                    // 入力フィールドを再有効化
+                    chatInput.disabled = false;
+                    sendBtn.disabled = false;
+                    sendBtn.textContent = '送信';
+                    chatInput.focus();
+                } else {
+                    throw new Error('PHP APIからの応答が無効です');
+                }
+
+            } catch (error) {
+                console.error('PHP API呼び出しエラー:', error);
+                console.log('エラーの詳細:', error.message);
+
+                // タイピングインジケーターを削除
+                const typingIndicator = document.getElementById('typing-indicator');
+                if (typingIndicator) {
+                    typingIndicator.remove();
+                }
+
+                // エラーメッセージを表示
+                const errorMessage = `❌ 申し訳ございません。エラーが発生しました。\n\n${error.message}\n\nしばらく時間をおいてから、もう一度お試しください。`;
+
+                addMessageToChat('assistant', errorMessage);
+                chatHistory.push({ sender: 'assistant', message: errorMessage });
+
+                // 入力フィールドを再有効化
+                chatInput.disabled = false;
+                sendBtn.disabled = false;
+                sendBtn.textContent = '送信';
+                chatInput.focus();
+            }
+        }
+
+        // デフォルト応答関数を削除しました
+        // AIが実際に動作しているかどうかを確認するため、デフォルト応答は使用しません
+    </script>
+</body>
+
+</html>

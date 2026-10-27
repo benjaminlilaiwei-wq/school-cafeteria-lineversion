@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>定食カレンダー - OliMeal</title>
+  <link rel="stylesheet" href="styles.css">
+  <style>
+    .calendar-day.liked {
+      background: #fff6d8;
+      box-shadow: inset 0 0 0 3px #e0a106;
+      font-weight: 800;
+    }
+    .star-note {
+      background: #fff6d8;
+      border: 2px solid #e0a106;
+      border-radius: 14px;
+      padding: 14px 16px;
+      margin-bottom: 14px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <nav class="site-nav" aria-label="主なメニュー">
+      <a class="site-nav-brand" href="index.html">OliMeal</a>
+      <div class="site-nav-links">
+        <a href="index.html">ホーム</a>
+        <a href="book.html">予約する</a>
+        <a href="line.html" class="is-here">定食カレンダー</a>
+      </div>
+    </nav>
+    <header class="page-intro">
+      <p class="eyebrow">LINE</p>
+      <h1 id="cal-title">定食カレンダー</h1>
+      <p class="lead" id="cal-lead">アンケートで答えた好きな食べ方から、合いそうな日に星をつけます。</p>
+    </header>
+    <main>
+      <div id="star-note" class="star-note" hidden></div>
+      <p class="legend"><span><span class="swatch today"></span>緑の枠はきょう</span><span><span class="swatch holiday"></span>オレンジは休み</span><span>黄色い枠は好きそうな定食</span></p>
+      <div id="calendar" class="info-card calendar-container"><p>読み込んでいます…</p></div>
+      <p class="help-note">予約は、LINEのトークで「予約する」を押すか、いつもの予約ページからできます。LINEをしていない人は、いつもの予約ページを使ってください。</p>
+      <p><a class="back-link" href="book.html">いつもの予約ページへ</a></p>
+    </main>
+  </div>
+  <script>
+    const params = new URLSearchParams(location.search);
+    const key = params.get('key') || '';
+
+    function render(data) {
+      const title = document.getElementById('cal-title');
+      const note = document.getElementById('star-note');
+      if (data.name) {
+        title.textContent = data.name + 'さんの定食カレンダー';
+        note.hidden = false;
+        note.textContent = '黄色い枠の日は、アンケートの答えから好きそうな定食です。';
+      } else {
+        note.hidden = false;
+        note.textContent = '星をつけるには、LINEのトークからこのカレンダーを開いてください。';
+      }
+      const year = data.year;
+      const month = data.month;
+      const first = new Date(year, month - 1, 1).getDay();
+      const names = ['日', '月', '火', '水', '木', '金', '土'];
+      let html = '<div class="calendar-header"><h4>' + year + '年 ' + month + '月</h4></div><div class="calendar-grid"><div class="calendar-weekdays">';
+      names.forEach(function (name) { html += '<div class="calendar-weekday">' + name + '</div>'; });
+      html += '</div><div class="calendar-days">';
+      for (let i = 0; i < first; i++) html += '<div class="calendar-day empty"></div>';
+      (data.days || []).forEach(function (day) {
+        let cls = 'calendar-day';
+        if (day.today) cls += ' today';
+        if (day.holiday) cls += ' holiday';
+        if (day.liked) cls += ' liked';
+        let body = String(day.day);
+        if (day.holiday) body += '<br><small>' + escapeHtml(day.holiday) + '</small>';
+        else if (day.food) body += '<br><small>' + (day.liked ? '★ ' : '') + escapeHtml(day.food) + '</small>';
+        if (day.event) body += '<br><small>' + escapeHtml(day.event) + '</small>';
+        html += '<div class="' + cls + '">' + body + '</div>';
+      });
+      html += '</div></div>';
+      document.getElementById('calendar').innerHTML = html;
+    }
+
+    function escapeHtml(value) {
+      return String(value || '').replace(/[&<>"']/g, function (ch) {
+        return ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[ch];
+      });
+    }
+
+    function loadJson(url) {
+      return fetch(url, { cache: 'no-store' }).then(function (res) {
+        if (!res.ok) throw new Error('failed');
+        return res.json();
+      });
+    }
+
+    function monthFromSources(menus, holidays) {
+      const now = new Date();
+      const year = now.getFullYear();
+      const month = now.getMonth() + 1;
+      const today = year + '-' + String(month).padStart(2, '0') + '-' + String(now.getDate()).padStart(2, '0');
+      const last = new Date(year, month, 0).getDate();
+      const holidayMap = {};
+      (holidays || []).forEach(function (row) {
+        if (row && row.date) holidayMap[row.date] = row.reason || '休み';
+      });
+      const foodMap = {};
+      (menus || []).forEach(function (row) {
+        if (row && row.date) foodMap[row.date] = row.food || '';
+      });
+      const days = [];
+      for (let day = 1; day <= last; day++) {
+        const date = year + '-' + String(month).padStart(2, '0') + '-' + String(day).padStart(2, '0');
+        days.push({
+          date: date,
+          day: day,
+          food: foodMap[date] || '',
+          holiday: holidayMap[date] || null,
+          event: '',
+          liked: false,
+          today: date === today
+        });
+      }
+      return { year: year, month: month, name: '', days: days };
+    }
+
+    Promise.all([
+      loadJson('api/daily-menu.php').catch(function () { return []; }),
+      loadJson('api/holidays.php').catch(function () { return []; }),
+      loadJson('api/line-calendar.php?key=' + encodeURIComponent(key)).catch(function () { return null; })
+    ]).then(function (results) {
+      const base = monthFromSources(results[0], results[1]);
+      const personal = results[2];
+      if (personal && personal.days) {
+        const liked = {};
+        personal.days.forEach(function (day) { liked[day.date] = !!day.liked; });
+        base.days.forEach(function (day) { day.liked = !!liked[day.date]; });
+        if (personal.name) base.name = personal.name;
+      }
+      render(base);
+    }).catch(function () {
+      document.getElementById('calendar').innerHTML = '<p>カレンダーを読み込めませんでした。</p>';
+    });
+  </script>
+</body>
+</html>
