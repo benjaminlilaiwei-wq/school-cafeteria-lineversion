@@ -16,6 +16,7 @@ if (!defined('SALES_DATA_INTERNAL')) {
 
 $dataDir = __DIR__ . '/../data';
 $file = $dataDir . '/sales-data.json';
+$GLOBALS['SALES_DATA_FILE'] = $file;
 
 if (!is_dir($dataDir)) {
     mkdir($dataDir, 0777, true);
@@ -23,6 +24,10 @@ if (!is_dir($dataDir)) {
 
 if (!file_exists($file)) {
     file_put_contents($file, json_encode([], JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT));
+}
+
+function salesDataFile() {
+    return (string) ($GLOBALS['SALES_DATA_FILE'] ?? '');
 }
 
 function readJsonSafe($file) {
@@ -43,7 +48,7 @@ function writeJsonSafe($file, $data) {
 
 // 予約リストを取得（全予約を配列で返す）
 function getAllReservations() {
-    global $file;
+    $file = salesDataFile();
     $salesData = readJsonSafe($file);
     $reservations = [];
     
@@ -60,7 +65,7 @@ function getAllReservations() {
 
 // 予約を追加（詳細情報を含む）
 function addReservationDetail($reservation) {
-    global $file;
+    $file = salesDataFile();
     
     $salesData = readJsonSafe($file);
     $date = $reservation['date'] ?? date('Y-m-d');
@@ -85,7 +90,8 @@ function addReservationDetail($reservation) {
     
     // 予約数を+1
     $people = intval($reservation['people'] ?? 1);
-    $salesData[$date]['reservations'] += $people;
+    $salesData[$date]['reservations'] = (int) ($salesData[$date]['reservations'] ?? 0) + $people;
+    $salesData[$date]['people'] = (int) ($salesData[$date]['people'] ?? 0);
     
     // 認証済みの場合は来客数も+1
     $verified = isset($reservation['verified']) && ($reservation['verified'] === true || $reservation['verified'] === 'true' || $reservation['verified'] === 1);
@@ -107,7 +113,7 @@ function addReservationDetail($reservation) {
 
 // 予約リスト全体を保存（既存の予約リストを置き換え）
 function saveAllReservations($reservations) {
-    global $file;
+    $file = salesDataFile();
     
     $salesData = readJsonSafe($file);
     
@@ -170,7 +176,7 @@ function saveAllReservations($reservations) {
 
 // 予約を追加（+1する）
 function addReservationToSales($date, $food, $people = 1, $verified = false) {
-    global $file;
+    $file = salesDataFile();
     
     $salesData = readJsonSafe($file);
     
@@ -205,7 +211,7 @@ function addReservationToSales($date, $food, $people = 1, $verified = false) {
 
 // 認証状態を更新（未認証→認証済みに変更）
 function updateVerificationStatus($date, $food, $people = 1) {
-    global $file;
+    $file = salesDataFile();
     
     $salesData = readJsonSafe($file);
     
@@ -230,7 +236,7 @@ function updateVerificationStatus($date, $food, $people = 1) {
 
 // 受け取り状態を更新（日付・名前・予約番号で特定）
 function setReceivedStatus($date, $name, $reservationNumber, $received = true) {
-    global $file;
+    $file = salesDataFile();
 
     $salesData = readJsonSafe($file);
     if (!isset($salesData[$date]) || !is_array($salesData[$date]['reservationList'] ?? null)) {
@@ -256,7 +262,7 @@ function setReceivedStatus($date, $name, $reservationNumber, $received = true) {
 
 // 名前と予約番号で予約を検索して認証状態を更新
 function verifyReservationByNameAndNumber($name, $reservationNumber) {
-    global $file;
+    $file = salesDataFile();
     
     $salesData = readJsonSafe($file);
     $found = false;
