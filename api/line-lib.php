@@ -545,7 +545,7 @@ function line_uri_button($label, $url) {
 }
 
 function line_menu_version() {
-    return 'v3';
+    return 'v4';
 }
 
 function line_rich_menu_ready() {
@@ -646,7 +646,7 @@ function line_ensure_rich_menu() {
     if ($list[0]) {
         $decoded = json_decode($list[1], true);
         foreach (($decoded['richmenus'] ?? []) as $menu) {
-            if (is_array($menu) && ($menu['name'] ?? '') === 'cafeteria-v3' && !empty($menu['richMenuId'])) {
+            if (is_array($menu) && ($menu['name'] ?? '') === 'cafeteria-v4' && !empty($menu['richMenuId'])) {
                 $existing = (string) $menu['richMenuId'];
                 break;
             }
@@ -660,12 +660,12 @@ function line_ensure_rich_menu() {
     if (!is_file($image)) {
         return;
     }
-    $padX = 34;
-    $gapX = 22;
-    $padY = 40;
-    $gapY = 26;
-    $cellW = 796;
-    $cellH = 790;
+    $padX = 18;
+    $gapX = 14;
+    $padY = 16;
+    $gapY = 11;
+    $cellW = 812;
+    $cellH = 400;
     $actions = [
         ['home:reserve', '予約する'],
         ['home:check', '予約を確認'],
@@ -693,10 +693,10 @@ function line_ensure_rich_menu() {
         ];
     }
     $created = line_api('https://api.line.me/v2/bot/richmenu', [
-        'size' => ['width' => 2500, 'height' => 1686],
-        'selected' => true,
-        'name' => 'cafeteria-v3',
-        'chatBarText' => '食堂メニュー',
+        'size' => ['width' => 2500, 'height' => 843],
+        'selected' => false,
+        'name' => 'cafeteria-v4',
+        'chatBarText' => 'メニュー',
         'areas' => $areas,
     ]);
     if (!$created[0]) {
@@ -1736,7 +1736,14 @@ function line_handle_postback($user, $data) {
         return line_locked_prompt($user);
     }
     if ($data === 'home:redo') {
-        return line_survey_invite($user);
+        $saved = line_survey_ack_messages($user);
+        $url = line_survey_url($user);
+        if ($url === '') {
+            return $saved;
+        }
+        $saved[] = line_text('直すときだけ、最初のアンケートのページを開いてね。予約や定食は、このトークのメニューのまま。');
+        $saved[] = line_survey_card('メニュー', 'アンケートを直す', '名前や好きな食べ方を直すページだよ。', [], 1, [], line_uri_button('アンケートを直す', $url));
+        return $saved;
     }
     if ($data === 'home:today') {
         return [line_text(line_today_text($user))];
