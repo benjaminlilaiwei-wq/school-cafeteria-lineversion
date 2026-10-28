@@ -1,0 +1,370 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>食堂アンケート - OliMeal</title>
+  <style>
+    :root {
+      --ink: #3a2a16;
+      --muted: #8a6240;
+      --paper: #fffdf9;
+      --page: #fff1e4;
+      --chip: #fff;
+      --line: #f0dcc8;
+      --on: #f6c453;
+      --on-ink: #3a2a16;
+      --accent: #e07a3d;
+      --send: #f5c542;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      min-height: 100vh;
+      font-family: "Yu Gothic UI", "Hiragino Sans", "Hiragino Kaku Gothic ProN", Meiryo, sans-serif;
+      color: var(--ink);
+      background: linear-gradient(180deg, #fff7ef 0%, #ffe6d2 100%);
+    }
+    .wrap {
+      max-width: 720px;
+      margin: 0 auto;
+      padding: 18px 14px 40px;
+    }
+    .top {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 14px;
+    }
+    .mark {
+      width: 42px;
+      height: 42px;
+      border-radius: 14px;
+      background: #fff;
+      color: var(--accent);
+      display: grid;
+      place-items: center;
+      font-weight: 800;
+      box-shadow: 0 6px 16px rgba(180, 110, 50, 0.12);
+    }
+    .brand { font-weight: 800; line-height: 1.2; }
+    .brand small { display: block; font-weight: 600; color: var(--muted); }
+    .card {
+      background: var(--paper);
+      border-radius: 28px;
+      padding: 22px 18px 18px;
+      box-shadow: 0 16px 40px rgba(160, 100, 50, 0.12);
+    }
+    h1 { font-size: 1.55rem; margin: 0 0 6px; }
+    .lead { margin: 0 0 18px; color: var(--muted); line-height: 1.6; }
+    label { display: block; font-weight: 800; margin-bottom: 8px; }
+    .req { color: var(--accent); font-weight: 800; }
+    input[type="text"] {
+      width: 100%;
+      border: 2px solid var(--line);
+      background: #fff;
+      border-radius: 999px;
+      padding: 14px 18px;
+      font-size: 1.05rem;
+      color: var(--ink);
+    }
+    input[type="text"]:focus { outline: 3px solid #f6d48a; border-color: #e7b34d; }
+    .hint, .error { margin: 8px 4px 0; line-height: 1.5; }
+    .hint { color: var(--muted); font-size: 0.92rem; }
+    .error { color: #9b2c2c; font-weight: 700; min-height: 1.4em; }
+    .group { margin-top: 22px; }
+    .group h2 { margin: 0 0 10px; font-size: 1rem; color: var(--accent); }
+    .chips { display: flex; flex-wrap: wrap; gap: 8px; }
+    .chip {
+      border: 1.5px solid #eadfce;
+      background: var(--chip);
+      color: var(--ink);
+      border-radius: 999px;
+      padding: 10px 16px;
+      font-size: 1rem;
+      font-weight: 700;
+      cursor: pointer;
+      min-height: 48px;
+    }
+    .chip[aria-pressed="true"] {
+      background: var(--on);
+      border-color: #e2ae3a;
+      color: var(--on-ink);
+    }
+    .tray {
+      margin-top: 22px;
+      background: #fff6ee;
+      border-radius: 18px;
+      padding: 14px 16px;
+    }
+    .tray strong { display: block; margin-bottom: 6px; }
+    .tray p { margin: 0; color: var(--muted); }
+    .send {
+      margin-top: 18px;
+      width: 100%;
+      border: 0;
+      background: var(--send);
+      color: #3a2a16;
+      font-weight: 800;
+      font-size: 1.05rem;
+      border-radius: 999px;
+      min-height: 56px;
+      cursor: pointer;
+    }
+    .send:disabled { opacity: 0.55; cursor: wait; }
+    .done { text-align: center; }
+    .done h1 { font-size: 1.7rem; }
+    .summary {
+      text-align: left;
+      background: #fff6ee;
+      border-radius: 18px;
+      padding: 14px 16px;
+      line-height: 1.7;
+      margin: 14px 0;
+    }
+    .back {
+      display: inline-block;
+      margin-top: 8px;
+      background: #06c755;
+      color: #fff;
+      text-decoration: none;
+      font-weight: 800;
+      border-radius: 999px;
+      padding: 14px 22px;
+    }
+    .missing { padding: 28px 8px; text-align: center; }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="top">
+      <div class="mark">食</div>
+      <div class="brand">OliMeal<small>食堂アンケート</small></div>
+    </div>
+    <main class="card" id="card">
+      <p>読み込んでいます…</p>
+    </main>
+  </div>
+  <script>
+    const params = new URLSearchParams(location.search);
+    const key = params.get('key') || '';
+    const card = document.getElementById('card');
+    const state = { likes: [], avoids: [], times: '', none: false };
+
+    function esc(value) {
+      return String(value || '').replace(/[&<>"']/g, function (ch) {
+        return ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[ch];
+      });
+    }
+
+    function normalizeName(value) {
+      return String(value || '').replace(/[\s\u3000]+/g, ' ').trim();
+    }
+
+    function nameError(value) {
+      const name = normalizeName(value);
+      if (!name) return '名前が空白だよ。姓と名を入れてね。例: 瀬尾 太郎';
+      if ([...name].length > 20) return '名前は20文字以内のフルネームにしてね。例: 瀬尾 太郎';
+      const parts = name.split(/[\s・･·]+/).filter(Boolean);
+      const letters = name.replace(/[^\p{L}]/gu, '');
+      const letterParts = parts.filter(function (part) { return /\p{L}/u.test(part); }).length;
+      if (!letters) return '名前は文字で入れてね。例: 瀬尾 太郎';
+      if (letterParts < 2 && [...letters].length < 3) {
+        return 'フルネームで入れてね。姓だけは送れないよ。例: 瀬尾 太郎';
+      }
+      return '';
+    }
+
+    function selectedText() {
+      const bits = state.likes.slice();
+      if (state.times) bits.push(state.times);
+      if (state.none) bits.push('苦手はとくにない');
+      else if (state.avoids.length) bits.push('苦手: ' + state.avoids.join('、'));
+      return bits.length ? bits.join('  /  ') : 'まだ選ばれていないよ';
+    }
+
+    function paintTray() {
+      const tray = document.getElementById('tray-text');
+      if (tray) tray.textContent = selectedText();
+    }
+
+    function chip(label, pressed, group) {
+      return '<button type="button" class="chip" data-group="' + esc(group) + '" data-label="' + esc(label) + '" aria-pressed="' + (pressed ? 'true' : 'false') + '">' + esc(label) + '</button>';
+    }
+
+    function renderForm(data) {
+      state.likes = (data.likes || []).slice();
+      state.avoids = (data.avoids || []).slice();
+      state.times = data.timesPerWeek || '';
+      state.none = state.avoids.length === 0 && !!data.done;
+      const groups = (data.groups || []).map(function (group) {
+        const buttons = (group.items || []).map(function (label) {
+          return chip(label, state.likes.indexOf(label) !== -1, 'like');
+        }).join('');
+        return '<section class="group"><h2>' + esc(group.title) + '</h2><div class="chips">' + buttons + '</div></section>';
+      }).join('');
+      const times = (data.timeChoices || []).map(function (label) {
+        return chip(label, state.times === label, 'time');
+      }).join('');
+      const avoids = chip('とくにない', state.none, 'avoid') + (data.avoidChoices || []).map(function (label) {
+        return chip(label, state.avoids.indexOf(label) !== -1, 'avoid');
+      }).join('');
+      card.innerHTML = ''
+        + '<h1>食堂のアンケート</h1>'
+        + '<p class="lead">好きなものはボタンを押すだけ。名前は、姓と名の両方を入れてね。空白では送れないよ。</p>'
+        + '<form id="survey-form">'
+        + '<label for="full-name">名前 <span class="req">必須</span></label>'
+        + '<input id="full-name" name="name" type="text" maxlength="20" autocomplete="name" placeholder="例: 瀬尾 太郎" value="' + esc(data.name || '') + '" required>'
+        + '<p class="hint">姓と名。例: 瀬尾 太郎</p>'
+        + '<p class="error" id="name-error" role="alert"></p>'
+        + groups
+        + '<section class="group"><h2>週に何回来る？</h2><div class="chips">' + times + '</div></section>'
+        + '<section class="group"><h2>苦手なもの</h2><div class="chips">' + avoids + '</div></section>'
+        + '<div class="tray"><strong>選択中</strong><p id="tray-text"></p></div>'
+        + '<p class="error" id="form-error" role="alert"></p>'
+        + '<button class="send" type="submit">この内容で答える</button>'
+        + '</form>';
+      paintTray();
+      card.querySelectorAll('.chip').forEach(function (button) {
+        button.addEventListener('click', function () { toggle(button); });
+      });
+      document.getElementById('survey-form').addEventListener('submit', submitForm);
+      const nameInput = document.getElementById('full-name');
+      nameInput.addEventListener('input', function () {
+        document.getElementById('name-error').textContent = '';
+      });
+    }
+
+    function toggle(button) {
+      const group = button.getAttribute('data-group');
+      const label = button.getAttribute('data-label');
+      if (group === 'like') {
+        const on = state.likes.indexOf(label) === -1;
+        if (on) {
+          if (state.likes.length >= 8) return;
+          state.likes.push(label);
+          state.avoids = state.avoids.filter(function (item) { return item !== label; });
+          const other = card.querySelector('[data-group="avoid"][data-label="' + label + '"]');
+          if (other) other.setAttribute('aria-pressed', 'false');
+        } else {
+          state.likes = state.likes.filter(function (item) { return item !== label; });
+        }
+        button.setAttribute('aria-pressed', on ? 'true' : 'false');
+      } else if (group === 'time') {
+        state.times = label;
+        card.querySelectorAll('[data-group="time"]').forEach(function (el) {
+          el.setAttribute('aria-pressed', el === button ? 'true' : 'false');
+        });
+      } else if (label === 'とくにない') {
+        state.none = true;
+        state.avoids = [];
+        card.querySelectorAll('[data-group="avoid"]').forEach(function (el) {
+          el.setAttribute('aria-pressed', el.getAttribute('data-label') === 'とくにない' ? 'true' : 'false');
+        });
+      } else {
+        state.none = false;
+        const on = state.avoids.indexOf(label) === -1;
+        if (on) {
+          state.avoids.push(label);
+          state.likes = state.likes.filter(function (item) { return item !== label; });
+          const other = card.querySelector('[data-group="like"][data-label="' + label + '"]');
+          if (other) other.setAttribute('aria-pressed', 'false');
+        } else {
+          state.avoids = state.avoids.filter(function (item) { return item !== label; });
+        }
+        card.querySelector('[data-label="とくにない"]').setAttribute('aria-pressed', 'false');
+        button.setAttribute('aria-pressed', on ? 'true' : 'false');
+      }
+      paintTray();
+    }
+
+    function renderDone(data) {
+      const avoids = (data.avoids || []).length ? data.avoids.join('、') : 'とくにない';
+      const back = data.addUrl
+        ? '<a class="back" href="' + esc(data.addUrl) + '">LINEのトークに戻る</a>'
+        : '';
+      card.innerHTML = ''
+        + '<div class="done"><h1>保存したよ</h1>'
+        + '<p class="lead">LINEに戻って「答えた」と送ってね。トークにこの内容が届くよ。</p>'
+        + '<div class="summary"><strong>' + esc(data.name) + 'さん</strong><br>好き: ' + esc((data.likes || []).join('、'))
+        + '<br>来る回数: ' + esc(data.timesPerWeek || '')
+        + '<br>苦手: ' + esc(avoids)
+        + '<br>この答えは、日付が変わっても残るよ。</div>'
+        + back
+        + '<p class="hint">戻ったあとに下のメニューも開くよ。トークで「答えた」と送ると、この内容がカードで返ってくるよ。</p></div>';
+    }
+
+    function renderMissing(message) {
+      card.innerHTML = '<div class="missing"><h1>アンケート</h1><p>' + esc(message) + '</p></div>';
+    }
+
+    async function submitForm(event) {
+      event.preventDefault();
+      const name = document.getElementById('full-name').value;
+      const nameProblem = nameError(name);
+      document.getElementById('name-error').textContent = nameProblem;
+      const formError = document.getElementById('form-error');
+      formError.textContent = '';
+      if (nameProblem) {
+        document.getElementById('full-name').focus();
+        return;
+      }
+      if (!state.likes.length) {
+        formError.textContent = '好きな食べ方を、1つ以上押してね。';
+        return;
+      }
+      if (!state.times) {
+        formError.textContent = '週に何回来るか、1つ押してね。';
+        return;
+      }
+      const button = event.target.querySelector('.send');
+      button.disabled = true;
+      try {
+        const res = await fetch('api/line-survey.php', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            key: key,
+            name: normalizeName(name),
+            likes: state.likes,
+            timesPerWeek: state.times,
+            avoids: state.none ? [] : state.avoids
+          })
+        });
+        const data = await res.json();
+        if (!res.ok || !data.ok) {
+          const message = data.error || '保存できなかったよ。もう一度押してね。';
+          if (message.indexOf('名前') !== -1 || message.indexOf('フルネーム') !== -1) {
+            document.getElementById('name-error').textContent = message;
+          } else {
+            formError.textContent = message;
+          }
+          button.disabled = false;
+          return;
+        }
+        renderDone(data);
+      } catch (err) {
+        formError.textContent = '保存できなかったよ。もう一度押してね。';
+        button.disabled = false;
+      }
+    }
+
+    if (!key) {
+      renderMissing('LINEのトークから開いてね。');
+    } else {
+      fetch('api/line-survey.php?key=' + encodeURIComponent(key), { cache: 'no-store' })
+        .then(function (res) { return res.json().then(function (data) { return { res: res, data: data }; }); })
+        .then(function (result) {
+          if (!result.res.ok || !result.data.ok) {
+            renderMissing(result.data.error || 'このリンクでは開けないよ。');
+            return;
+          }
+          renderForm(result.data);
+        })
+        .catch(function () {
+          renderMissing('読み込めなかったよ。もう一度開いてね。');
+        });
+    }
+  </script>
+</body>
+</html>
