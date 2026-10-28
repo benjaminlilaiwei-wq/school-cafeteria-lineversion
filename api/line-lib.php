@@ -393,7 +393,7 @@ function line_postback_button($label, $data, $primary = false) {
     $button = [
         'type' => 'button',
         'style' => $primary ? 'primary' : 'secondary',
-        'height' => 'sm',
+        'height' => 'md',
         'flex' => 1,
         'action' => [
             'type' => 'postback',
@@ -470,14 +470,14 @@ function line_survey_card($stepLabel, $title, $note, $buttons, $columns, $leadin
         'header' => [
             'type' => 'box',
             'layout' => 'vertical',
-            'backgroundColor' => '#E8F8EE',
+            'backgroundColor' => '#FFE3C2',
             'paddingTop' => '14px',
             'paddingBottom' => '14px',
             'paddingStart' => '16px',
             'paddingEnd' => '16px',
             'contents' => [
-                ['type' => 'text', 'text' => $stepLabel, 'size' => 'xs', 'color' => '#3A7D44'],
-                ['type' => 'text', 'text' => $title, 'weight' => 'bold', 'size' => 'xl', 'color' => '#17301C', 'wrap' => true],
+                ['type' => 'text', 'text' => $stepLabel, 'size' => 'sm', 'color' => '#9A4B12'],
+                ['type' => 'text', 'text' => $title, 'weight' => 'bold', 'size' => 'xl', 'color' => '#3D2914', 'wrap' => true],
             ],
         ],
         'body' => [
@@ -517,22 +517,8 @@ function line_attach_home($messages, $user) {
             return $messages;
         }
     }
-    $messages[] = line_home_menu('メニュー', 'カードのボタンから選んでね。');
+    $messages[] = line_home_menu('メニュー', '色のついたボタンから選んでね。');
     return $messages;
-}
-
-function line_labels_in_text($text, $labels) {
-    $found = [];
-    foreach ($labels as $label) {
-        if ($label !== '' && mb_strpos($text, $label) !== false) {
-            $found[] = $label;
-        }
-    }
-    return $found;
-}
-
-function line_is_done_word($text) {
-    return (bool) preg_match('/^(ok|okay|決定|完了|以上|おわり|終わり|これで)$/ui', trim($text));
 }
 
 function line_calendar_url($user) {
@@ -549,7 +535,7 @@ function line_uri_button($label, $url) {
         'type' => 'button',
         'style' => 'primary',
         'color' => '#14B8A6',
-        'height' => 'sm',
+        'height' => 'md',
         'action' => [
             'type' => 'uri',
             'label' => line_cut($label, 20),
@@ -558,9 +544,13 @@ function line_uri_button($label, $url) {
     ];
 }
 
+function line_menu_version() {
+    return 'v3';
+}
+
 function line_rich_menu_ready() {
     $saved = line_read_json(line_data_dir() . '/rich-menu.json', []);
-    return is_array($saved) && ($saved['version'] ?? '') === 'v2' && ($saved['id'] ?? '') !== '' && !empty($saved['defaultCleared']);
+    return is_array($saved) && ($saved['version'] ?? '') === line_menu_version() && ($saved['id'] ?? '') !== '' && !empty($saved['defaultCleared']);
 }
 
 function line_clear_default_menu() {
@@ -570,7 +560,7 @@ function line_clear_default_menu() {
 
 function line_remember_menu($id) {
     line_write_json(line_data_dir() . '/rich-menu.json', [
-        'version' => 'v2',
+        'version' => line_menu_version(),
         'id' => $id,
         'defaultCleared' => line_clear_default_menu(),
     ]);
@@ -584,7 +574,7 @@ function line_sync_user_menu($user) {
     $saved = line_read_json(line_data_dir() . '/rich-menu.json', []);
     $menuId = is_array($saved) ? (string) ($saved['id'] ?? '') : '';
     $userId = (string) ($user['userId'] ?? '');
-    if ($menuId === '' || $userId === '' || ($saved['version'] ?? '') !== 'v2') {
+    if ($menuId === '' || $userId === '' || ($saved['version'] ?? '') !== line_menu_version()) {
         return;
     }
     $want = line_survey_finished($user);
@@ -656,7 +646,7 @@ function line_ensure_rich_menu() {
     if ($list[0]) {
         $decoded = json_decode($list[1], true);
         foreach (($decoded['richmenus'] ?? []) as $menu) {
-            if (is_array($menu) && ($menu['name'] ?? '') === 'cafeteria-v2' && !empty($menu['richMenuId'])) {
+            if (is_array($menu) && ($menu['name'] ?? '') === 'cafeteria-v3' && !empty($menu['richMenuId'])) {
                 $existing = (string) $menu['richMenuId'];
                 break;
             }
@@ -670,12 +660,12 @@ function line_ensure_rich_menu() {
     if (!is_file($image)) {
         return;
     }
-    $padX = 24;
-    $gapX = 23;
-    $padY = 24;
-    $gapY = 15;
-    $cellW = 802;
-    $cellH = 390;
+    $padX = 34;
+    $gapX = 22;
+    $padY = 40;
+    $gapY = 26;
+    $cellW = 796;
+    $cellH = 790;
     $actions = [
         ['home:reserve', '予約する'],
         ['home:check', '予約を確認'],
@@ -703,10 +693,10 @@ function line_ensure_rich_menu() {
         ];
     }
     $created = line_api('https://api.line.me/v2/bot/richmenu', [
-        'size' => ['width' => 2500, 'height' => 843],
+        'size' => ['width' => 2500, 'height' => 1686],
         'selected' => true,
-        'name' => 'cafeteria-v2',
-        'chatBarText' => 'メニュー',
+        'name' => 'cafeteria-v3',
+        'chatBarText' => '食堂メニュー',
         'areas' => $areas,
     ]);
     if (!$created[0]) {
@@ -1161,7 +1151,7 @@ function line_answer($text, $user) {
 function line_check_text($user) {
     $name = trim((string) ($user['name'] ?? ''));
     if ($name === '') {
-        return '先に名前を教えてね。';
+        return '先にアンケートでフルネームを入れてね。';
     }
     $row = line_find_reservation($name, date('Y-m-d'));
     if (!$row) {
@@ -1460,13 +1450,192 @@ function line_user_summaries() {
             'avoids' => $user['avoids'] ?? [],
             'done' => ($user['step'] ?? '') === 'done',
             'active' => !empty($user['active']),
+            'createdAt' => (string) ($user['createdAt'] ?? ''),
+            'updatedAt' => (string) ($user['updatedAt'] ?? ''),
         ];
     }
     return $list;
 }
 
-function line_name_prompt() {
-    return [line_survey_card('1 / 4', '名前', "予約に使う名前を、このトークに送ってね。\nひらがなでも漢字でも大丈夫。\n例: 田中", [], 1)];
+function line_normalize_name($name) {
+    $name = str_replace(["\r", "\n", "\t"], ' ', (string) $name);
+    $name = preg_replace('/[\s\x{3000}]+/u', ' ', $name);
+    return trim((string) $name);
+}
+
+function line_full_name_error($name) {
+    $name = line_normalize_name($name);
+    if ($name === '') {
+        return '名前が空白だよ。姓と名を入れてね。例: 瀬尾 太郎';
+    }
+    if (mb_strlen($name) > 20) {
+        return '名前は20文字以内のフルネームにしてね。例: 瀬尾 太郎';
+    }
+    $parts = preg_split('/[\s・･·]+/u', $name, -1, PREG_SPLIT_NO_EMPTY);
+    if (!is_array($parts)) {
+        $parts = [];
+    }
+    $letterParts = 0;
+    foreach ($parts as $part) {
+        if (preg_match('/\p{L}/u', $part)) {
+            $letterParts++;
+        }
+    }
+    $letters = preg_replace('/[^\p{L}]/u', '', $name);
+    $letterCount = mb_strlen((string) $letters);
+    if ($letterCount === 0) {
+        return '名前は文字で入れてね。例: 瀬尾 太郎';
+    }
+    if ($letterParts < 2 && $letterCount < 3) {
+        return 'フルネームで入れてね。姓だけは送れないよ。例: 瀬尾 太郎';
+    }
+    return '';
+}
+
+function line_times_labels() {
+    return ['ほとんど来ない', '週1回', '週2〜3回', 'ほぼ毎日'];
+}
+
+function line_like_groups() {
+    return [
+        ['title' => 'ごはん・主食', 'items' => ['カレー', '麺', 'どんぶり', '和食']],
+        ['title' => 'おかず', 'items' => ['肉', '魚', '揚げ物', '野菜']],
+    ];
+}
+
+function line_survey_url($user) {
+    $base = line_site_base();
+    $key = is_array($user) ? (string) ($user['viewKey'] ?? '') : '';
+    if ($base === '' || $key === '') {
+        return '';
+    }
+    return $base . '/survey.html?key=' . rawurlencode($key);
+}
+
+function line_is_survey_return_word($text) {
+    return (bool) preg_match('/^(答えた|答えました|回答した|終わった|おわった|完了)$/u', trim((string) $text));
+}
+
+function line_survey_invite($user) {
+    $name = trim((string) ($user['name'] ?? ''));
+    $note = "アンケートはこのボタンのページで答えてね。\n名前は空白だと送れないよ。姓と名を入れてね。\n例: 瀬尾 太郎\n好きなものはボタンを押すだけ。\n答え終わったら、このトークに戻って「答えた」と送ってね。";
+    if ($name !== '') {
+        $note = "いまの名前: " . $name . "\n" . $note;
+    }
+    $url = line_survey_url($user);
+    if ($url === '') {
+        return [line_text($note . "\nページのリンクが作れなかったよ。もう一度開き直してね。")];
+    }
+    return [line_survey_card('アンケート', 'ボタンで答える', $note, [], 1, [], line_uri_button('アンケートを開く', $url))];
+}
+
+function line_survey_ack_messages($user) {
+    $name = (string) ($user['name'] ?? '');
+    $likes = implode('、', is_array($user['likes'] ?? null) ? $user['likes'] : []);
+    $avoids = is_array($user['avoids'] ?? null) ? $user['avoids'] : [];
+    $avoidText = count($avoids) ? implode('、', $avoids) : 'とくにない';
+    $times = (string) ($user['timesPerWeek'] ?? '');
+    $when = (string) ($user['updatedAt'] ?? '');
+    if ($when !== '') {
+        $when = substr(str_replace('T', ' ', $when), 0, 16);
+    }
+    $note = ($name !== '' ? $name . "さん\n" : '')
+        . '好き: ' . ($likes !== '' ? $likes : '未設定')
+        . "\n来る回数: " . ($times !== '' ? $times : '未設定')
+        . "\n苦手: " . $avoidText
+        . "\n\nこの答えは、日付が変わっても消えないよ。";
+    if ($when !== '') {
+        $note .= "\n最後に保存したとき: " . $when;
+    }
+    $url = line_calendar_url($user);
+    if ($url === '') {
+        return [line_text('アンケートを保存したよ。' . "\n" . $note)];
+    }
+    return [line_survey_card('保存済み', $name !== '' ? $name . 'さん' : 'アンケート', $note, [], 1, [], line_uri_button('カレンダーを開く', $url))];
+}
+
+function line_with_ack($user, $messages) {
+    if (($user['step'] ?? '') !== 'done' || empty($user['needsLineAck'])) {
+        return $messages;
+    }
+    $fresh = line_users();
+    $id = (string) ($user['userId'] ?? '');
+    if ($id !== '' && isset($fresh[$id]) && is_array($fresh[$id])) {
+        $fresh[$id]['needsLineAck'] = false;
+        line_save_users($fresh);
+        $user = $fresh[$id];
+    }
+    return array_merge(line_survey_ack_messages($user), $messages);
+}
+
+function line_survey_public($user) {
+    return [
+        'ok' => true,
+        'name' => (string) ($user['name'] ?? ''),
+        'likes' => array_values(is_array($user['likes'] ?? null) ? $user['likes'] : []),
+        'avoids' => array_values(is_array($user['avoids'] ?? null) ? $user['avoids'] : []),
+        'timesPerWeek' => (string) ($user['timesPerWeek'] ?? ''),
+        'done' => ($user['step'] ?? '') === 'done',
+        'createdAt' => (string) ($user['createdAt'] ?? ''),
+        'updatedAt' => (string) ($user['updatedAt'] ?? ''),
+        'groups' => line_like_groups(),
+        'timeChoices' => line_times_labels(),
+        'avoidChoices' => line_avoid_labels(),
+        'addUrl' => (string) (line_settings()['addUrl'] ?? ''),
+    ];
+}
+
+function line_apply_survey($user, $input) {
+    if (!is_array($input)) {
+        return [false, '送れなかったよ。もう一度押してね。', $user];
+    }
+    $name = line_normalize_name($input['name'] ?? '');
+    $error = line_full_name_error($name);
+    if ($error !== '') {
+        return [false, $error, $user];
+    }
+    $allowed = array_keys(line_like_words());
+    $likes = [];
+    foreach (($input['likes'] ?? []) as $label) {
+        $label = (string) $label;
+        if (in_array($label, $allowed, true) && !in_array($label, $likes, true)) {
+            $likes[] = $label;
+        }
+        if (count($likes) >= 8) {
+            break;
+        }
+    }
+    if (!count($likes)) {
+        return [false, '好きな食べ方を、1つ以上押してね。', $user];
+    }
+    $times = (string) ($input['timesPerWeek'] ?? '');
+    if (!in_array($times, line_times_labels(), true)) {
+        return [false, '週に何回来るか、1つ押してね。', $user];
+    }
+    $avoids = [];
+    foreach (($input['avoids'] ?? []) as $label) {
+        $label = (string) $label;
+        if (in_array($label, line_avoid_labels(), true) && !in_array($label, $avoids, true)) {
+            $avoids[] = $label;
+        }
+    }
+    if (empty($user['createdAt'])) {
+        $user['createdAt'] = date('c');
+    }
+    if (empty($user['viewKey'])) {
+        $user['viewKey'] = bin2hex(random_bytes(8));
+    }
+    $user['name'] = $name;
+    $user['likes'] = $likes;
+    $user['timesPerWeek'] = $times;
+    $user['avoids'] = $avoids;
+    $user['updatedAt'] = date('c');
+    $user['step'] = 'done';
+    $user['active'] = true;
+    $user['needsLineAck'] = true;
+    $user['pendingFood'] = '';
+    line_store_user($user);
+    return [true, '', $user];
 }
 
 function line_avoid_labels() {
@@ -1474,101 +1643,16 @@ function line_avoid_labels() {
 }
 
 function line_start_survey($user) {
-    $user['step'] = 'name';
-    line_store_user($user);
-    return line_name_prompt();
-}
-
-function line_likes_prompt($user) {
-    $likes = $user['likes'] ?? [];
-    $now = count($likes) ? ('選んでいるもの: ' . implode('、', $likes)) : 'まだ選んでいないよ';
-    $buttons = [];
-    foreach (array_keys(line_like_words()) as $label) {
-        $on = in_array($label, $likes, true);
-        $buttons[] = line_postback_button(($on ? '✓ ' : '') . $label, 'like:' . $label, $on);
-    }
-    return [line_survey_card(
-        '2 / 4',
-        '好きな食べ方',
-        "緑が、いま選んでいるもの。いくつでも押せるよ。\n一度に答えるなら「肉 麺 カレー」と送ってね。\n" . $now,
-        $buttons,
-        2,
-        [],
-        line_postback_button('これで決定', 'likes:done', true)
-    )];
-}
-
-function line_times_prompt() {
-    $buttons = [];
-    foreach (['ほとんど来ない', '週1回', '週2〜3回', 'ほぼ毎日'] as $label) {
-        $buttons[] = line_postback_button($label, 'times:' . $label, false);
-    }
-    return [line_survey_card('3 / 4', '週に何回来る？', '近いものを1つ押してね。言葉で送っても大丈夫。', $buttons, 1)];
-}
-
-function line_avoid_prompt($user) {
-    $avoids = $user['avoids'] ?? [];
-    $now = count($avoids) ? ('選んでいるもの: ' . implode('、', $avoids)) : 'まだ選んでいないよ';
-    $buttons = [];
-    foreach (line_avoid_labels() as $label) {
-        $on = in_array($label, $avoids, true);
-        $buttons[] = line_postback_button(($on ? '✓ ' : '') . $label, 'avoid:' . $label, $on);
-    }
-    return [line_survey_card(
-        '4 / 4',
-        '苦手なもの',
-        "苦手なものを全部押してね。なければ上の「とくにない」。\n一度に答えるなら「魚 乳製品」と送ってね。\n" . $now,
-        $buttons,
-        2,
-        [line_postback_button('とくにない', 'avoid:とくにない', false)],
-        line_postback_button('これで決定', 'avoid:done', true)
-    )];
-}
-
-function line_times_label_from_text($text) {
-    $map = [
-        'ほとんど来ない' => ['ほとんど来ない', '来ない'],
-        '週2〜3回' => ['週2〜3回', '週2', '週3'],
-        '週1回' => ['週1回', '週1', '週一'],
-        'ほぼ毎日' => ['ほぼ毎日', '毎日'],
-    ];
-    foreach ($map as $label => $words) {
-        foreach ($words as $word) {
-            if (mb_strpos($text, $word) !== false) {
-                return $label;
-            }
-        }
-    }
-    return '';
-}
-
-function line_finish_survey($user) {
+    $user['step'] = 'survey';
     if (empty($user['viewKey'])) {
         $user['viewKey'] = bin2hex(random_bytes(8));
     }
-    $user['step'] = 'done';
-    $user['active'] = true;
     line_store_user($user);
-    $name = (string) ($user['name'] ?? '');
-    $note = "登録できたよ。\n好きそうな日は、カレンダーで星がつくよ。\n下にメニューが出るよ。予約は、そこからできる。";
-    $url = line_calendar_url($user);
-    if ($url === '') {
-        return [line_text(($name !== '' ? $name . "さん\n" : '') . $note)];
-    }
-    return [line_survey_card('できたよ', $name !== '' ? $name . 'さん' : '登録できたよ', $note, [], 1, [], line_uri_button('カレンダーを開く', $url))];
+    return line_survey_invite($user);
 }
 
 function line_resume_prompt($user) {
-    $step = $user['step'] ?? 'name';
-    if ($step === 'likes') {
-        return line_likes_prompt($user);
-    }
-    if ($step === 'times') {
-        return line_times_prompt();
-    }
-    if ($step === 'avoid') {
-        return line_avoid_prompt($user);
-    }
+    $step = $user['step'] ?? 'survey';
     if ($step === 'pick') {
         return line_reserve_prompt($user);
     }
@@ -1576,9 +1660,9 @@ function line_resume_prompt($user) {
         return line_confirm_prompt($user);
     }
     if ($step === 'done') {
-        return [line_home_menu('メニュー', 'カードのボタンから選んでね。')];
+        return [line_home_menu('メニュー', '色のついたボタンから選んでね。')];
     }
-    return line_name_prompt();
+    return line_survey_invite($user);
 }
 
 function line_locked_prompt($user) {
@@ -1589,80 +1673,14 @@ function line_locked_prompt($user) {
 
 function line_handle_text($user, $text) {
     $text = trim($text);
-    $step = $user['step'] ?? 'name';
-    if ($step === '' || $step === 'new') {
-        $step = 'name';
-    }
-    if ($step === 'name') {
-        $name = trim(str_replace(["\r", "\n"], '', $text));
-        $name = line_cut($name, 20);
-        if ($name === '') {
-            return line_name_prompt();
-        }
-        $user['name'] = $name;
-        $user['likes'] = [];
-        $user['step'] = 'likes';
+    $step = $user['step'] ?? 'survey';
+    if (in_array($step, ['', 'new', 'name', 'likes', 'times', 'avoid', 'survey'], true)) {
+        $user['step'] = 'survey';
         line_store_user($user);
-        return line_likes_prompt($user);
+        return line_survey_invite($user);
     }
-    if ($step === 'likes') {
-        $found = line_labels_in_text($text, array_keys(line_like_words()));
-        if (line_is_done_word($text) && count($user['likes'] ?? [])) {
-            $user['step'] = 'times';
-            line_store_user($user);
-            return line_times_prompt();
-        }
-        if (count($found) >= 2) {
-            $user['likes'] = array_slice($found, 0, 8);
-            $user['step'] = 'times';
-            line_store_user($user);
-            return line_times_prompt();
-        }
-        if (count($found) === 1) {
-            $likes = $user['likes'] ?? [];
-            if (!in_array($found[0], $likes, true) && count($likes) < 8) {
-                $likes[] = $found[0];
-            }
-            $user['likes'] = $likes;
-            $user['step'] = 'likes';
-            line_store_user($user);
-        }
-        return line_likes_prompt($user);
-    }
-    if ($step === 'times') {
-        $label = line_times_label_from_text($text);
-        if ($label === '') {
-            return line_times_prompt();
-        }
-        $user['timesPerWeek'] = $label;
-        $user['step'] = 'avoid';
-        $user['avoids'] = [];
-        line_store_user($user);
-        return line_avoid_prompt($user);
-    }
-    if ($step === 'avoid') {
-        if (mb_strpos($text, 'とくにない') !== false || mb_strpos($text, '特にない') !== false || trim($text) === 'ない') {
-            $user['avoids'] = [];
-            return line_finish_survey($user);
-        }
-        $found = line_labels_in_text($text, line_avoid_labels());
-        if (line_is_done_word($text)) {
-            return line_finish_survey($user);
-        }
-        if (count($found) >= 2) {
-            $user['avoids'] = $found;
-            return line_finish_survey($user);
-        }
-        if (count($found) === 1) {
-            $avoids = $user['avoids'] ?? [];
-            if (!in_array($found[0], $avoids, true)) {
-                $avoids[] = $found[0];
-            }
-            $user['avoids'] = $avoids;
-            $user['step'] = 'avoid';
-            line_store_user($user);
-        }
-        return line_avoid_prompt($user);
+    if (!line_survey_finished($user)) {
+        return line_survey_invite($user);
     }
     if ($step === 'pick' || $step === 'confirm') {
         return line_resume_prompt($user);
@@ -1697,6 +1715,8 @@ function line_load_user($userId, $displayName) {
             'step' => 'new',
             'active' => true,
             'viewKey' => bin2hex(random_bytes(8)),
+            'createdAt' => date('c'),
+            'updatedAt' => '',
         ];
         line_save_users($users);
     }
@@ -1709,73 +1729,14 @@ function line_load_user($userId, $displayName) {
 }
 
 function line_handle_postback($user, $data) {
-    if (strpos($data, 'like:') === 0) {
-        $label = substr($data, 5);
-        $likes = $user['likes'] ?? [];
-        if (in_array($label, $likes, true)) {
-            $likes = array_values(array_filter($likes, function ($item) use ($label) {
-                return $item !== $label;
-            }));
-        } elseif (isset(line_like_words()[$label]) && count($likes) < 8) {
-            $likes[] = $label;
-        }
-        $user['likes'] = $likes;
-        $user['step'] = 'likes';
-        line_store_user($user);
-        return line_likes_prompt($user);
-    }
-    if ($data === 'likes:done') {
-        if (!count($user['likes'] ?? [])) {
-            return line_likes_prompt($user);
-        }
-        $user['step'] = 'times';
-        line_store_user($user);
-        return line_times_prompt();
-    }
-    if (strpos($data, 'times:') === 0) {
-        $user['timesPerWeek'] = substr($data, 6);
-        $user['step'] = 'avoid';
-        $user['avoids'] = [];
-        line_store_user($user);
-        return line_avoid_prompt($user);
-    }
-    if ($data === 'avoid:done') {
-        if (!is_array($user['avoids'] ?? null)) {
-            $user['avoids'] = [];
-        }
-        return line_finish_survey($user);
-    }
-    if ($data === 'avoid:とくにない') {
-        $user['avoids'] = [];
-        return line_finish_survey($user);
-    }
-    if (strpos($data, 'avoid:') === 0) {
-        $label = substr($data, 6);
-        if (!in_array($label, line_avoid_labels(), true)) {
-            return line_avoid_prompt($user);
-        }
-        $avoids = $user['avoids'] ?? [];
-        if (in_array($label, $avoids, true)) {
-            $avoids = array_values(array_filter($avoids, function ($item) use ($label) {
-                return $item !== $label;
-            }));
-        } elseif (count($avoids) < 5) {
-            $avoids[] = $label;
-        }
-        $user['avoids'] = $avoids;
-        $user['step'] = 'avoid';
-        line_store_user($user);
-        return line_avoid_prompt($user);
+    if (strpos($data, 'like:') === 0 || $data === 'likes:done' || strpos($data, 'times:') === 0 || strpos($data, 'avoid:') === 0) {
+        return line_survey_invite($user);
     }
     if (!line_survey_finished($user)) {
         return line_locked_prompt($user);
     }
     if ($data === 'home:redo') {
-        $user['step'] = 'name';
-        $user['likes'] = [];
-        $user['avoids'] = [];
-        line_store_user($user);
-        return line_name_prompt();
+        return line_survey_invite($user);
     }
     if ($data === 'home:today') {
         return [line_text(line_today_text($user))];
@@ -1852,26 +1813,33 @@ function line_handle_event($event) {
     $user = line_load_user($userId, '');
     $messages = [];
     if ($type === 'follow') {
-        $user['name'] = '';
-        $user['likes'] = [];
-        $user['avoids'] = [];
-        $user['timesPerWeek'] = '';
-        $user['pendingFood'] = '';
-        $user['choices'] = [];
-        $user['menuOn'] = false;
         $user['active'] = true;
-        $user['step'] = 'name';
-        line_store_user($user);
-        $messages = line_start_survey($user);
+        $user['menuOn'] = false;
+        $kept = ($user['step'] ?? '') === 'done' && line_full_name_error((string) ($user['name'] ?? '')) === '';
+        if ($kept) {
+            $user['needsLineAck'] = false;
+            line_store_user($user);
+            $messages = line_survey_ack_messages($user);
+        } else {
+            $messages = line_start_survey($user);
+        }
     } elseif ($type === 'message') {
         $msgType = $event['message']['type'] ?? '';
         if ($msgType === 'text') {
-            $messages = line_handle_text($user, (string) ($event['message']['text'] ?? ''));
+            $text = (string) ($event['message']['text'] ?? '');
+            if (line_survey_finished($user) && line_is_survey_return_word($text)) {
+                $user['needsLineAck'] = false;
+                line_store_user($user);
+                $messages = line_survey_ack_messages($user);
+            } else {
+                $messages = line_with_ack($user, line_handle_text($user, $text));
+            }
         } else {
-            $messages = line_resume_prompt($user);
+            $messages = line_with_ack($user, line_resume_prompt($user));
         }
     } elseif ($type === 'postback') {
-        $messages = line_handle_postback(line_load_user($userId, ''), (string) ($event['postback']['data'] ?? ''));
+        $loaded = line_load_user($userId, '');
+        $messages = line_with_ack($loaded, line_handle_postback($loaded, (string) ($event['postback']['data'] ?? '')));
     }
     $fresh = line_load_user($userId, '');
     line_sync_user_menu($fresh);

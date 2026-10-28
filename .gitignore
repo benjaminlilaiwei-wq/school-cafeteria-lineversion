@@ -4,3 +4,7 @@ data/sales-data.json
 data/reservations-archive.json
 data/reviews.json
 data/shifts.json
+data/line-users.json
+data/line-settings.json
+data/line-push.json
+data/rich-menu.json
