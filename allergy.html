@@ -7,108 +7,118 @@
   <title>アレルギーを見る - OliMeal</title>
   <link rel="stylesheet" href="styles.css">
   <style>
+    /* アレルギーテーブルのスタイル調整 */
+    .allergy-table-container {
+      overflow-x: auto;
+      border-radius: var(--radius-lg);
+      border: 1.5px solid var(--border-color);
+      box-shadow: var(--shadow-soft);
+      background: var(--card-bg);
+      margin: 20px 0;
+    }
+
     .allergy-table {
       width: 100%;
       border-collapse: collapse;
-      margin: 20px 0;
-      background-color: white;
-      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-      border-radius: 8px;
-      overflow: hidden;
+      background-color: #ffffff;
     }
 
     .allergy-table thead {
-      background: #2f6b4f;
-      color: white;
+      background: var(--primary);
+      color: #ffffff;
     }
 
     .allergy-table th {
-      padding: 15px;
+      padding: 16px;
       text-align: left;
-      font-weight: 600;
-      font-size: 1.1rem;
+      font-weight: 800;
+      font-size: 1rem;
+      letter-spacing: 0.02em;
     }
 
     .allergy-table td {
-      padding: 15px;
-      border-bottom: 1px solid #e9ecef;
+      padding: 16px;
+      border-bottom: 1px solid var(--border-color);
     }
 
     .allergy-table tbody tr:hover {
-      background-color: #f8f9fa;
+      background-color: var(--primary-subtle);
     }
 
     .allergy-table tbody tr:last-child td {
       border-bottom: none;
     }
 
+    /* アレルゲンバッジ（ぷっくりピルタグ風） */
     .allergen-badge {
       display: inline-flex;
       align-items: center;
       gap: 6px;
-      padding: 8px 12px;
-      margin: 4px 6px;
-      background-color: #fff3cd;
-      color: #856404;
-      border: 1px solid #ffeaa7;
-      border-radius: 12px;
-      font-size: 0.9rem;
-      font-weight: 500;
+      padding: 6px 14px;
+      margin: 4px 5px;
+      background-color: var(--accent-sun-light);
+      color: var(--text-main);
+      border: 1px solid var(--accent-sun);
+      border-radius: 999px;
+      font-size: 0.88rem;
+      font-weight: 800;
       vertical-align: middle;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.03);
     }
 
+    /* 義務表示7品目などの強調バッジ */
     .allergen-badge.warning {
-      background-color: #f8d7da;
-      color: #721c24;
-      border-color: #f5c6cb;
+      background-color: var(--accent-orange-light);
+      color: #991b1b;
+      border-color: var(--accent-orange);
     }
 
     .allergen-icon {
-      font-size: 1.2rem;
+      font-size: 1.1rem;
       line-height: 1;
     }
 
+    /* 注意書きボックス（暖色系の優しいトーンに変更） */
     .info-box {
-      background-color: #e7f3ff;
-      border-left: 4px solid #2196F3;
-      padding: 15px;
-      margin: 20px 0;
-      border-radius: 4px;
+      background-color: var(--accent-sun-light);
+      border: 1.5px solid var(--accent-sun);
+      border-left: 6px solid var(--accent-sun);
+      padding: 18px 20px;
+      margin: 20px 0 28px;
+      border-radius: var(--radius-md);
+      box-shadow: var(--shadow-soft);
     }
 
     .info-box p {
-      margin: 5px 0;
-      color: #1976D2;
+      margin: 4px 0;
+      color: var(--text-main);
+      font-size: 0.95rem;
+      line-height: 1.6;
     }
 
-    .back-link {
-      text-align: center;
-      margin-top: 30px;
-      padding: 20px;
-    }
-
-    .back-link a {
+    .info-box p strong {
+      color: var(--primary);
+      font-size: 1.05rem;
       display: inline-block;
-      padding: 12px 24px;
-      background: #2f6b4f;
-      color: white;
-      text-decoration: none;
-      border-radius: 8px;
-      font-weight: 500;
-      transition: transform 0.2s, box-shadow 0.2s;
+      margin-bottom: 4px;
     }
 
-    .back-link a:hover {
-      transform: translateY(-2px);
-      box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+    .back-link-wrapper {
+      text-align: center;
+      margin-top: 32px;
     }
   </style>
+  <link rel="stylesheet" href="olimeal-interior.css">
 </head>
 
-<body>
+<body class="olimeal-interior">
   <div class="container">
+    <!-- 全ページ共通ナビゲーション -->
     <nav class="site-nav" aria-label="主なメニュー">
-      <a class="site-nav-brand" href="index.html">OliMeal</a>
+      <a class="site-nav-brand" href="index.html" aria-label="OliMeal ホーム">
+        <img src="icon.png" alt="" class="logo-nav-icon">
+        <span class="logo-nav-text">OliMeal</span>
+      </a>
       <div class="site-nav-links">
         <a href="index.html">ホーム</a>
         <a href="book.html">予約する</a>
@@ -117,6 +127,7 @@
         <a href="ai-assistant-php.html">質問する</a>
       </div>
     </nav>
+
     <header class="page-intro">
       <h1>アレルギーを見る</h1>
       <p class="lead">きょうの定食に入っている食材です。心配なときは、必ず店員さんに聞いてください。</p>
@@ -124,15 +135,15 @@
 
     <main>
       <div class="info-box">
-        <p><strong>かならず読んでください</strong></p>
+        <p><strong>⚠️ かならず読んでください</strong></p>
         <p>このページは目安です。アレルギーがある人は、予約するときと来るときに、店員さんへ伝えてください。</p>
         <p>材料が変わることがあり、ここに書いてある内容と違うことがあります。</p>
       </div>
 
       <section class="info-section">
         <h2>きょうの定食</h2>
-        <p style="color: #666; margin-bottom: 15px;" id="allergy-date-label">—</p>
-        <div id="allergy-table-container">
+        <p style="color: var(--text-muted); margin-bottom: 12px; font-weight: 700;" id="allergy-date-label">—</p>
+        <div id="allergy-table-container" class="allergy-table-container">
           <table class="allergy-table">
             <thead>
               <tr>
@@ -142,7 +153,8 @@
             </thead>
             <tbody id="allergy-tbody">
               <tr>
-                <td colspan="2" style="text-align: center; padding: 20px;">
+                <td colspan="2" style="text-align: center; padding: 24px; color: var(--text-muted);">
+                  <div class="spinner"></div>
                   <p>読み込み中...</p>
                 </td>
               </tr>
@@ -151,8 +163,8 @@
         </div>
       </section>
 
-      <div class="back-link">
-        <a href="index.html">ホームに戻る</a>
+      <div class="back-link-wrapper">
+        <a href="index.html" class="back-link">← ホームに戻る</a>
       </div>
     </main>
 
@@ -184,7 +196,6 @@
       return y + '年' + m + '月' + d + '日';
     }
 
-    // 特定原材料等28品目に基づくアイコン（米は🍚に変更）
     function getAllergenIcon(allergen) {
       const iconMap = {
         '卵': '🥚',
@@ -224,7 +235,6 @@
       return iconMap[allergen] || '⚠️';
     }
 
-    // 表示用：義務表示のアレルゲンは warning スタイルで強調
     const highRiskAllergens = ['そば', 'えび', 'エビ', 'かに', 'カニ', '落花生', '卵', '乳', '小麦', 'くるみ'];
 
     function renderAllergyRow(item) {
@@ -237,8 +247,8 @@
       }).join('');
       return `
         <tr>
-          <td style="font-weight: 600; font-size: 1.05rem;">${escapeHtml(item.menu)}</td>
-          <td>${allergenBadges || '<span style="color: #6c757d;">アレルギー物質なし</span>'}</td>
+          <td style="font-weight: 800; font-size: 1.05rem; color: var(--primary);">${escapeHtml(item.menu)}</td>
+          <td>${allergenBadges || '<span style="color: var(--text-muted);">アレルギー物質なし</span>'}</td>
         </tr>
       `;
     }
@@ -261,7 +271,6 @@
 
         const rows = [];
 
-        // 1. 本日の定食（1件だけ）
         let dailyMenus = [];
         try {
           dailyMenus = await apiGet('daily-menu.php');
@@ -280,29 +289,28 @@
           } else {
             rows.push(`
               <tr>
-                <td style="font-weight: 600;">${escapeHtml(setMealName)}</td>
-                <td><span style="color: #6c757d;">アレルギー情報を取得できませんでした</span></td>
+                <td style="font-weight: 800; color: var(--primary);">${escapeHtml(setMealName)}</td>
+                <td><span style="color: var(--text-muted);">アレルギー情報を取得できませんでした</span></td>
               </tr>
             `);
           }
         } else {
           rows.push(`
             <tr>
-              <td colspan="2" style="text-align: center; padding: 16px; color: #6c757d;">
+              <td colspan="2" style="text-align: center; padding: 20px; color: var(--text-muted);">
                 本日の定食は設定されていません
               </td>
             </tr>
           `);
         }
 
-        // 2. その他のメニュー（うどん・ラーメン・そば・カレーなど。定食以外）
         const otherMenus = allergies.filter(item => {
           const menu = (item.menu || '').trim();
           return menu !== '' && !menu.endsWith('定食');
         });
         otherMenus.sort((a, b) => (a.menu || '').localeCompare(b.menu || ''));
         if (otherMenus.length > 0) {
-          rows.push('<tr><td colspan="2" style="padding-top:20px; padding-bottom:8px; font-weight:600; color:#495057; border-top:1px solid #dee2e6;">その他のメニュー（うどん・ラーメン・そば・カレーなど）</td></tr>');
+          rows.push('<tr><td colspan="2" style="padding-top:20px; padding-bottom:10px; font-weight:800; color:var(--primary); border-top:2px solid var(--border-color); background: var(--primary-subtle);">その他のメニュー（うどん・ラーメン・そば・カレーなど）</td></tr>');
           rows.push(otherMenus.map(item => renderAllergyRow(item)).join(''));
         }
 
@@ -311,9 +319,9 @@
         console.error('アレルギー情報の読み込みエラー:', error);
         tbody.innerHTML = `
           <tr>
-            <td colspan="2" style="text-align: center; padding: 20px; color: #dc3545;">
+            <td colspan="2" style="text-align: center; padding: 24px; color: var(--accent-orange);">
               <p>❌ アレルギー情報の読み込みに失敗しました</p>
-              <p style="font-size: 0.9rem; margin-top: 10px;">${escapeHtml(error.message)}</p>
+              <p style="font-size: 0.9rem; margin-top: 8px;">${escapeHtml(error.message)}</p>
             </td>
           </tr>
         `;
@@ -334,4 +342,3 @@
 </body>
 
 </html>
-

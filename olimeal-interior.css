@@ -1,0 +1,234 @@
+@charset "UTF-8";
+/* OliMeal LP Interior Design. Presentation only: no changes to features or markup order. */
+@import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@500;600;700;800&family=Noto+Sans+JP:wght@400;500;600;700;800;900&family=Zen+Maru+Gothic:wght@500;700;900&display=swap');
+body.olimeal-interior {
+ --primary:#344d2e;--primary-hover:#263d23;--primary-light:#e3edda;--primary-subtle:#f0f5eb;
+ --bg-main:#f7f8ef;--card-bg:#fffef9;--text-main:#283a2a;--text-muted:#667665;
+ --border-color:#dce3d3;--shadow-soft:0 9px 29px rgba(31,54,27,.07);--shadow-hover:0 17px 36px rgba(31,54,27,.13);
+ background:#f7f8ef;color:#283a2a;font-family:'Noto Sans JP','Hiragino Sans',sans-serif;
+ padding:0 20px 55px;min-height:100vh;
+}
+.olimeal-interior *, .olimeal-interior *::before, .olimeal-interior *::after {box-sizing:border-box;}
+.olimeal-interior .container {width:min(100%,1100px);max-width:1100px;margin:0 auto;}
+.olimeal-interior h1,.olimeal-interior h2,.olimeal-interior h3 {font-family:'Zen Maru Gothic','Noto Sans JP',sans-serif;letter-spacing:-.025em;}
+.olimeal-interior .site-nav {position:relative;z-index:2;display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:14px;min-height:83px;padding:14px 3px 22px;margin:0 0 16px;background:transparent;border:none;border-radius:0;box-shadow:none;}
+.olimeal-interior .site-nav-brand {display:flex;align-items:center;gap:9px;min-width:135px;color:#344d2e;text-decoration:none;font-family:'DM Sans',sans-serif;font-weight:800;font-size:25px;letter-spacing:-.055em;}
+.olimeal-interior .site-nav-brand .logo-nav-icon {display:none;}
+.olimeal-interior .site-nav-brand::before {content:'✳';flex:none;display:grid;place-items:center;width:37px;height:37px;color:#fbfae9;background:#3e5b36;border-radius:13px;font:700 22px 'DM Sans',sans-serif;transform:rotate(-12deg);}
+.olimeal-interior .site-nav-brand .logo-nav-text {font:800 26px 'DM Sans',sans-serif;color:#344d2e;letter-spacing:-.06em;}
+.olimeal-interior .site-nav-links {display:flex;align-items:center;flex-wrap:wrap;gap:5px;}
+.olimeal-interior .site-nav-links a {display:inline-flex;align-items:center;padding:10px 14px;border-radius:999px;font-size:12px;font-weight:800;white-space:nowrap;color:#4b5b49;text-decoration:none;background:transparent;transition:background .2s,color .2s;}
+.olimeal-interior .site-nav-links a:hover {background:#e5efdc;color:#2e4829;}
+.olimeal-interior .site-nav-links a.is-here {background:#344d2e;color:#fff;}
+.olimeal-interior .page-intro {position:relative;overflow:hidden;text-align:left;display:block;background:#e7ecd8;border:1px solid #dce3cc;border-radius:30px;padding:38px 44px;margin:0 0 28px;box-shadow:none;}
+.olimeal-interior .page-intro::before {content:'';position:absolute;inset:auto -100px -260px auto;width:470px;height:470px;background:#d1ddb8;opacity:.42;border-radius:50%;pointer-events:none;}
+.olimeal-interior .page-intro>* {position:relative;z-index:1;}
+.olimeal-interior .page-intro .eyebrow {display:inline-block;padding:7px 15px;margin:0 0 13px;background:#fffef5;border:1px solid #d9e2d0;border-radius:999px;color:#4a6344;font-size:12px;font-weight:800;letter-spacing:.06em;}
+.olimeal-interior .page-intro h1 {font-size:clamp(27px,4.2vw,42px);font-weight:900;line-height:1.4;color:#2e4829;margin:0 0 10px;}
+.olimeal-interior .page-intro .lead,.olimeal-interior .page-intro p {max-width:730px;color:#53644d;line-height:1.85;font-size:14px;font-weight:600;}
+.olimeal-interior .page-intro p:last-child {margin-bottom:0;}
+.olimeal-interior main {gap:26px;}
+.olimeal-interior h2 {color:#344d2e;line-height:1.45;}
+.olimeal-interior main section {min-width:0;}
+/* Universal content surfaces. Select existing named components only; preserve layout/data. */
+.olimeal-interior :is(.verification-card,.review-card,.mamori-card,.admin-card,.card,.info-card,.info-box,.booking-card) {background:#fffef9;border:1px solid #dce3d3;border-radius:23px;box-shadow:0 8px 29px rgba(31,54,27,.055);}
+.olimeal-interior :is(.verification-card,.review-card,.mamori-card,.admin-card,.card,.info-card,.info-box) {padding:clamp(17px,2.7vw,29px);}
+.olimeal-interior :is(.help-note,.star-note) {background:#eff4e8;color:#465e40;border:1px solid #dce7d2;border-left:4px solid #7d9d6c;border-radius:13px;padding:12px 16px;line-height:1.75;}
+.olimeal-interior .form-group label {color:#344d2e;font-weight:800;}
+.olimeal-interior :is(input:not([type="checkbox"]):not([type="radio"]),select,textarea) {max-width:100%;border:1.5px solid #d4dfcd;border-radius:13px;background:#fff;color:#293e2b;font:inherit;}
+.olimeal-interior :is(input:not([type="checkbox"]):not([type="radio"]),select,textarea):focus-visible {outline:3px solid #b8d09d;outline-offset:2px;border-color:#587b4b;}
+.olimeal-interior :is(button,.btn,a):focus-visible {outline:3px solid #d0a63a;outline-offset:3px;}
+.olimeal-interior :is(.btn-primary,.btn-submit,.btn-search,button[type="submit"]):not(.tab-button) {background:#36552f;color:#fff;border-color:#36552f;border-radius:13px;font-weight:800;box-shadow:0 5px 15px rgba(37,69,31,.12);}
+.olimeal-interior :is(.btn-primary,.btn-submit,.btn-search,button[type="submit"]):not(.tab-button):hover:not(:disabled) {background:#2b4526;}
+.olimeal-interior :is(.btn-secondary,.btn-reset) {background:#e9f1e2;color:#344d2e;border:1px solid #d3e2cb;border-radius:13px;font-weight:800;}
+.olimeal-interior :is(.menu-preview,.status-preview,.search-box,.quick-questions,.legend) {border-radius:20px;border:1px solid #dce5d1;background:#f0f5eb;}
+.olimeal-interior :is(.menu-item,.status-item) {border-radius:13px;border-color:#dce3d3;background:#fffefa;}
+.olimeal-interior :is(.allergy-table-container,.calendar-container,.result-table,.ranking-table) {max-width:100%;overflow-x:auto;}
+.olimeal-interior table {max-width:100%;border-collapse:separate;border-spacing:0;}
+.olimeal-interior :is(th,td) {border-color:#dce3d3;}
+.olimeal-interior th {background:#edf3e6;color:#3b5637;}
+.olimeal-interior footer {margin-top:40px;padding:20px 0;border-top:1px solid #dce3d3;}
+/* 戻るリンクの統一指定はファイル末尾にまとめています。 */
+/* Reservation: white header card instead of the original dark green band. */
+.olimeal-interior .booking-container {width:100%;max-width:1100px;margin-inline:auto;}
+.olimeal-interior .booking-header {position:relative;isolation:isolate;overflow:hidden;background:#e7ecd8;color:#2e4829;border:1px solid #dce3cc;border-radius:30px;padding:38px 44px;text-align:left;margin:0 0 26px;}
+.olimeal-interior .booking-header h1 {color:#2e4829;font-size:clamp(27px,4vw,39px);margin:0 0 9px;}
+.olimeal-interior .booking-header p {color:#53644d;opacity:1;font-weight:600;line-height:1.8;}
+.olimeal-interior .booking-card {background:#fffef9;border:1px solid #dce3d3;border-radius:26px;padding:clamp(21px,4vw,39px);margin:0 0 30px;}
+.olimeal-interior .booking-card :is(.menu-preview,.status-preview) {margin-top:25px;padding:22px;}
+.olimeal-interior .booking-card .form-actions {margin-top:25px;}
+/* AI chat; do not change messages or request hooks. */
+.olimeal-interior .chat-container {overflow:hidden;border:1px solid #dce3d3;border-radius:24px;background:#fffef9;box-shadow:var(--shadow-soft);}
+.olimeal-interior .chat-messages {background:#fbfcf5;}
+.olimeal-interior .chat-input-container {background:#fffef9;border-color:#dce3d3;}
+.olimeal-interior .quick-btn {border:1px solid #d8e5cf;border-radius:999px;background:#eff5e9;color:#36552f;font-weight:700;}
+.olimeal-interior .quick-btn:hover {background:#e1edda;}
+/* Admin dashboard: preserve tabs, accordions, controls and all JS behavior. */
+.olimeal-interior .tab-navigation {display:flex;flex-wrap:wrap;gap:8px;padding:9px;border:1px solid #dce3d3;border-radius:21px;background:#eaf0e4;}
+.olimeal-interior .tab-button {border-radius:12px;font-weight:800;}
+.olimeal-interior .tab-button.active {background:#36552f;color:#fff;}
+.olimeal-interior .accordion-header {border-radius:14px;background:#eef3e9;color:#344d2e;}
+.olimeal-interior .accordion-body {border-radius:0 0 15px 15px;}
+.olimeal-interior .admin-section {min-width:0;}
+/* Accessibility and mobile */
+@media(max-width:800px) {
+ .olimeal-interior {padding:0 14px 42px;}
+ .olimeal-interior .site-nav {justify-content:center;}
+ .olimeal-interior .site-nav-links {justify-content:center;}
+ .olimeal-interior .page-intro {padding:30px 28px;}
+ .olimeal-interior .booking-header {padding:30px 28px;margin-bottom:22px;}
+ .olimeal-interior :is(.grid-2,.stats-grid) {max-width:100%;}
+}
+@media(max-width:540px) {
+ .olimeal-interior {padding:0 10px 35px;}
+ .olimeal-interior .site-nav {gap:10px;padding:14px 0;}
+ .olimeal-interior .site-nav-links {width:100%;gap:3px;}
+ .olimeal-interior .site-nav-links a {padding:8px 9px;font-size:11px;}
+ .olimeal-interior .page-intro {padding:25px 19px;border-radius:22px;margin-bottom:20px;}
+ .olimeal-interior .page-intro h1 {font-size:26px;}
+ .olimeal-interior .page-intro .lead {font-size:12px;}
+ .olimeal-interior .booking-header {padding:25px 20px;border-radius:22px;margin-bottom:18px;}
+ .olimeal-interior .booking-header h1 {font-size:26px;}
+ .olimeal-interior .booking-card {padding:20px 16px;border-radius:22px;}
+ .olimeal-interior :is(.verification-card,.review-card,.mamori-card,.admin-card,.card,.info-card,.info-box) {padding:17px;border-radius:18px;}
+ .olimeal-interior .form-actions {flex-wrap:wrap;}
+ .olimeal-interior :is(.form-actions button,.form-actions .btn) {max-width:100%;}
+ .olimeal-interior .chat-container {border-radius:18px;}
+ .olimeal-interior .tab-navigation {padding:7px;gap:5px;}
+ .olimeal-interior .tab-button {font-size:12px;}
+}
+@media(prefers-reduced-motion:reduce) {
+ .olimeal-interior *, .olimeal-interior *::before, .olimeal-interior *::after {scroll-behavior:auto!important;transition:none!important;}
+}
+
+
+/* =========================================
+   予約ページの右側の薄い円形装飾
+   ========================================= */
+body.olimeal-interior .booking-header::before {
+  content:"";
+  position:absolute;
+  width:470px;
+  height:470px;
+  right:-100px;
+  bottom:-260px;
+  background:#d1ddb8;
+  opacity:.42;
+  border-radius:50%;
+  z-index:-1;
+  pointer-events:none;
+}
+body.olimeal-interior .booking-header > * {position:relative;z-index:1;}
+
+/* =========================================
+   AI質問ページ：独立したカード
+   ========================================= */
+body.olimeal-interior .container:has(> .chat-container) {
+  width:min(100%,1100px);
+  max-width:1100px;
+  padding:0;
+  background:transparent;
+  border:0;
+  border-radius:0;
+  box-shadow:none;
+}
+body.olimeal-interior .container:has(> .chat-container) > .page-intro {margin-bottom:26px;}
+body.olimeal-interior .container:has(> .chat-container) > .chat-container {
+  margin-bottom:24px;
+  background:#fffef9;
+  border:1px solid #dce3d3;
+  border-radius:26px;
+  box-shadow:0 10px 32px rgba(31,54,27,.055);
+}
+body.olimeal-interior .container:has(> .chat-container) > .quick-questions {
+  background:#f0f5eb;
+  border:1px solid #dce3d3;
+  border-radius:23px;
+  padding:clamp(18px,3vw,27px);
+}
+
+/* =========================================
+   ホームに戻るボタンを全ページで統一
+   AIページは div.back-link > a#backLink の構造
+   ========================================= */
+body.olimeal-interior footer,
+body.olimeal-interior .back-link-wrapper,
+body.olimeal-interior div.back-link:has(> a[href="index.html"]) {
+  text-align:center !important;
+}
+body.olimeal-interior div.back-link:has(> a[href="index.html"]) {
+  display:flex !important;
+  justify-content:center !important;
+  align-items:center !important;
+  width:100% !important;
+  margin-inline:auto !important;
+}
+body.olimeal-interior :is(
+  a.back-link[href="index.html"],
+  a#backLink[href="index.html"],
+  footer a[href="index.html"],
+  .back-link-wrapper a[href="index.html"],
+  div.back-link > a[href="index.html"]
+) {
+  display:inline-flex !important;
+  align-items:center !important;
+  justify-content:center !important;
+  gap:8px !important;
+  align-self:center !important;
+  width:fit-content !important;
+  max-width:100% !important;
+  min-height:48px !important;
+  margin-left:auto !important;
+  margin-right:auto !important;
+  padding:12px 25px !important;
+  background:#fffefa !important;
+  color:#47643c !important;
+  border:1.5px solid #9aac77 !important;
+  border-radius:999px !important;
+  font-family:'Noto Sans JP',sans-serif !important;
+  font-size:.94rem !important;
+  font-weight:800 !important;
+  line-height:1.5;
+  text-decoration:none !important;
+  box-shadow:0 4px 14px rgba(54,79,44,.08) !important;
+  box-sizing:border-box !important;
+  position:relative;
+  float:none !important;
+  transform:none !important;
+}
+body.olimeal-interior :is(
+  a.back-link[href="index.html"],
+  a#backLink[href="index.html"],
+  footer a[href="index.html"],
+  .back-link-wrapper a[href="index.html"],
+  div.back-link > a[href="index.html"]
+):hover {
+  background:#eaf2e4 !important;
+  border-color:#47643c !important;
+}
+body.olimeal-interior :is(a.back-link,a#backLink,footer a[href="index.html"]):focus-visible {
+  outline:3px solid #e5bd4e !important;
+  outline-offset:3px;
+}
+@media(max-width:540px) {
+  body.olimeal-interior .booking-header::before {
+    width:260px;
+    height:260px;
+    right:-110px;
+    bottom:-195px;
+  }
+  body.olimeal-interior .container:has(> .chat-container) > .page-intro {margin-bottom:18px;}
+  body.olimeal-interior .container:has(> .chat-container) > .chat-container {
+    border-radius:20px;
+    margin-bottom:18px;
+  }
+  body.olimeal-interior :is(
+    a.back-link[href="index.html"],a#backLink[href="index.html"],
+    footer a[href="index.html"],.back-link-wrapper a[href="index.html"],
+    div.back-link > a[href="index.html"]
+  ) {
+    min-height:46px !important;
+    padding:11px 20px !important;
+    font-size:.88rem !important;
+  }
+}

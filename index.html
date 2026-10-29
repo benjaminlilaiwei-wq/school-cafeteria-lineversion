@@ -6,13 +6,16 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>OliMeal 学校食堂</title>
   <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="olimeal-lp.css">
 </head>
 
-<body>
+<body class="olimeal-lp">
   <div class="container">
     <nav class="site-nav" aria-label="主なメニュー">
-      <a class="site-nav-brand" href="index.html">OliMeal</a>
-      <div class="site-nav-links">
+     <a href="index.html" class="site-nav-brand">
+  <img src="logo.png" alt="OliMeal ロゴ" class="logo-nav">
+</a>
+      　<div class="site-nav-links">
         <a href="index.html" class="is-here">ホーム</a>
         <a href="book.html">予約する</a>
         <a href="verification.html">予約を確認</a>
@@ -23,7 +26,9 @@
 
     <header class="page-intro">
       <p class="eyebrow">学校食堂</p>
-      <h1>OliMeal</h1>
+     <h1>
+  <img src="logo.png" alt="OliMeal ロゴ" class="logo-main">
+</h1>
       <p class="lead">きょうの営業と、よく使うメニューです。下のボタンから、やりたいことを選んでください。</p>
     </header>
 
@@ -68,7 +73,7 @@
             <h3>今までの予約を見る</h3>
             <p>名前を入れると、これまで頼んだメニューが見られます。</p>
           </a>
-          <a id="line-card" href="line.html" class="link-card" hidden>
+          <a id="line-card" href="line.html" class="link-card">
             <div class="link-icon">L</div>
             <h3>LINEでも予約する</h3>
             <p>トークで質問や予約ができます。LINEをしていない人は、上の予約ページを使ってください。</p>

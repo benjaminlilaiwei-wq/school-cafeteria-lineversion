@@ -191,9 +191,10 @@
       }
     }
   </style>
+  <link rel="stylesheet" href="olimeal-interior.css">
 </head>
 
-<body class="page-bg">
+<body class="page-bg olimeal-interior">
   <div class="container">
     <header class="page-intro">
       <p class="eyebrow">職員用</p>
@@ -722,9 +723,6 @@
             <div class="accordion-body">
               <div class="help-note">
                 生徒がトークでボタンを押したときの返事は、LINEの通数に入りません。こちらから送るのは、平日にその日の定食が好きそうな人だけです。1人1通で、月200通を超えたらその月は送りません。全員への一斉送信はしません。判定はこのサーバーの中だけで行い、有料のAIは使いません。
-              </div>
-              <div class="help-note">
-                アンケートは、LINEのトークから別のページを開いて、ボタンで答えます。名前は空白や姓だけでは送れず、フルネームが必要です。例: 瀬尾 太郎。答えた名前・好きな食べ方・予約は、日付が変わっても消えません。毎朝元に戻るのは、売っているメニューの残り数だけです。友だち削除すると、その人のアンケートは消えます。
               </div>
               <div class="admin-card">
                 <h3>1. LINEとつなぐ</h3>
@@ -3745,9 +3743,7 @@
             } else {
               box.innerHTML = '<ul>' + users.map(function (user) {
                 const state = user.done ? '登録済み' : 'アンケートの途中';
-                const saved = user.updatedAt ? (' / 最終保存: ' + String(user.updatedAt).replace('T', ' ').slice(0, 16)) : '';
-                const since = user.createdAt ? (' / 登録開始: ' + String(user.createdAt).replace('T', ' ').slice(0, 16)) : '';
-                return '<li>' + escapeLine(user.name || '名前なし') + ' / ' + state + ' / 好き: ' + escapeLine((user.likes || []).join('、')) + ' / ' + escapeLine(user.times || '') + saved + since + '</li>';
+                return '<li>' + escapeLine(user.name || '名前なし') + ' / ' + state + ' / 好き: ' + escapeLine((user.likes || []).join('、')) + ' / ' + escapeLine(user.times || '') + '</li>';
               }).join('') + '</ul>';
             }
           }

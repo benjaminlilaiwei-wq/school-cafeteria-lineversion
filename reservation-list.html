@@ -4,7 +4,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>【管理用】予約確認一覧（認証）</title>
+  <title>【管理用】予約確認一覧（認証） - OliMeal</title>
   <link rel="stylesheet" href="styles.css" />
   <style>
     .actions {
@@ -16,86 +16,105 @@
 
     .filters {
       display: flex;
-      gap: 10px;
+      gap: 12px;
       flex-wrap: wrap;
-      align-items: center;
-      margin: 10px 0 10px 0;
+      align-items: flex-end;
+      margin: 10px 0 20px 0;
+      background: var(--primary-subtle);
+      padding: 16px;
+      border-radius: var(--radius-md);
+      border: 1px solid var(--border-color);
     }
 
     .filters label {
-      font-weight: bold;
-      color: #333;
-      font-size: 14px;
+      font-weight: 800;
+      color: var(--primary);
+      font-size: 0.88rem;
     }
 
     .filters input,
     .filters select {
       padding: 10px 12px;
-      border: 2px solid #ddd;
-      border-radius: 8px;
-      font-size: 14px;
+      border: 1.5px solid var(--border-color);
+      border-radius: var(--radius-md);
+      font-size: 0.95rem;
       min-width: 180px;
+      background-color: #ffffff;
+      color: var(--text-main);
     }
 
-    .btn {
-      padding: 12px 18px;
-      border: none;
-      border-radius: 8px;
-      font-size: 16px;
-      font-weight: bold;
-      cursor: pointer;
-      transition: all 0.2s;
-      text-decoration: none;
-      display: inline-block;
-    }
-
-    .btn-primary {
-      background-color: #007bff;
-      color: #fff;
-    }
-
-    .btn-primary:hover {
-      background-color: #0056b3;
-    }
-
-    .btn-secondary {
-      background-color: #6c757d;
-      color: #fff;
-    }
-
-    .btn-secondary:hover {
-      background-color: #545b62;
-    }
-
-    .btn-success {
-      background-color: #28a745;
-      color: #fff;
-    }
-
-    .btn-success:hover {
-      background-color: #1f7f35;
-    }
-
-    .btn-disabled {
-      opacity: 0.6;
-      cursor: not-allowed;
+    .filters input:focus,
+    .filters select:focus {
+      border-color: var(--primary);
+      outline: none;
     }
 
     .card {
-      background: white;
-      border-radius: 12px;
-      padding: 20px;
+      background: var(--card-bg);
+      border-radius: var(--radius-lg);
+      padding: 24px;
       margin-bottom: 20px;
-      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+      box-shadow: var(--shadow-soft);
+      border: 1.5px solid var(--border-color);
+    }
+
+    /* テーブルのスタイル調整 */
+    .reservation-table-container {
+      overflow-x: auto;
+      border-radius: var(--radius-md);
+      border: 1px solid var(--border-color);
+    }
+
+    .reservation-table {
+      width: 100%;
+      border-collapse: collapse;
+      min-width: 900px;
+      background: #ffffff;
+    }
+
+    .reservation-table th {
+      background-color: var(--primary-light);
+      color: var(--primary);
+      font-weight: 800;
+      border: 1px solid var(--border-color);
+      padding: 12px 10px;
+      text-align: left;
+    }
+
+    .reservation-table td {
+      border: 1px solid var(--border-color);
+      padding: 12px 10px;
+      font-size: 0.92rem;
+    }
+
+    .reservation-table tr.row-verified {
+      background-color: var(--primary-subtle);
     }
   </style>
+  <link rel="stylesheet" href="olimeal-interior.css">
 </head>
 
-<body>
+<body class="olimeal-interior">
   <div class="container">
-    <header>
-      <h1>🧾 【管理用】予約確認一覧（認証）</h1>
-      <p>食堂スタッフ向け：予約の一覧確認と「認証（受け取り済み）」の更新ができます</p>
+    <!-- 全ページ共通ナビゲーション -->
+    <nav class="site-nav" aria-label="主なメニュー">
+      <a class="site-nav-brand" href="index.html" aria-label="OliMeal ホーム">
+        <img src="icon.png" alt="" class="logo-nav-icon">
+        <span class="logo-nav-text">OliMeal</span>
+      </a>
+      <div class="site-nav-links">
+        <a href="index.html">ホーム</a>
+        <a href="book.html">予約する</a>
+        <a href="verification.html" class="is-here">予約を確認</a>
+        <a href="allergy.html">アレルギー</a>
+        <a href="ai-assistant-php.html">質問する</a>
+      </div>
+    </nav>
+
+    <header class="page-intro">
+      <span class="eyebrow">スタッフ用</span>
+      <h1>🧾 予約確認一覧（認証）</h1>
+      <p class="lead">食堂スタッフ向け：予約の一覧確認と「認証（受け取り済み）」の更新ができます</p>
     </header>
 
     <main>
@@ -125,7 +144,7 @@
           </div>
         </div>
         <div id="reservations-list"></div>
-        <p style="margin-top: 10px; color: #666; font-size: 14px;">
+        <p style="margin-top: 14px; color: var(--text-muted); font-size: 0.85rem;">
           ※ ファイルを直接開いている（URLが <code>file://</code> で始まる）場合、PHP(API)が動かず一覧取得に失敗します。Webサーバー経由で開いてください。
         </p>
       </section>
@@ -142,7 +161,6 @@
   </div>
 
   <script>
-    // 現在のページと同じフォルダの api/ を参照（サブフォルダで開いても正しく動作）
     function getApiBaseCandidates() {
       if (typeof window === 'undefined' || !window.location) return ['api/'];
       if (window.location.protocol === 'file:') return ['api/'];
@@ -190,7 +208,6 @@
       throw lastErr || new Error('POST failed');
     }
 
-    // HTMLエスケープ関数
     function escapeHtml(text) {
       if (text === null || text === undefined) return '';
       const div = document.createElement('div');
@@ -214,14 +231,20 @@
       });
     }
 
-    // === 予約一覧 ===
     async function loadReservations() {
       const list = document.getElementById("reservations-list");
       let reservations = [];
       const isFileProtocol = window.location.protocol === 'file:';
-      list.innerHTML = "<p style='color:#666;'>読み込み中...</p>";
+      list.innerHTML = "<p style='color:var(--text-muted);'>読み込み中...</p>";
       try {
-        const raw = await fetch(apiBase + 'sales-data.php?reservations=true', { cache: 'no-store' }).then(r => r.json());
+        const candidates = getApiBaseCandidates();
+        let raw = null;
+        for (const base of candidates) {
+          try {
+            const res = await fetch(base + 'sales-data.php?reservations=true', { cache: 'no-store' });
+            if (res.ok) { raw = await res.json(); break; }
+          } catch (_) {}
+        }
         if (Array.isArray(raw)) {
           reservations = raw;
         } else if (raw && Array.isArray(raw.reservations)) {
@@ -237,17 +260,17 @@
         } else {
           errMsg += ' しばらくしてから「予約一覧を更新」を押すか、ページを再読み込みしてください。';
         }
-        list.innerHTML = "<p style='color:#dc3545;'>" + errMsg + "</p>";
+        list.innerHTML = "<p style='color:var(--accent-orange);'>" + errMsg + "</p>";
         return;
       }
 
       if (reservations.length === 0) {
-        let emptyMsg = '予約はありません（0件）。';
-        emptyMsg += '<br>予約が入った後に「予約一覧を更新」を押してください。';
+        let emptyMsg = '☕️ 現在、対象の予約はありません（0件）。';
+        emptyMsg += '<br>生徒からの予約が入った後に「予約一覧を更新」を押してください。';
         if (isFileProtocol) {
-          emptyMsg += '<br><span style="color:#856404;"><strong>※ ファイルで直接開いていると予約は保存・表示されません。</strong> Webサーバー経由で開いてください。</span>';
+          emptyMsg += '<br><span style="color:var(--accent-orange);"><strong>※ ファイルで直接開いていると予約は保存・表示されません。</strong> Webサーバー経由で開いてください。</span>';
         }
-        list.innerHTML = "<p style='color:#666;'>" + emptyMsg + "</p>";
+        list.innerHTML = "<p style='color:var(--text-muted); line-height: 1.6;'>" + emptyMsg + "</p>";
         return;
       }
 
@@ -260,7 +283,6 @@
 
       const isVerifiedFn = (r) => r.verified === true || r.verified === 'true' || r.verified === 1;
 
-      // 絞り込み
       let filtered = reservations;
       if (mode === 'today') {
         filtered = filtered.filter(r => String(r.date || '') === selectedDate);
@@ -268,8 +290,6 @@
         filtered = filtered.filter(r => !isVerifiedFn(r));
       } else if (mode === 'verified') {
         filtered = filtered.filter(r => isVerifiedFn(r));
-      } else if (mode === 'all') {
-        // no-op
       }
       if (q) {
         filtered = filtered.filter(r => {
@@ -282,18 +302,16 @@
       }
 
       if (filtered.length === 0) {
-        list.innerHTML = "<p style='color:#666;'>条件に一致する予約がありません。</p>";
+        list.innerHTML = "<p style='color:var(--text-muted);'>🔍 条件に一致する予約が見つかりませんでした。</p>";
         return;
       }
 
-      // 日付・時間でソート（新しい順）
       filtered = [...filtered].sort((a, b) => {
         const dateA = (a.date || '') + ' ' + (a.time || '');
         const dateB = (b.date || '') + ' ' + (b.time || '');
         return dateB.localeCompare(dateA);
       });
 
-      // 認証ボタン用に現在表示中の配列を保持
       window.__visibleReservations = filtered;
 
       const tableRows = filtered.map((r, idx) => {
@@ -304,42 +322,42 @@
         const time = escapeHtml(String(r.time || '—'));
         const num = r.reservationNumber != null ? r.reservationNumber : '—';
         const isVerified = isVerifiedFn(r);
-        const verifiedMark = isVerified ? '<span style="color: #28a745;">✅</span>' : '—';
+        const verifiedMark = isVerified ? '<span style="color: var(--primary); font-weight: bold;">✅ 認証済</span>' : '<span style="color: var(--text-muted);">未受け取り</span>';
         const actionBtn = isVerified
-          ? `<button class="btn btn-secondary btn-disabled" disabled>認証済み</button>`
+          ? `<button class="btn btn-secondary btn-disabled" disabled>受け取り完了</button>`
           : `<button class="btn btn-success" onclick="handleVerifyClick(${idx})">認証（受け取り）</button>`;
         return `
-          <tr style="background-color: ${isVerified ? '#f0fff0' : '#fff'};">
-            <td style="border: 1px solid #ddd; padding: 10px;">${date}</td>
-            <td style="border: 1px solid #ddd; padding: 10px;">${time}</td>
-            <td style="border: 1px solid #ddd; padding: 10px; font-weight: bold;">${name}</td>
-            <td style="border: 1px solid #ddd; padding: 10px;">${cls}</td>
-            <td style="border: 1px solid #ddd; padding: 10px;">${food}</td>
-            <td style="border: 1px solid #ddd; padding: 10px;">${num}</td>
-            <td style="border: 1px solid #ddd; padding: 10px; text-align: center;">${verifiedMark}</td>
-            <td style="border: 1px solid #ddd; padding: 10px; text-align: center;">${actionBtn}</td>
+          <tr class="${isVerified ? 'row-verified' : ''}">
+            <td>${date}</td>
+            <td>${time}</td>
+            <td style="font-weight: bold; color: var(--primary);">${name}</td>
+            <td>${cls}</td>
+            <td>${food}</td>
+            <td style="font-weight: 800; color: var(--primary);">${num}</td>
+            <td style="text-align: center;">${verifiedMark}</td>
+            <td style="text-align: center;">${actionBtn}</td>
           </tr>
         `;
       }).join('');
 
       list.innerHTML = `
         <div style="margin-bottom: 20px;">
-          <h3 style="margin: 0 0 10px 0; color: #333;">📋 予約一覧（認証/受け取り管理）</h3>
-          <p style="margin: 0 0 10px 0; color: #666; font-size: 14px;">
+          <h3 style="margin: 0 0 10px 0; color: var(--primary); font-weight: 800;">📋 予約一覧（認証/受け取り管理）</h3>
+          <p style="margin: 0 0 12px 0; color: var(--text-muted); font-size: 0.9rem;">
             表示件数: <strong>${filtered.length}</strong> 件
           </p>
-          <div style="overflow-x: auto;">
-            <table style="width: 100%; border-collapse: collapse; min-width: 900px;">
+          <div class="reservation-table-container">
+            <table class="reservation-table">
               <thead>
-                <tr style="background-color: #f8f9fa;">
-                  <th style="border: 1px solid #ddd; padding: 10px; text-align: left;">日付</th>
-                  <th style="border: 1px solid #ddd; padding: 10px; text-align: left;">時間</th>
-                  <th style="border: 1px solid #ddd; padding: 10px; text-align: left;">予約者名</th>
-                  <th style="border: 1px solid #ddd; padding: 10px; text-align: left;">クラス</th>
-                  <th style="border: 1px solid #ddd; padding: 10px; text-align: left;">予約メニュー</th>
-                  <th style="border: 1px solid #ddd; padding: 10px; text-align: left;">予約番号</th>
-                  <th style="border: 1px solid #ddd; padding: 10px; text-align: center;">認証</th>
-                  <th style="border: 1px solid #ddd; padding: 10px; text-align: center;">操作</th>
+                <tr>
+                  <th>日付</th>
+                  <th>時間</th>
+                  <th>予約者名</th>
+                  <th>クラス</th>
+                  <th>予約メニュー</th>
+                  <th>予約番号</th>
+                  <th style="text-align: center;">ステータス</th>
+                  <th style="text-align: center;">操作</th>
                 </tr>
               </thead>
               <tbody>${tableRows}</tbody>
@@ -371,7 +389,6 @@
       }
     }
 
-    // ページリンクの表示
     function renderLinks() {
       const base = window.location.href.replace(/[^/]*$/, '');
       const pages = [
@@ -384,13 +401,12 @@
       if (!linksDiv) return;
       linksDiv.innerHTML = pages.map(p => {
         const url = base + p.file;
-        return `<p><strong>${p.name}:</strong> <a href="${url}">${url}</a></p>`;
+        return `<p style="margin-bottom: 8px;"><strong>${p.name}:</strong> <a href="${url}" style="color: var(--primary); font-weight: 700;">${url}</a></p>`;
       }).join('');
     }
 
     document.addEventListener('DOMContentLoaded', () => {
       renderLinks();
-      // フィルター初期化（今日）
       const dateEl = document.getElementById('filter-date');
       if (dateEl) dateEl.value = getTodayIso();
       const statusEl = document.getElementById('filter-status');
@@ -401,11 +417,9 @@
       if (qEl) qEl.addEventListener('input', reload);
 
       loadReservations();
-      // 30秒ごとに自動更新（必要ならコメントアウト可能）
       setInterval(loadReservations, 30000);
     });
   </script>
 </body>
 
 </html>
-

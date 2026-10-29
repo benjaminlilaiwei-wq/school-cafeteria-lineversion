@@ -1,0 +1,67 @@
+@charset "UTF-8";
+@import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&family=Noto+Sans+JP:wght@400;500;600;700;800;900&family=Zen+Maru+Gothic:wght@500;700;900&display=swap');
+/* OliMeal LP concept — presentation layer only. Original JS, ids, links, order untouched. */
+.olimeal-lp {
+ --primary:#344d2e; --primary-hover:#263d23; --primary-light:#e3edda; --primary-subtle:#f0f5eb;
+ --bg-main:#f8f8ef;--card-bg:#fffef8;--text-main:#243426;--text-muted:#677266;
+ --border-color:#dce3d3;--shadow-soft:0 12px 38px rgba(34,61,33,.075);
+ --shadow-hover:0 20px 38px rgba(34,61,33,.14);
+ background:#f7f8ef;color:#283a2a;padding:0 24px 70px;
+ font-family:'Noto Sans JP',sans-serif;
+}
+.olimeal-lp .container {max-width:1180px;}
+.olimeal-lp .site-nav {position:relative;z-index:3;display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;min-height:86px;background:transparent;border:0;box-shadow:none;border-radius:0;margin:0;padding:15px 2px 20px;}
+.olimeal-lp .site-nav-brand{display:flex;align-items:center;min-width:152px;text-decoration:none;}
+/* Undecided logo: reserve image reference in markup, present a polished wordmark visually */
+.olimeal-lp .logo-nav{display:none;}
+.olimeal-lp .site-nav-brand::before{content:'✳';display:grid;place-items:center;width:38px;height:38px;background:#3e5b36;color:#f4f3dc;border-radius:13px;font-size:22px;margin-right:10px;transform:rotate(-12deg);}
+.olimeal-lp .site-nav-brand::after{content:'OliMeal';font-family:'DM Sans',sans-serif;letter-spacing:-.06em;font-size:29px;font-weight:800;color:#344e30;}
+.olimeal-lp .site-nav-links{display:flex;align-items:center;gap:4px;flex-wrap:wrap;}
+.olimeal-lp .site-nav-links a{font-size:13px;font-weight:800;color:#4b5b49;text-decoration:none;padding:11px 15px;border-radius:999px;transition:.2s;}
+.olimeal-lp .site-nav-links a:hover{background:#e5efdc;}
+.olimeal-lp .site-nav-links a.is-here{background:#344d2e;color:#fff;}
+/* Editorial hero, with CSS-only decorative meal illustration; no unapproved logo assets */
+.olimeal-lp .page-intro{position:relative;display:flex;flex-direction:column;align-items:flex-start;justify-content:center;overflow:hidden;min-height:418px;padding:55px 55px 56px;background:#e7ecd8;border:1px solid #dce3cc;border-radius:36px;box-shadow:none;text-align:left;isolation:isolate;}
+.olimeal-lp .page-intro::before{content:'';position:absolute;inset:auto -130px -280px auto;width:760px;height:760px;border-radius:50%;background:#d4ddbc;opacity:.7;z-index:-1;}
+.olimeal-lp .page-intro::after{content:'';position:absolute;right:6%;top:12%;width:min(38%,390px);aspect-ratio:1;border-radius:50%;background:radial-gradient(ellipse at 42% 42%,#f4ebc3 0 5%,transparent 5.4%),radial-gradient(ellipse at 65% 36%,#ed9b5d 0 10%,transparent 10.4%),radial-gradient(ellipse at 36% 64%,#8eac64 0 12%,transparent 12.4%),radial-gradient(ellipse at 60% 66%,#ecbc64 0 18%,transparent 18.4%),radial-gradient(ellipse at 45% 44%,#618d4a 0 31%,transparent 31.4%),radial-gradient(circle at 50% 50%,#fffdf3 0 58%,#dedac5 59% 63%,#f9f8e9 64% 68%,transparent 68.5%);box-shadow:24px 32px 40px -30px #657458aa;transform:rotate(-11deg);z-index:-1;}
+.olimeal-lp .eyebrow{border-radius:100px;background:#fffdf2;color:#476445;border:1px solid #d6dec8;padding:9px 17px;font-size:13px;font-weight:800;letter-spacing:.12em;margin:0 0 19px;box-shadow:none;}
+.olimeal-lp .page-intro h1{margin:0 0 19px;font:900 clamp(56px,7vw,100px)/1 'DM Sans','Zen Maru Gothic',sans-serif;letter-spacing:-.07em;color:#2e4829;position:relative;}
+.olimeal-lp .page-intro h1::after{content:'OliMeal';}
+.olimeal-lp .logo-main{display:none;}
+.olimeal-lp .page-intro .lead{position:relative;max-width:415px;font-weight:700;line-height:2;font-size:15px;color:#53644d;margin:0;}
+.olimeal-lp main{gap:58px;margin-top:55px;}
+.olimeal-lp section{gap:20px;}
+.olimeal-lp h2{font:900 clamp(22px,2.4vw,29px)/1.35 'Zen Maru Gothic',sans-serif;color:#30482e;letter-spacing:-.025em;}
+.olimeal-lp h2::before{width:7px;height:27px;border-radius:10px;background:#d1b659;}
+.olimeal-lp .status-section{display:grid;grid-template-columns:1fr 1fr;column-gap:20px;row-gap:18px;align-items:stretch;}
+.olimeal-lp .status-section h2{grid-column:1/-1;}
+.olimeal-lp .status-card{padding:26px 29px;border:1px solid #dde5d4;border-radius:23px;background:#fffef9;box-shadow:0 8px 28px #253d2410;line-height:1.9;min-height:100px;}
+.olimeal-lp #status-display{grid-column:1/-1;background:#eff4e9;}
+.olimeal-lp .status-card:empty{display:none;}
+.olimeal-lp #status-display p{margin-bottom:5px;}
+.olimeal-lp #status-display .big-status{font:900 20px 'Zen Maru Gothic',sans-serif;}
+.olimeal-lp .links-section{gap:23px;}
+.olimeal-lp .link-cards{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:18px;}
+.olimeal-lp .link-card{position:relative;display:flex;flex-direction:column;align-items:flex-start;min-width:0;min-height:224px;background:#fffef9;border:1px solid #dee5d4;border-radius:26px;padding:27px 26px;box-shadow:0 8px 23px rgba(29,51,25,.045);transition:transform .18s,box-shadow .18s,border-color .18s;}
+.olimeal-lp .link-card:hover{transform:translateY(-5px);box-shadow:0 20px 40px #273b2720;border-color:#a4b89b;}
+.olimeal-lp .link-card .link-icon{display:grid;place-items:center;background:#ecf2e7;color:#425e3a;width:52px;height:52px;border-radius:17px;margin-bottom:22px;font:800 20px 'DM Sans',sans-serif;}
+.olimeal-lp .link-card h3{font:900 19px/1.5 'Zen Maru Gothic',sans-serif;color:#314b2d;margin:0 0 9px;}
+.olimeal-lp .link-card p{font-size:12.5px;font-weight:500;line-height:1.9;color:#6d7968;margin:0;}
+.olimeal-lp .link-card:first-child{background:#36552f;border-color:#36552f;box-shadow:0 13px 30px #36552f2b;}
+.olimeal-lp .link-card:first-child .link-icon{background:#e5f0dc;color:#36552f;}
+.olimeal-lp .link-card:first-child h3{color:#fff;}
+.olimeal-lp .link-card:first-child p{color:#dbe8d3;}
+.olimeal-lp .link-card:first-child::after{content:'↗';position:absolute;right:25px;top:29px;color:#e7f0dd;font-size:24px;}
+.olimeal-lp #line-card{background:#f1f6e9;}
+.olimeal-lp #line-card .link-icon{background:#d8edd7;color:#267b48;}
+.olimeal-lp .info-section{gap:18px;}
+.olimeal-lp .info-card{background:#fffef9;border:1px solid #dee5d4;border-radius:25px;padding:27px 30px;box-shadow:0 7px 25px #253d2410;}
+.olimeal-lp .legend{padding:16px 19px;background:#f0f4e9;border:1px solid #dfe7d7;border-radius:16px;line-height:1.8;}
+.olimeal-lp .calendar-container{overflow-x:auto;}
+.olimeal-lp .calendar-day{border-radius:12px;}
+.olimeal-lp footer{margin-top:62px;padding-top:25px;border-top:1px solid #dbe3d3;color:#768271;}
+.olimeal-lp a:focus-visible{outline:3px solid #d0a63a;outline-offset:3px;}
+@media(max-width:850px){.olimeal-lp .page-intro{min-height:365px;padding:43px 38px;}.olimeal-lp .page-intro::after{right:1%;width:38%;}.olimeal-lp .page-intro h1{font-size:clamp(52px,9vw,80px)}.olimeal-lp .link-cards{grid-template-columns:repeat(2,minmax(0,1fr));}.olimeal-lp .status-section{grid-template-columns:1fr;}.olimeal-lp #status-display{grid-column:auto;}}
+@media(max-width:540px){.olimeal-lp{padding:0 12px 40px;}.olimeal-lp .site-nav{padding:14px 3px;gap:15px;}.olimeal-lp .site-nav-links{width:100%;justify-content:center;gap:2px;}.olimeal-lp .site-nav-links a{font-size:11px;padding:8px 10px;}.olimeal-lp .page-intro{min-height:390px;border-radius:26px;padding:36px 24px 145px;justify-content:flex-start;}.olimeal-lp .page-intro::after{top:auto;bottom:-67px;right:5%;width:205px;}.olimeal-lp .page-intro::before{width:450px;height:450px;right:-180px;bottom:-250px;}.olimeal-lp .page-intro h1{font-size:54px;}.olimeal-lp .page-intro .lead{font-size:12px;max-width:310px;}.olimeal-lp main{margin-top:37px;gap:42px;}.olimeal-lp h2{font-size:22px;}.olimeal-lp .link-cards{gap:11px;}.olimeal-lp .link-card{padding:18px 15px;min-height:205px;border-radius:19px;}.olimeal-lp .link-card .link-icon{width:42px;height:42px;border-radius:13px;margin-bottom:15px;font-size:16px;}.olimeal-lp .link-card h3{font-size:15px;}.olimeal-lp .link-card p{font-size:11px;}.olimeal-lp .link-card:first-child::after{right:15px;top:19px;}.olimeal-lp .info-card,.olimeal-lp .status-card{padding:19px 18px;}.olimeal-lp .legend{gap:8px;font-size:11px;}}
+@media(max-width:350px){.olimeal-lp .link-cards{grid-template-columns:1fr;}.olimeal-lp .link-card{min-height:0;}}
+@media(prefers-reduced-motion:reduce){.olimeal-lp .link-card{transition:none;}.olimeal-lp .link-card:hover{transform:none;}}

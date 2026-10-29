@@ -1,800 +1,679 @@
-/* OliMeal — 見やすく、押しやすい画面 */
+@charset "UTF-8";
+
+/* ==========================================================================
+   OliMeal (学校食堂) 全体共通スタイルシート
+   ========================================================================== */
+
+/* 1. 変数定義 & リセット */
 :root {
-    --ink: #241c14;
-    --muted: #5c5146;
-    --paper: #fffdf8;
-    --page: #f3eee4;
-    --line: #e4d8c6;
-    --green: #2f6b4f;
-    --green-dark: #234f3a;
-    --green-soft: #e7f3ec;
-    --amber: #8a5a12;
-    --amber-soft: #fff6e8;
-    --red: #9b2c2c;
-    --red-soft: #fdeeee;
-    --shadow: 0 10px 28px rgba(60, 42, 24, 0.08);
-    --radius: 16px;
+  /* メインカラー：温かみのあるオリーブグリーン */
+  --primary: #4a6839;
+  --primary-hover: #3b532d;
+  --primary-light: #eaf1e4;
+  --primary-subtle: #f2f6ee;
+
+  /* アクセントカラー（太陽のイエロー＆カトラリーのベージュ＆テラコッタ） */
+  --accent-sun: #f1be43;
+  --accent-sun-light: #fbf2d8;
+  --accent-beige: #c2b093;
+  --accent-beige-light: #f5f0e6;
+  --accent-olive: #7f8e52;
+  --accent-orange: #e07a5f;        /* 休日・強調表示用 */
+  --accent-orange-light: #fbebe8;  /* 休日背景用 */
+
+  /* ステータスカラー */
+  --status-open-bg: #d8edd5;
+  --status-open-text: #2d5022;
+  --status-closed-bg: #fde2e2;
+  --status-closed-text: #9b2c2c;
+
+  /* 背景・テキスト・ボーダー */
+  --bg-main: #f8f4e8;            /* 画像と同じ温かいミルキーアイボリー */
+  --card-bg: #ffffff;            /* カード部分の白 */
+  --text-main: #283124;          /* ほんのり緑がかった優しい黒 */
+  --text-muted: #6b7764;        /* 控えめな文字色 */
+  --text-light: #9ea997;
+  --border-color: #e6dfcf;       /* ナチュラルなベージュ寄りの枠線 */
+
+  /* 角丸 & シャドウ */
+  --radius-xl: 24px;
+  --radius-lg: 18px;
+  --radius-md: 12px;
+  --radius-sm: 8px;
+
+  --shadow-soft: 0 10px 25px rgba(74, 104, 57, 0.08);
+  --shadow-hover: 0 14px 32px rgba(74, 104, 57, 0.15);
 }
 
-* {
-    margin: 0;
-    padding: 0;
-    box-sizing: border-box;
-}
-
-html {
-    font-size: 18px;
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
 }
 
 body {
-    font-family: "Yu Gothic UI", "Hiragino Sans", "Hiragino Kaku Gothic ProN", Meiryo, "Segoe UI", sans-serif;
-    line-height: 1.7;
-    color: var(--ink);
-    background-color: var(--page);
-    min-height: 100vh;
+  background-color: var(--bg-main);
+  color: var(--text-main);
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Hiragino Sans", "Hiragino Kaku Gothic ProN", "Meiryo", sans-serif;
+  line-height: 1.6;
+  min-height: 100vh;
+  padding: 20px 16px 40px;
+  -webkit-font-smoothing: antialiased;
 }
 
-body.page-bg {
-    background-image: none;
+[hidden] {
+  display: none !important;
 }
 
+/* 2. レイアウト & コンテナ */
 .container {
-    max-width: 980px;
-    margin: 0 auto;
-    padding: 20px 18px 48px;
-    background: transparent;
-    min-height: 100vh;
-    box-shadow: none;
+  max-width: 860px;
+  margin: 0 auto;
 }
 
-/* 上部メニュー */
-.site-nav {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    gap: 10px 14px;
-    background: var(--paper);
-    border: 2px solid var(--line);
-    border-radius: 18px;
-    padding: 12px 14px;
-    margin-bottom: 22px;
-    position: sticky;
-    top: 10px;
-    z-index: 20;
-    box-shadow: var(--shadow);
-}
-
-.site-nav-brand {
-    font-weight: 800;
-    color: var(--green-dark);
-    text-decoration: none;
-    font-size: 1.15rem;
-    letter-spacing: 0.02em;
-    padding: 8px 10px;
-}
-
-.site-nav-links {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 8px;
-    margin-left: auto;
-}
-
-.site-nav-links a {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    min-height: 48px;
-    padding: 8px 16px;
-    border-radius: 999px;
-    border: 2px solid transparent;
-    background: var(--green-soft);
-    color: var(--green-dark);
-    text-decoration: none;
-    font-weight: 700;
-    font-size: 1rem;
-}
-
-.site-nav-links a:hover,
-.site-nav-links a.is-here {
-    background: var(--green);
-    color: #fff;
-    border-color: var(--green-dark);
-}
-
-/* 見出し */
-.page-intro {
-    margin-bottom: 26px;
-}
-
-.eyebrow {
-    color: var(--green);
-    font-weight: 800;
-    letter-spacing: 0.08em;
-    font-size: 0.85rem;
-    margin-bottom: 4px;
-}
-
-header {
-    text-align: left;
-    margin-bottom: 22px;
-    padding: 0;
-    border-bottom: none;
-}
-
-header h1,
-.page-intro h1 {
-    font-size: 2rem;
-    color: var(--ink);
-    margin-bottom: 8px;
-    line-height: 1.3;
-    font-weight: 800;
-}
-
-header p,
-.lead {
-    font-size: 1.08rem;
-    color: var(--muted);
-    max-width: 40rem;
+main {
+  display: flex;
+  flex-direction: column;
+  gap: 32px;
 }
 
 section {
-    margin-bottom: 28px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
 }
 
 h2 {
-    font-size: 1.35rem;
-    color: var(--ink);
-    margin-bottom: 12px;
-    padding-left: 12px;
-    border-left: 6px solid var(--green);
-    line-height: 1.4;
+  font-size: 1.35rem;
+  font-weight: 800;
+  color: var(--primary);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  letter-spacing: -0.01em;
 }
 
-h3 {
-    font-size: 1.15rem;
-    color: var(--ink);
-    margin-bottom: 10px;
+h2::before {
+  content: "";
+  display: inline-block;
+  width: 6px;
+  height: 1.2em;
+  background-color: var(--accent-sun);
+  border-radius: 4px;
 }
 
-.help-note {
-    background: var(--amber-soft);
-    border: 2px solid #f0d7a8;
-    color: #5c3d0e;
-    border-radius: 14px;
-    padding: 14px 16px;
-    margin-bottom: 16px;
-    font-size: 1rem;
+/* 3. ナビゲーション (.site-nav) */
+.site-nav {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: var(--card-bg);
+  padding: 14px 22px;
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-soft);
+  margin-bottom: 24px;
+  border: 1px solid var(--border-color);
+  gap: 16px;
+  flex-wrap: wrap;
 }
 
-/* カード */
-.status-card:empty {
-    display: none;
+/* ナビゲーションブランド（アイコン＋テキスト） */
+.site-nav-brand {
+  font-size: 1.35rem;
+  font-weight: 800;
+  color: var(--primary);
+  text-decoration: none;
+  letter-spacing: -0.02em;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  transition: opacity 0.2s ease;
 }
 
-.status-card,
-.link-card,
-.info-card,
-.admin-card,
-.reservation-card,
-.verification-card,
-.review-card,
-.mamori-card {
-    background: var(--paper);
-    border-radius: var(--radius);
-    padding: 18px 18px;
-    margin-bottom: 14px;
-    border: 2px solid var(--line);
-    box-shadow: none;
+.site-nav-brand:hover {
+  opacity: 0.8;
+}
+
+.logo-nav-icon {
+  width: 30px;
+  height: 30px;
+  object-fit: contain;
+  display: block;
+}
+
+.logo-nav-text {
+  line-height: 1;
+}
+
+.site-nav-links {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.site-nav-links a {
+  text-decoration: none;
+  color: var(--text-muted);
+  font-size: 0.92rem;
+  font-weight: 700;
+  padding: 8px 14px;
+  border-radius: var(--radius-md);
+  transition: all 0.2s ease;
+}
+
+.site-nav-links a:hover {
+  color: var(--primary);
+  background-color: var(--primary-light);
+}
+
+.site-nav-links a.is-here {
+  background-color: var(--primary);
+  color: #ffffff;
+}
+
+/* 4. ヘッダー (.page-intro) */
+.page-intro {
+  text-align: center;
+  margin-bottom: 28px;
+  padding: 36px 20px 28px;
+  background: #ffffff;
+  border-radius: var(--radius-xl);
+  box-shadow: var(--shadow-soft);
+  border: 1.5px solid rgba(74, 104, 57, 0.18);
+  position: relative;
+  overflow: hidden;
+}
+
+.eyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.85rem;
+  font-weight: 800;
+  color: var(--primary);
+  background-color: var(--primary-light);
+  padding: 5px 16px;
+  border-radius: 999px;
+  margin-bottom: 10px;
+  border: 1px solid rgba(74, 104, 57, 0.15);
+}
+
+.page-intro h1 {
+  font-size: 2.8rem;
+  font-weight: 900;
+  letter-spacing: -0.03em;
+  margin-bottom: 8px;
+  color: var(--primary);
+}
+
+.lead {
+  font-size: 0.98rem;
+  color: var(--text-muted);
+  font-weight: 600;
+  max-width: 520px;
+  margin: 0 auto;
+  line-height: 1.65;
+}
+
+/* 5. ステータスセクション */
+.status-section {
+  gap: 16px;
+}
+
+.status-card {
+  background: var(--card-bg);
+  border-radius: var(--radius-lg);
+  padding: 22px 24px;
+  box-shadow: var(--shadow-soft);
+  border: 1.5px solid var(--border-color);
+  transition: transform 0.2s ease;
 }
 
 .big-status {
-    font-size: 1.45rem;
-    font-weight: 800;
-    line-height: 1.4;
-    margin-bottom: 6px;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 1.15rem;
+  font-weight: 800;
+  padding: 8px 20px;
+  border-radius: 999px;
+  margin-bottom: 10px;
 }
 
 .big-status.open {
-    color: var(--green-dark);
+  background-color: var(--status-open-bg);
+  color: var(--status-open-text);
 }
 
 .big-status.closed {
-    color: var(--red);
+  background-color: var(--status-closed-bg);
+  color: var(--status-closed-text);
 }
 
 .menu-label {
-    color: var(--muted);
-    font-size: 0.95rem;
-    margin-bottom: 2px;
+  font-size: 0.85rem;
+  font-weight: 800;
+  color: var(--text-muted);
+  letter-spacing: 0.05em;
+  margin-bottom: 4px;
 }
 
 .menu-name {
-    font-size: 1.35rem;
-    font-weight: 800;
+  font-size: 1.5rem;
+  font-weight: 900;
+  color: var(--primary);
+  line-height: 1.3;
 }
 
 .crowd {
-    padding: 14px 16px;
-    background: var(--green-soft);
-    border-radius: 14px;
-    border-left: 6px solid var(--green);
+  border-left-width: 6px;
+  border-left-style: solid;
+  border-left-color: var(--primary);
+  padding-left: 18px;
 }
 
-.crowd p {
-    margin: 0;
+.crowd-level {
+  font-size: 1.4rem;
+  font-weight: 800;
+  margin-bottom: 4px;
 }
 
-.crowd .crowd-level {
-    font-size: 1.25rem;
-    font-weight: 800;
-}
-
-.status-open {
-    color: var(--green-dark);
-    font-weight: 800;
-}
-
-.status-closed {
-    color: var(--red);
-    font-weight: 800;
-}
-
-.status-holiday {
-    color: var(--amber);
-    font-weight: 800;
-}
-
-/* やりたいこと */
+/* 6. やりたいことを選ぶ (カードリンク) */
 .link-cards {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
-    gap: 14px;
-}
-
-.link-card[hidden] {
-    display: none;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 18px;
 }
 
 .link-card {
-    text-decoration: none;
-    color: inherit;
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    min-height: 132px;
-    text-align: left;
-    transition: border-color 0.15s ease, background 0.15s ease;
+  display: flex;
+  flex-direction: column;
+  background: var(--card-bg);
+  padding: 22px;
+  border-radius: var(--radius-lg);
+  text-decoration: none;
+  color: var(--text-main);
+  box-shadow: var(--shadow-soft);
+  border: 2px solid transparent;
+  transition: all 0.25s ease;
 }
 
 .link-card:hover {
-    text-decoration: none;
-    color: inherit;
-    background: #fff;
-    border-color: var(--green);
-    transform: none;
-    box-shadow: none;
+  transform: translateY(-4px);
+  border-color: var(--primary);
+  box-shadow: var(--shadow-hover);
 }
 
 .link-icon {
-    width: 46px;
-    height: 46px;
-    border-radius: 12px;
-    background: var(--green-soft);
-    color: var(--green-dark);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 1.35rem;
-    margin-bottom: 10px;
-    font-weight: 800;
+  width: 42px;
+  height: 42px;
+  border-radius: 12px;
+  background-color: var(--primary-light);
+  color: var(--primary);
+  font-weight: 900;
+  font-size: 1.15rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 14px;
 }
 
 .link-card h3 {
-    color: var(--ink);
-    margin-bottom: 4px;
-    font-size: 1.2rem;
+  font-size: 1.15rem;
+  font-weight: 800;
+  color: var(--primary);
+  margin-bottom: 6px;
 }
 
 .link-card p {
-    color: var(--muted);
-    font-size: 1rem;
+  font-size: 0.88rem;
+  color: var(--text-muted);
+  line-height: 1.5;
 }
 
-/* フォーム */
-.form-group {
-    margin-bottom: 18px;
+#line-card .link-icon {
+  background-color: #e6f9ed;
+  color: #06c755;
 }
 
-.form-group label {
-    display: block;
-    margin-bottom: 8px;
-    font-weight: 800;
-    color: var(--ink);
-    font-size: 1.05rem;
+#line-card h3 {
+  color: #06c755;
 }
 
-.form-group input,
-.form-group textarea,
-.form-group select,
-.search-box input {
-    width: 100%;
-    padding: 14px 16px;
-    border: 2px solid #cbbba6;
-    border-radius: 12px;
-    font-size: 1.05rem;
-    font-family: inherit;
-    background: #fff;
-    color: var(--ink);
-    min-height: 52px;
-}
-
-.form-group textarea {
-    min-height: 140px;
-}
-
-.form-group input:focus,
-.form-group textarea:focus,
-.form-group select:focus,
-.search-box input:focus {
-    outline: 3px solid #8fceb0;
-    border-color: var(--green);
-}
-
-.form-group small {
-    display: block;
-    margin-top: 6px;
-    color: var(--muted);
-}
-
-.btn,
-.btn-submit,
-.btn-reset,
-.btn-search,
-button.btn {
-    min-height: 52px;
-    padding: 12px 22px;
-    border-radius: 12px;
-    font-size: 1.05rem;
-    font-weight: 800;
-    font-family: inherit;
-    cursor: pointer;
-    text-decoration: none;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    border: 2px solid transparent;
-}
-
-.btn-primary,
-.btn-submit,
-.btn-search {
-    background: var(--green);
-    color: #fff;
-    border-color: var(--green-dark);
-}
-
-.btn-primary:hover,
-.btn-submit:hover:not(:disabled),
-.btn-search:hover {
-    background: var(--green-dark);
-    transform: none;
-}
-
-.btn-secondary,
-.btn-reset {
-    background: #fff;
-    color: var(--ink);
-    border-color: #cbbba6;
-}
-
-.btn-secondary:hover,
-.btn-reset:hover {
-    background: #f6f1e8;
-    transform: none;
-}
-
-.form-actions {
-    display: flex;
-    gap: 12px;
-    margin-top: 18px;
-    flex-wrap: wrap;
-}
-
-.form-actions .btn,
-.form-actions .btn-submit,
-.form-actions .btn-reset {
-    flex: 1 1 180px;
-}
-
-/* 休業日 */
-.holidays-list {
-    max-height: none;
-}
-
-.holiday-item {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    gap: 12px;
-    padding: 12px;
-    border: 2px solid var(--line);
-    border-radius: 12px;
-    margin-bottom: 10px;
-    background: var(--amber-soft);
-}
-
-.holiday-date {
-    font-weight: 800;
-    color: var(--red);
-}
-
-.holiday-reason {
-    color: var(--muted);
+/* 7. 情報カード & 休業日 */
+.info-card {
+  background: var(--card-bg);
+  border-radius: var(--radius-lg);
+  padding: 22px 24px;
+  box-shadow: var(--shadow-soft);
+  border: 1.5px solid var(--border-color);
 }
 
 .holiday-line {
-    padding: 10px 0;
-    border-bottom: 1px solid var(--line);
-    font-size: 1.05rem;
+  padding: 10px 0;
+  border-bottom: 1px dashed var(--border-color);
+  font-size: 0.95rem;
+  display: flex;
+  gap: 12px;
+  align-items: center;
 }
 
 .holiday-line:last-child {
-    border-bottom: none;
+  border-bottom: none;
 }
 
-.delete-btn {
-    background: var(--red);
-    color: white;
-    border: none;
-    padding: 10px 14px;
-    border-radius: 10px;
-    cursor: pointer;
-    font-size: 0.95rem;
-    font-weight: 700;
-    min-height: 44px;
+.holiday-line strong {
+  color: var(--accent-orange);
+  font-weight: 800;
+  min-width: 100px;
 }
 
-/* 予約・チャット（既存画面用） */
-.reservations-list {
-    max-height: 480px;
-    overflow-y: auto;
-}
-
-.reservation-item {
-    padding: 14px;
-    border: 2px solid var(--line);
-    border-radius: 12px;
-    margin-bottom: 10px;
-    background: #fff;
-}
-
-.reservation-time,
-.food-item {
-    font-weight: 800;
-    color: var(--green-dark);
-}
-
-.food-item {
-    background: var(--green-soft);
-    padding: 2px 8px;
-    border-radius: 999px;
-}
-
-.reservation-details {
-    margin-top: 4px;
-    color: var(--muted);
-}
-
-.chat-container {
-    height: 420px;
-    border: 2px solid var(--line);
-    border-radius: 16px;
-    padding: 16px;
-    margin-bottom: 16px;
-    overflow-y: auto;
-    background: #fff;
-}
-
-.chat-message {
-    margin-bottom: 12px;
-    display: flex;
-}
-
-.bot-message { justify-content: flex-start; }
-.user-message { justify-content: flex-end; }
-
-.message-content {
-    max-width: 78%;
-    padding: 12px 16px;
-    border-radius: 16px;
-    word-wrap: break-word;
-}
-
-.bot-message .message-content {
-    background: #f3eee4;
-    color: var(--ink);
-}
-
-.user-message .message-content {
-    background: var(--green);
-    color: white;
-}
-
-.chat-input-container {
-    display: flex;
-    gap: 10px;
-}
-
-#chat-input {
-    flex: 1;
-    padding: 14px 16px;
-    border: 2px solid #cbbba6;
-    border-radius: 14px;
-    font-size: 1.05rem;
-    font-family: inherit;
-    min-height: 52px;
-}
-
-.quick-question-buttons,
-.quick-buttons {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 10px;
-}
-
-.quick-btn {
-    background: #fff;
-    border: 2px solid #cbbba6;
-    padding: 12px 16px;
-    border-radius: 999px;
-    cursor: pointer;
-    font-size: 1rem;
-    font-family: inherit;
-    font-weight: 700;
-    color: var(--ink);
-    min-height: 48px;
-}
-
-.quick-btn:hover {
-    background: var(--green);
-    color: white;
-    border-color: var(--green);
-}
-
-.loading {
-    text-align: center;
-    color: var(--muted);
-}
-
-footer {
-    text-align: center;
-    margin-top: 28px;
-    padding: 18px 0 8px;
-    color: var(--muted);
-    font-size: 0.95rem;
-}
-
-.back-link,
-a.back-link {
-    color: var(--green-dark);
-    text-decoration: none;
-    font-weight: 800;
-    display: inline-flex;
-    align-items: center;
-    min-height: 48px;
-    padding: 8px 4px;
-}
-
-.back-link:hover,
-a.back-link:hover {
-    text-decoration: underline;
-}
-
-.reservation-section {
-    display: grid;
-    grid-template-columns: 2fr 1fr;
-    gap: 20px;
-    margin-bottom: 24px;
-}
-
-.info-content ul {
-    margin: 8px 0;
-    padding-left: 1.2em;
-}
-
-.info-content li {
-    margin-bottom: 6px;
-}
-
+/* 8. カレンダー */
 .legend {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 8px 16px;
-    color: var(--muted);
-    margin-bottom: 10px;
-    font-size: 0.98rem;
+  display: flex;
+  gap: 16px;
+  flex-wrap: wrap;
+  font-size: 0.85rem;
+  color: var(--text-muted);
+  background: var(--card-bg);
+  padding: 12px 18px;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-color);
+}
+
+.legend span {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
 }
 
 .swatch {
-    display: inline-block;
-    width: 14px;
-    height: 14px;
-    border-radius: 4px;
-    margin-right: 6px;
-    vertical-align: -2px;
-    border: 1px solid rgba(0, 0, 0, 0.08);
+  display: inline-block;
+  width: 14px;
+  height: 14px;
+  border-radius: 4px;
 }
 
-.swatch.holiday { background: #ffe8cc; }
-.swatch.today { background: #d9f0e3; border-color: var(--green); }
+.swatch.today {
+  border: 2px solid var(--primary);
+  background-color: var(--primary-light);
+}
 
-/* カレンダー */
+.swatch.holiday {
+  background-color: var(--accent-orange-light);
+  border: 1px solid var(--accent-orange);
+}
+
 .calendar-container {
-    margin-top: 0;
+  padding: 20px;
+  overflow-x: auto;
 }
 
 .calendar-header {
-    text-align: left;
-    margin-bottom: 12px;
+  text-align: center;
+  margin-bottom: 16px;
 }
 
 .calendar-header h4 {
-    color: var(--ink);
-    font-size: 1.25rem;
-    margin: 0;
+  font-size: 1.25rem;
+  font-weight: 800;
+  color: var(--primary);
 }
 
 .calendar-grid {
-    border: 2px solid var(--line);
-    border-radius: 14px;
-    overflow: hidden;
-    background: #fff;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 320px;
 }
 
 .calendar-weekdays {
-    display: grid;
-    grid-template-columns: repeat(7, 1fr);
-    background: var(--green);
-    color: white;
-}
-
-.calendar-weekday {
-    padding: 10px 4px;
-    text-align: center;
-    font-weight: 800;
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  text-align: center;
+  font-weight: 800;
+  font-size: 0.88rem;
+  color: var(--text-muted);
+  padding-bottom: 8px;
+  border-bottom: 2px solid var(--border-color);
 }
 
 .calendar-days {
-    display: grid;
-    grid-template-columns: repeat(7, 1fr);
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 6px;
 }
 
 .calendar-day {
-    padding: 10px 4px;
-    text-align: center;
-    border-right: 1px solid var(--line);
-    border-bottom: 1px solid var(--line);
-    min-height: 72px;
-    display: flex;
-    flex-direction: column;
-    justify-content: flex-start;
-    align-items: center;
-    font-size: 0.95rem;
-    line-height: 1.3;
-}
-
-.calendar-day:nth-child(7n) {
-    border-right: none;
-}
-
-.calendar-day.empty {
-    background: #faf7f2;
-}
-
-.calendar-day.weekday {
-    background: white;
-    color: var(--ink);
-}
-
-.calendar-day.saturday {
-    background: #f3f7fb;
-    color: #1d4e89;
-}
-
-.calendar-day.sunday {
-    background: #fdf4f4;
-    color: var(--red);
-}
-
-.calendar-day.holiday {
-    background: #fff1df;
-    color: #8a4b12;
-    font-weight: 800;
-}
-
-.calendar-day.today {
-    outline: 3px solid var(--green);
-    outline-offset: -3px;
-    background: #e7f6ee;
-    font-weight: 800;
+  background: var(--primary-subtle);
+  border-radius: var(--radius-sm);
+  padding: 8px 4px;
+  min-height: 72px;
+  font-size: 0.85rem;
+  font-weight: 800;
+  color: var(--text-main);
+  text-align: center;
+  line-height: 1.35;
+  border: 2px solid transparent;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
+  word-break: break-word;
 }
 
 .calendar-day small {
-    font-size: 0.72rem;
-    margin-top: 2px;
-    display: block;
-    font-weight: 600;
+  font-size: 0.72rem;
+  font-weight: 500;
+  margin-top: 4px;
+  color: var(--text-muted);
 }
 
-.api-status {
-    background: var(--amber-soft);
-    border: 2px solid #f0d7a8;
-    border-radius: 12px;
-    padding: 14px;
-    margin-top: 12px;
+.calendar-day.empty {
+  background: transparent;
+  border: none;
 }
 
-:focus-visible {
-    outline: 3px solid #1f6b45;
-    outline-offset: 3px;
+.calendar-day.today {
+  border-color: var(--primary);
+  background-color: var(--primary-light);
+  color: var(--primary);
 }
 
-@media (max-width: 768px) {
-    html {
-        font-size: 17px;
-    }
-
-    .container {
-        padding: 12px 12px 36px;
-    }
-
-    .site-nav {
-        top: 0;
-        border-radius: 0;
-        margin: -12px -12px 18px;
-        position: sticky;
-    }
-
-    .site-nav-links {
-        margin-left: 0;
-        width: 100%;
-    }
-
-    .site-nav-links a {
-        flex: 1 1 calc(50% - 8px);
-    }
-
-    header h1,
-    .page-intro h1 {
-        font-size: 1.7rem;
-    }
-
-    .link-cards,
-    .reservation-section {
-        grid-template-columns: 1fr;
-    }
-
-    .chat-input-container,
-    .form-actions {
-        flex-direction: column;
-    }
-
-    .holiday-item {
-        flex-direction: column;
-        align-items: flex-start;
-    }
-
-    .calendar-day {
-        min-height: 58px;
-        padding: 6px 2px;
-        font-size: 0.85rem;
-    }
+.calendar-day.holiday {
+  background-color: var(--accent-orange-light);
+  color: var(--accent-orange);
 }
 
-@media (prefers-reduced-motion: reduce) {
-    * {
-        animation: none !important;
-        transition: none !important;
-    }
+.calendar-day.holiday small {
+  color: var(--accent-orange);
+}
+
+/* 9. フッター */
+footer {
+  text-align: center;
+  padding: 32px 0 16px;
+  font-size: 0.88rem;
+  color: var(--text-light);
+  font-weight: 600;
+}
+
+/* 10. フォーム・ボタン汎用パーツ */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 12px 20px;
+  border-radius: var(--radius-md);
+  font-size: 0.95rem;
+  font-weight: 700;
+  border: none;
+  cursor: pointer;
+  text-decoration: none;
+  transition: all 0.2s ease;
+}
+
+.btn-primary {
+  background-color: var(--primary);
+  color: #ffffff;
+}
+
+.btn-primary:hover {
+  background-color: var(--primary-hover);
+}
+
+.btn-secondary {
+  background-color: var(--primary-light);
+  color: var(--primary);
+}
+
+.btn-danger {
+  background-color: #fee2e2;
+  color: #dc2626;
+}
+
+.btn-success {
+  background-color: #d1fae5;
+  color: #065f46;
+}
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: 16px;
+}
+
+.form-group label {
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: var(--text-main);
+}
+
+input[type="text"],
+input[type="number"],
+input[type="date"],
+input[type="time"],
+input[type="month"],
+input[type="url"],
+input[type="password"],
+select,
+textarea {
+  width: 100%;
+  padding: 12px 14px;
+  border-radius: var(--radius-md);
+  border: 1.5px solid var(--border-color);
+  font-size: 0.95rem;
+  color: var(--text-main);
+  background-color: #ffffff;
+  outline: none;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+input:focus,
+select:focus,
+textarea:focus {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px var(--primary-light);
+}
+
+.back-link {
+  display: inline-block;
+  color: var(--primary);
+  font-weight: 700;
+  text-decoration: none;
+  margin-top: 8px;
+}
+
+.back-link:hover {
+  text-decoration: underline;
+}
+
+/* メイン看板ロゴ（トップページ中央用） */
+.logo-main {
+  max-width: 100%;
+  height: auto;
+  max-height: 110px;
+  display: block;
+  margin: 0 auto;
+}
+
+@media (max-width: 600px) {
+  body {
+    padding: 12px 8px;
+  }
+
+  .site-nav {
+    flex-direction: column;
+    align-items: stretch;
+    text-align: center;
+  }
+
+  .site-nav-links {
+    justify-content: center;
+  }
+
+  .page-intro h1 {
+    font-size: 1.9rem;
+  }
+
+  .link-cards {
+    grid-template-columns: 1fr;
+  }
+
+  .calendar-day {
+    min-height: 56px;
+    padding: 4px 2px;
+    font-size: 0.78rem;
+  }
+
+  .calendar-day small {
+    font-size: 0.65rem;
+  }
+}
+/* ==========================================================================
+   追加デザイン：あしらい・タグ・アニメーション
+   ========================================================================== */
+
+/* 1. ヘッダーの右上に小さな葉っぱのワンポイント */
+.page-intro::before {
+  content: "🌿";
+  position: absolute;
+  top: 12px;
+  right: 18px;
+  font-size: 1.4rem;
+  opacity: 0.45;
+  transform: rotate(15deg);
+  pointer-events: none;
+}
+
+/* 2. メニュー残数の「ぷっくりピルタグ」化 */
+.menu-item-stock {
+  display: inline-block;
+  padding: 4px 14px;
+  border-radius: 999px;
+  font-size: 0.8rem;
+  font-weight: 800;
+  margin-top: 8px;
+  background-color: var(--primary-subtle);
+  color: var(--text-muted);
+}
+
+.menu-item-stock.unlimited {
+  background-color: var(--primary-light);
+  color: var(--primary);
+}
+
+.menu-item-stock.soldout {
+  background-color: var(--accent-orange-light);
+  color: var(--accent-orange);
+}
+
+/* 3. ボタンを押したときの「ぷにっ」としたリアクション */
+.btn, .btn-submit, .btn-reset, .link-card {
+  transition: transform 0.15s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.15s ease !important;
+}
+
+.btn:active, .btn-submit:active, .btn-reset:active, .link-card:active {
+  transform: scale(0.96) !important;
 }

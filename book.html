@@ -7,7 +7,6 @@
   <title>ごはんを予約する - OliMeal</title>
   <link rel="stylesheet" href="styles.css">
   <style>
-
     #reservation-hours-display:empty {
       display: none;
     }
@@ -20,98 +19,113 @@
 
     .booking-header {
       text-align: left;
-      padding: 22px 22px 18px;
-      background: #2f6b4f;
+      padding: 24px 28px 20px;
+      background: var(--primary);
       color: white;
-      border-radius: 16px 16px 0 0;
+      border-radius: var(--radius-lg) var(--radius-lg) 0 0;
       margin-bottom: 0;
     }
 
     .booking-header h1 {
       font-size: 1.7rem;
-      margin-bottom: 8px;
+      margin-bottom: 6px;
       color: white;
+      font-weight: 800;
     }
 
     .booking-header p {
-      font-size: 1.1rem;
-      opacity: 0.95;
+      font-size: 0.98rem;
+      opacity: 0.92;
     }
 
     .booking-card {
-      background: white;
-      border-radius: 0 0 15px 15px;
-      padding: 40px;
-      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+      background: var(--card-bg);
+      border-radius: 0 0 var(--radius-lg) var(--radius-lg);
+      padding: 36px 32px;
+      box-shadow: var(--shadow-soft);
+      border: 1.5px solid var(--border-color);
+      border-top: none;
       margin-bottom: 30px;
     }
 
     .form-group {
-      margin-bottom: 25px;
+      margin-bottom: 22px;
     }
 
     .form-group label {
       display: block;
       margin-bottom: 8px;
-      font-weight: 600;
-      color: #333;
-      font-size: 1rem;
+      font-weight: 800;
+      color: var(--primary);
+      font-size: 0.95rem;
     }
 
     .form-group label .required {
-      color: #dc3545;
+      color: var(--accent-orange);
       margin-left: 4px;
     }
 
     .form-group input[type="text"],
     .form-group select {
       width: 100%;
-      padding: 14px 16px;
-      border: 2px solid #e0e0e0;
-      border-radius: 8px;
+      padding: 13px 16px;
+      border: 1.5px solid var(--border-color);
+      border-radius: var(--radius-md);
       font-size: 1rem;
-      transition: all 0.3s ease;
-      background: #fafafa;
+      transition: all 0.2s ease;
+      background: #ffffff;
+      color: var(--text-main);
     }
 
     .form-group input[type="text"]:focus,
     .form-group select:focus {
       outline: none;
-      border-color: #2f6b4f;
-      background: white;
-      box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+      border-color: var(--primary);
+      background: #ffffff;
+      box-shadow: 0 0 0 3px var(--primary-light);
     }
 
     .form-group small {
       display: block;
       margin-top: 6px;
-      color: #666;
-      font-size: 0.875rem;
+      color: var(--text-muted);
+      font-size: 0.85rem;
+    }
+
+    .help-note {
+      font-size: 0.88rem;
+      color: var(--text-muted);
+      margin-bottom: 18px;
+      background: var(--primary-subtle);
+      padding: 10px 14px;
+      border-radius: var(--radius-sm);
+      border-left: 4px solid var(--primary);
     }
 
     .form-actions {
       display: flex;
-      gap: 15px;
-      margin-top: 35px;
+      gap: 12px;
+      margin-top: 32px;
     }
 
     .btn-submit {
       flex: 2;
-      padding: 16px 32px;
-      background: #2f6b4f;
+      padding: 15px 28px;
+      background: var(--primary);
       color: white;
       border: none;
-      border-radius: 8px;
-      font-size: 1.1rem;
-      font-weight: 600;
+      border-radius: var(--radius-md);
+      font-size: 1.05rem;
+      font-weight: 800;
       cursor: pointer;
-      transition: all 0.3s ease;
-      box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+      transition: all 0.2s ease;
+      box-shadow: var(--shadow-soft);
     }
 
     .btn-submit:hover:not(:disabled) {
+      background: var(--primary-hover);
       transform: translateY(-2px);
-      box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
+      box-shadow: var(--shadow-hover);
     }
 
     .btn-submit:disabled {
@@ -121,37 +135,36 @@
 
     .btn-reset {
       flex: 1;
-      padding: 16px 32px;
-      background: #6c757d;
-      color: white;
-      border: none;
-      border-radius: 8px;
-      font-size: 1rem;
-      font-weight: 600;
+      padding: 15px 24px;
+      background: var(--primary-light);
+      color: var(--primary);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-md);
+      font-size: 0.95rem;
+      font-weight: 800;
       cursor: pointer;
-      transition: all 0.3s ease;
+      transition: all 0.2s ease;
     }
 
     .btn-reset:hover {
-      background: #5a6268;
-      transform: translateY(-2px);
+      background: #dbe7d5;
+      transform: translateY(-1px);
     }
 
     /* 結果表示 */
     .result-box {
       display: none;
       margin-top: 25px;
-      padding: 25px;
-      border-radius: 10px;
-      animation: slideIn 0.4s ease-out;
+      padding: 24px;
+      border-radius: var(--radius-md);
+      animation: slideIn 0.3s ease-out;
     }
 
     @keyframes slideIn {
       from {
         opacity: 0;
-        transform: translateY(-10px);
+        transform: translateY(-8px);
       }
-
       to {
         opacity: 1;
         transform: translateY(0);
@@ -159,148 +172,152 @@
     }
 
     .result-success {
-      background: #d4edda;
-      border: 2px solid #c3e6cb;
-      color: #155724;
+      background: var(--status-open-bg);
+      border: 2px solid var(--primary);
+      color: var(--status-open-text);
     }
 
     .result-error {
-      background: #f8d7da;
-      border: 2px solid #f5c6cb;
-      color: #721c24;
+      background: var(--status-closed-bg);
+      border: 2px solid var(--accent-orange);
+      color: var(--status-closed-text);
     }
 
     .result-box h3 {
-      margin: 0 0 15px 0;
-      font-size: 1.3rem;
+      margin: 0 0 12px 0;
+      font-size: 1.25rem;
+      font-weight: 800;
     }
 
     .result-box p {
-      margin: 8px 0;
+      margin: 6px 0;
       line-height: 1.6;
     }
 
     .reservation-number {
-      font-size: 2rem;
-      font-weight: bold;
-      color: #234f3a;
+      font-size: 2.2rem;
+      font-weight: 900;
+      color: var(--primary);
       margin: 10px 0;
+      letter-spacing: 0.05em;
     }
 
     .result-actions {
       display: flex;
       gap: 10px;
       flex-wrap: wrap;
-      margin-top: 20px;
+      margin-top: 18px;
     }
 
     /* メニュー表示 */
     .menu-preview {
-      background: #f8f9fa;
-      border-radius: 10px;
+      background: var(--primary-subtle);
+      border-radius: var(--radius-md);
       padding: 20px;
-      margin-top: 20px;
+      margin-top: 24px;
+      border: 1px solid var(--border-color);
     }
 
     .menu-preview h3 {
       margin-top: 0;
-      color: #234f3a;
+      color: var(--primary);
+      font-size: 1.1rem;
+      font-weight: 800;
     }
 
     .menu-list {
       display: grid;
       grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-      gap: 15px;
-      margin-top: 15px;
+      gap: 12px;
+      margin-top: 14px;
     }
 
     .menu-item {
       background: white;
-      padding: 15px;
-      border-radius: 8px;
-      border: 2px solid #e0e0e0;
+      padding: 14px;
+      border-radius: var(--radius-sm);
+      border: 1.5px solid var(--border-color);
       text-align: center;
     }
 
     .menu-item-name {
-      font-weight: 600;
-      color: #333;
-      margin-bottom: 5px;
+      font-weight: 800;
+      color: var(--text-main);
+      margin-bottom: 4px;
     }
 
     .menu-item-stock {
-      font-size: 0.875rem;
-      color: #666;
+      font-size: 0.85rem;
+      color: var(--text-muted);
     }
 
     .menu-item-stock.unlimited {
-      color: #28a745;
-      font-weight: 600;
+      color: var(--primary);
+      font-weight: 800;
     }
 
     .menu-item-stock.soldout {
-      color: #dc3545;
-      font-weight: 600;
+      color: var(--accent-orange);
+      font-weight: 800;
     }
 
     /* 予約状況 */
     .status-preview {
-      background: #e3f2fd;
-      border-radius: 10px;
+      background: var(--accent-sun-light);
+      border-radius: var(--radius-md);
       padding: 20px;
       margin-top: 20px;
+      border: 1px solid var(--accent-sun);
     }
 
     .status-preview h3 {
       margin-top: 0;
-      color: #1976d2;
+      color: var(--text-main);
+      font-size: 1.1rem;
+      font-weight: 800;
     }
 
     .status-item {
       background: white;
-      padding: 12px;
-      border-radius: 6px;
+      padding: 12px 16px;
+      border-radius: var(--radius-sm);
       margin-bottom: 8px;
       display: flex;
       justify-content: space-between;
       align-items: center;
+      border: 1px solid var(--border-color);
     }
 
     /* ローディング */
     .loading {
       text-align: center;
       padding: 20px;
-      color: #666;
+      color: var(--text-muted);
     }
 
     .spinner {
-      border: 3px solid #f3f3f3;
-      border-top: 3px solid #2f6b4f;
+      border: 3px solid var(--primary-light);
+      border-top: 3px solid var(--primary);
       border-radius: 50%;
-      width: 40px;
-      height: 40px;
+      width: 36px;
+      height: 36px;
       animation: spin 1s linear infinite;
       margin: 0 auto 10px;
     }
 
     @keyframes spin {
-      0% {
-        transform: rotate(0deg);
-      }
-
-      100% {
-        transform: rotate(360deg);
-      }
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
     }
 
     /* レスポンシブ */
     @media (max-width: 768px) {
       .booking-card {
-        padding: 25px 20px;
+        padding: 24px 18px;
       }
 
       .booking-header h1 {
-        font-size: 2rem;
+        font-size: 1.5rem;
       }
 
       .form-actions {
@@ -317,12 +334,17 @@
       }
     }
   </style>
+  <link rel="stylesheet" href="olimeal-interior.css">
 </head>
 
-<body>
+<body class="olimeal-interior">
   <div class="container">
+    <!-- 全ページ共通ナビゲーション -->
     <nav class="site-nav" aria-label="主なメニュー">
-      <a class="site-nav-brand" href="index.html">OliMeal</a>
+      <a class="site-nav-brand" href="index.html" aria-label="OliMeal ホーム">
+        <img src="icon.png" alt="" class="logo-nav-icon">
+        <span class="logo-nav-text">OliMeal</span>
+      </a>
       <div class="site-nav-links">
         <a href="index.html">ホーム</a>
         <a href="book.html" class="is-here">予約する</a>
@@ -331,6 +353,7 @@
         <a href="ai-assistant-php.html">質問する</a>
       </div>
     </nav>
+
     <div class="booking-container">
       <div class="booking-header">
         <h1>ごはんを予約する</h1>
@@ -339,14 +362,17 @@
 
       <div class="booking-card">
         <div id="today-closed-message"
-          style="display:none; margin-bottom:20px; padding:16px 20px; background:#fff3cd; border:2px solid #ffc107; border-radius:8px; font-size:1rem; font-weight:bold; color:#856404;">
+          style="display:none; margin-bottom:20px; padding:16px 20px; background:var(--status-closed-bg); border:2px solid var(--accent-orange); border-radius:var(--radius-md); font-size:0.95rem; font-weight:bold; color:var(--status-closed-text);">
           🚫 本日は休業日のため、予約はできません。
         </div>
+
         <div id="reservation-hours-display" class="reservation-hours-box"
-          style="margin-bottom:20px; padding:12px 16px; background:#e8f4fd; border-radius:8px; font-size:0.95rem;">
+          style="margin-bottom:20px; padding:12px 16px; background:var(--primary-subtle); border-radius:var(--radius-md); font-size:0.92rem; border:1px solid var(--border-color);">
         </div>
+
         <form id="booking-form">
-          <p class="help-note">赤い * の欄は、両方入れてから下の緑のボタンを押してください。</p>
+          <p class="help-note">💡 赤い <span style="color:var(--accent-orange); font-weight:bold;">*</span> の欄を入力して、「予約を確定する」ボタンを押してください。</p>
+
           <div class="form-group">
             <label for="student-name">
               お名前 <span class="required">*</span>
@@ -379,7 +405,7 @@
 
         <!-- メニュー一覧 -->
         <div class="menu-preview">
-          <h3>いま選べるメニュー</h3>
+          <h3>🍱 いま選べるメニュー</h3>
           <div id="menu-display" class="loading">
             <div class="spinner"></div>
             <p>メニューを読み込み中...</p>
@@ -388,7 +414,7 @@
 
         <!-- 今日の予約状況 -->
         <div class="status-preview">
-          <h3>きょうの予約のようす</h3>
+          <h3>📊 きょうの予約のようす</h3>
           <div id="reservations-display" class="loading">
             <div class="spinner"></div>
             <p>予約状況を読み込み中...</p>
@@ -397,8 +423,8 @@
       </div>
     </div>
 
-    <footer style="text-align: center; padding: 30px 20px;">
-      <a href="index.html" class="back-link" style="font-size: 1.1rem;">ホームに戻る</a>
+    <footer>
+      <a href="index.html" class="back-link">← ホームに戻る</a>
     </footer>
   </div>
 
@@ -418,55 +444,31 @@
     async function resolveApiBase() {
       if (__apiBaseResolved) return __apiBaseResolved;
 
-      // 候補パスの生成
       const candidates = [];
-      try {
-        candidates.push(new URL('api/', window.location.href).toString());
-      } catch (_) { }
-      try {
-        candidates.push(new URL('../api/', window.location.href).toString());
-      } catch (_) { }
-      try {
-        candidates.push(window.location.origin + '/api/');
-      } catch (_) { }
+      try { candidates.push(new URL('api/', window.location.href).toString()); } catch (_) { }
+      try { candidates.push(new URL('../api/', window.location.href).toString()); } catch (_) { }
+      try { candidates.push(window.location.origin + '/api/'); } catch (_) { }
 
-      // 同一オリジンの候補だけにする
       const validCandidates = candidates.filter(u => {
-        try {
-          return new URL(u).origin === window.location.origin;
-        } catch (_) {
-          return false;
-        }
+        try { return new URL(u).origin === window.location.origin; } catch (_) { return false; }
       });
-
-      console.log('[予約デバッグ] APIベース候補:', validCandidates);
 
       const probePath = 'menu.php';
       for (const base of validCandidates) {
         try {
-          console.log('[予約デバッグ] プローブ中:', base + probePath);
-          const res = await fetch(base + probePath, {
-            cache: 'no-store',
-            method: 'GET'
-          });
+          const res = await fetch(base + probePath, { cache: 'no-store', method: 'GET' });
           if (res.ok) {
             __apiBaseResolved = base;
-            console.log('[予約デバッグ] ✅ APIベースを確定:', __apiBaseResolved);
             return __apiBaseResolved;
-          } else {
-            console.log('[予約デバッグ] プローブ失敗:', base + probePath, res.status);
           }
         } catch (e) {
-          console.log('[予約デバッグ] プローブエラー:', base + probePath, e);
           continue;
         }
       }
       __apiBaseResolved = getApiBase();
-      console.warn('[予約デバッグ] ⚠️ APIベース確定に失敗。従来パスを使用:', __apiBaseResolved);
       return __apiBaseResolved;
     }
 
-    // HTMLエスケープ
     function escapeHtml(text) {
       if (text === null || text === undefined) return '';
       const div = document.createElement('div');
@@ -474,7 +476,6 @@
       return div.innerHTML;
     }
 
-    // 今日の日付を取得（YYYY-MM-DD形式）
     function getTodayIso() {
       const d = new Date();
       const yyyy = d.getFullYear();
@@ -483,16 +484,13 @@
       return `${yyyy}-${mm}-${dd}`;
     }
 
-    // 現在時刻を HH:MM 形式で取得
     function getCurrentTimeHHMM() {
       const d = new Date();
       return String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0');
     }
 
-    // 予約時間設定（adminで設定した内容を保持）
     let reservationTimesSettings = null;
 
-    // 予約時間設定をAPIから取得
     async function loadReservationTimesSettings() {
       try {
         const apiBase = await resolveApiBase();
@@ -509,10 +507,9 @@
       return null;
     }
 
-    // 現在時刻が予約可能時間内かチェック（設定が無い or enabledでない場合は true = 制限なし）
     function isWithinReservationHours() {
       if (!reservationTimesSettings || reservationTimesSettings.enabled !== true) {
-        return true; // 制限なしの場合はいつでも予約可能
+        return true;
       }
       let timeSlots = reservationTimesSettings.timeSlots;
       if (!Array.isArray(timeSlots) || timeSlots.length === 0) {
@@ -534,10 +531,9 @@
       return false;
     }
 
-    // 予約可能時間の表示用テキストを取得
     function getReservationHoursDisplayText() {
       if (!reservationTimesSettings || reservationTimesSettings.enabled !== true) {
-        return null; // 制限なし
+        return null;
       }
       let timeSlots = reservationTimesSettings.timeSlots;
       if (!Array.isArray(timeSlots) || timeSlots.length === 0) {
@@ -550,7 +546,6 @@
       return parts.join('、');
     }
 
-    // 本日が休業日か（管理画面で登録された休業日のみ。解除すれば営業日になる）
     async function isTodayClosed() {
       try {
         const apiBase = await resolveApiBase();
@@ -565,7 +560,6 @@
       }
     }
 
-    // メニューと予約状況を読み込む
     async function loadMenuAndStatus() {
       const foodSelect = document.getElementById('food');
       const menuDisplay = document.getElementById('menu-display');
@@ -580,9 +574,10 @@
         const closedResult = await isTodayClosed();
         const closed = closedResult && (closedResult.closed === true || closedResult === true);
         const reason = (closedResult && closedResult.reason) ? closedResult.reason : '';
+
         if (closed && todayClosedEl) {
           todayClosedEl.style.display = 'block';
-          todayClosedEl.innerHTML = '🚫 本日は休業日のため、予約はできません。' + (reason ? '<br><span style="font-size:0.9em;">理由: ' + escapeHtml(reason) + '</span>' : '');
+          todayClosedEl.innerHTML = '🚫 本日は休業日のため、予約はできません。' + (reason ? '<br><span style="font-size:0.88em;">理由: ' + escapeHtml(reason) + '</span>' : '');
           if (reservationHoursDisplay) reservationHoursDisplay.style.display = 'none';
           if (bookingForm) {
             bookingForm.querySelectorAll('input, select, button[type="submit"]').forEach(el => { el.disabled = true; });
@@ -601,24 +596,21 @@
           fetch(apiBase + 'sales-data.php?reservations=true', { cache: 'no-store' })
         ]);
 
-        // 予約可能時間の表示を更新（休業でない場合のみ）
         if (reservationHoursDisplay && !closed) {
           const text = getReservationHoursDisplayText();
           const within = isWithinReservationHours();
           if (text) {
             reservationHoursDisplay.innerHTML = '<span class="reservation-hours-label">⏰ 予約可能時間: </span><strong>' +
               escapeHtml(text) + '</strong>' +
-              (within ? ' <span style="color:#28a745;">（現在予約可能）</span>' : ' <span style="color:#dc3545;">（現在は予約時間外です）</span>');
+              (within ? ' <span style="color:var(--primary); font-weight:bold;">（現在予約可能）</span>' : ' <span style="color:var(--accent-orange); font-weight:bold;">（現在は予約時間外です）</span>');
           } else {
             reservationHoursDisplay.innerHTML = '<span class="reservation-hours-label">⏰ 予約可能時間: </span>制限なし（いつでも予約可能）';
           }
         }
 
-        // メニューの読み込み
         if (menuRes.ok) {
           const menus = await menuRes.json().catch(() => []);
           if (Array.isArray(menus) && menus.length > 0) {
-            // セレクトボックスを更新
             if (foodSelect) {
               foodSelect.innerHTML = '<option value="">-- 選択してください --</option>' +
                 menus.map(m => {
@@ -630,7 +622,6 @@
                 }).join('');
             }
 
-            // メニュー一覧を表示
             if (menuDisplay) {
               menuDisplay.innerHTML = '<div class="menu-list">' +
                 menus.map(m => {
@@ -655,14 +646,13 @@
             }
           } else {
             if (foodSelect) foodSelect.innerHTML = '<option value="">メニューが登録されていません</option>';
-            if (menuDisplay) menuDisplay.innerHTML = '<p>メニューが登録されていません。管理画面でメニューを追加してください。</p>';
+            if (menuDisplay) menuDisplay.innerHTML = '<p>メニューが登録されていません。</p>';
           }
         } else {
           if (foodSelect) foodSelect.innerHTML = '<option value="">メニューの読み込みに失敗しました</option>';
-          if (menuDisplay) menuDisplay.innerHTML = '<p style="color: #dc3545;">メニューの読み込みに失敗しました。</p>';
+          if (menuDisplay) menuDisplay.innerHTML = '<p style="color: var(--accent-orange);">メニューの読み込みに失敗しました。</p>';
         }
 
-        // 予約状況の読み込み
         if (resRes.ok) {
           const raw = await resRes.json();
           const list = Array.isArray(raw) ? raw : (raw?.reservations || []);
@@ -680,30 +670,26 @@
           const entries = Object.entries(byFood);
           if (reservationsDisplay) {
             if (entries.length === 0) {
-              reservationsDisplay.innerHTML = '<p>今日の予約はまだありません。</p>';
+              reservationsDisplay.innerHTML = '<p style="color: var(--text-muted); padding: 4px 0;">🍳 きょうの予約はまだ届いていません。一番乗りで予約してみよう！</p>';
             } else {
               reservationsDisplay.innerHTML = entries.map(([food, n]) =>
                 `<div class="status-item">
                   <span><strong>${escapeHtml(food)}</strong></span>
-                  <span>${n}人</span>
+                  <span style="font-weight: bold; color: var(--primary);">${n}人</span>
                 </div>`
               ).join('');
             }
           }
         } else {
           if (reservationsDisplay) {
-            reservationsDisplay.innerHTML = '<p style="color: #dc3545;">予約状況の読み込みに失敗しました。</p>';
+            reservationsDisplay.innerHTML = '<p style="color: var(--accent-orange);">予約状況の読み込みに失敗しました。</p>';
           }
         }
       } catch (e) {
         console.error('データの読み込みエラー:', e);
-        if (foodSelect) foodSelect.innerHTML = '<option value="">データの読み込みに失敗しました</option>';
-        if (menuDisplay) menuDisplay.innerHTML = '<p style="color: #dc3545;">データの読み込みに失敗しました。Webサーバー経由で開いてください。</p>';
-        if (reservationsDisplay) reservationsDisplay.innerHTML = '<p style="color: #dc3545;">予約状況の読み込みに失敗しました。</p>';
       }
     }
 
-    // 結果を表示
     function showResult(success, html) {
       const resultBox = document.getElementById('result-box');
       if (!resultBox) return;
@@ -714,32 +700,27 @@
       resultBox.scrollIntoView({ behavior: 'smooth', block: 'start' });
     }
 
-    // 結果を非表示
     function hideResult() {
       const resultBox = document.getElementById('result-box');
-      if (resultBox) {
-        resultBox.style.display = 'none';
-      }
+      if (resultBox) resultBox.style.display = 'none';
     }
 
-    // フォームをリセット
     function resetForm() {
       document.getElementById('booking-form').reset();
       hideResult();
     }
 
-    // 予約を送信
     async function submitReservation(formData) {
       const closedResult = await isTodayClosed();
       if (closedResult && (closedResult.closed === true || closedResult === true)) {
-        const r = (closedResult.reason || '土日・祝日は休業です');
+        const r = (closedResult.reason || '休業日です');
         throw new Error('本日は休業日のため、予約できません。（' + r + '）');
       }
-      // 予約時間設定を未取得なら取得
+
       if (reservationTimesSettings === null) {
         await loadReservationTimesSettings();
       }
-      // 予約時間設定が有効な場合、現在時刻が予約可能時間内かチェック
+
       if (reservationTimesSettings && reservationTimesSettings.enabled === true) {
         if (!isWithinReservationHours()) {
           const text = getReservationHoursDisplayText();
@@ -748,34 +729,23 @@
       }
 
       const apiBase = await resolveApiBase();
-      console.log('[予約デバッグ] APIベースパス:', apiBase);
-      console.log('[予約デバッグ] フォームデータ:', formData);
-
-      // 1. メニューデータを取得して残数をチェック
       const menuUrl = apiBase + 'menu.php';
-      console.log('[予約デバッグ] メニュー取得URL:', menuUrl);
       const menuResponse = await fetch(menuUrl, { cache: 'no-store' });
       if (!menuResponse.ok) {
-        const errorText = await menuResponse.text().catch(() => '');
-        console.error('[予約デバッグ] メニュー取得エラー:', menuResponse.status, errorText);
-        throw new Error(`メニューデータの取得に失敗しました（HTTP ${menuResponse.status}）`);
+        throw new Error(`メニューデータの取得に失敗しました`);
       }
 
       const menus = await menuResponse.json();
-      console.log('[予約デバッグ] 取得したメニュー:', menus);
       const selectedMenu = menus.find(menu => menu.name === formData.food);
-      console.log('[予約デバッグ] 選択されたメニュー:', selectedMenu);
 
       if (!selectedMenu) {
         throw new Error('選択されたメニューが見つかりません');
       }
 
-      // 残数チェック
       if (selectedMenu.stock !== -1 && selectedMenu.stock <= 0) {
         throw new Error('このメニューは売り切れです');
       }
 
-      // 残数を減らす（無制限でない場合）
       if (selectedMenu.stock !== -1) {
         selectedMenu.stock -= 1;
         const updateResponse = await fetch(apiBase + 'menu.php', {
@@ -785,61 +755,40 @@
         });
 
         if (!updateResponse.ok) {
-          const errorText = await updateResponse.text().catch(() => '');
-          console.error('[予約デバッグ] メニュー更新エラー:', updateResponse.status, errorText);
           throw new Error('メニューの残数更新に失敗しました');
         }
-        console.log('[予約デバッグ] メニューの残数を更新しました');
       }
 
-      // 2. 予約データを作成
       const reservation = {
         id: Date.now(),
         date: getTodayIso(),
         time: new Date().toTimeString().split(' ')[0].substring(0, 5),
         name: formData.name.trim(),
-        studentClass: '', // 学年・クラスは不要なので空文字
+        studentClass: '',
         people: 1,
         food: formData.food,
         reservationNumber: null
       };
-      console.log('[予約デバッグ] 作成した予約データ:', reservation);
 
-      // 3. 既存の予約を取得（sales-data.jsonから）
       const reservationsUrl = apiBase + 'sales-data.php?reservations=true';
-      console.log('[予約デバッグ] 予約取得URL:', reservationsUrl);
       const res = await fetch(reservationsUrl, { cache: 'no-store' });
       if (!res.ok) {
-        const errorText = await res.text().catch(() => '');
-        console.error('[予約デバッグ] 予約取得エラー:', res.status, errorText);
-        throw new Error(`予約データの取得に失敗しました（HTTP ${res.status}）`);
+        throw new Error(`予約データの取得に失敗しました`);
       }
 
       const raw = await res.json();
-      console.log('[予約デバッグ] 取得した生データ:', raw);
-      let existingReservations = [];
-      if (Array.isArray(raw)) {
-        existingReservations = raw;
-      } else if (raw && Array.isArray(raw.reservations)) {
-        existingReservations = raw.reservations;
-      }
-      console.log('[予約デバッグ] 既存予約数:', existingReservations.length);
-      console.log('[予約デバッグ] 既存予約一覧（最初の3件）:', existingReservations.slice(0, 3));
+      let existingReservations = Array.isArray(raw) ? raw : (raw?.reservations || []);
 
-      // 4. 重複チェック（名前のみでチェック）
       const today = reservation.date;
       const reservationName = reservation.name.trim();
       const duplicateReservation = existingReservations.find(r => {
-        const rDate = r.date || '';
-        const rName = (r.name || '').trim();
-        return rDate === today && rName === reservationName;
+        return (r.date || '') === today && (r.name || '').trim() === reservationName;
       });
 
       if (duplicateReservation) {
-        throw new Error(`${today}に「${reservationName}」さんは既に予約済みです。同じ日に複数の予約はできません。`);
+        throw new Error(`${today}に「${reservationName}」さんは既に予約済みです。`);
       }
 
-      // 5. 予約番号を採番（1-999）
       const usedNumbers = new Set(
         existingReservations
           .filter(r => String(r.date || '') === today)
@@ -850,107 +799,36 @@
       let candidate = null;
       for (let i = 0; i < 2000; i++) {
         const n = Math.floor(Math.random() * 999) + 1;
-        if (!usedNumbers.has(n)) {
-          candidate = n;
-          break;
-        }
+        if (!usedNumbers.has(n)) { candidate = n; break; }
       }
 
       if (candidate === null) {
         for (let n = 1; n <= 999; n++) {
-          if (!usedNumbers.has(n)) {
-            candidate = n;
-            break;
-          }
+          if (!usedNumbers.has(n)) { candidate = n; break; }
         }
       }
 
       if (candidate === null) {
-        throw new Error('本日の予約番号が上限に達しました（999件）。管理者に連絡してください。');
+        throw new Error('本日の予約番号が上限に達しました（999件）。');
       }
 
       reservation.reservationNumber = candidate;
       existingReservations.push(reservation);
-      console.log('[予約デバッグ] 予約番号を採番:', candidate);
-      console.log('[予約デバッグ] 保存後の総予約数:', existingReservations.length);
 
-      // 6. 予約を保存（sales-data.jsonに）
       const saveUrl = apiBase + 'sales-data.php';
-      console.log('[予約デバッグ] 予約保存URL:', saveUrl);
-      console.log('[予約デバッグ] 保存する新しい予約データ:', reservation);
-      console.log('[予約デバッグ] 保存する全予約データ（既存 + 新規）:', existingReservations);
-      console.log('[予約デバッグ] 📤 POST送信データ（JSON）:', JSON.stringify(existingReservations, null, 2));
-
       const saveResponse = await fetch(saveUrl, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          action: 'save-all',
-          reservations: existingReservations
-        })
+        body: JSON.stringify({ action: 'save-all', reservations: existingReservations })
       });
-
-      console.log('[予約デバッグ] 保存レスポンス:', saveResponse.status, saveResponse.statusText);
 
       if (!saveResponse.ok) {
-        const errorText = await saveResponse.text().catch(() => '');
-        console.error('[予約デバッグ] 保存エラー（HTTP）:', saveResponse.status, errorText);
-        let errorData = {};
-        try {
-          errorData = JSON.parse(errorText);
-        } catch (e) {
-          errorData = { error: errorText || `HTTP ${saveResponse.status}` };
-        }
-        console.error('[予約デバッグ] エラーデータ:', errorData);
-        const errorMessage = errorData.message || errorData.error || `予約の保存に失敗しました（HTTP ${saveResponse.status}）`;
-        throw new Error(errorMessage);
+        throw new Error('予約の保存に失敗しました');
       }
 
-      const saveResult = await saveResponse.json().catch((e) => {
-        console.error('[予約デバッグ] JSON解析エラー:', e);
-        return { ok: false, error: 'サーバーからの応答が正しくありません' };
-      });
-
-      console.log('[予約デバッグ] 保存結果:', saveResult);
-
-      if (saveResult && saveResult.ok !== true) {
-        throw new Error(saveResult.error || saveResult.message || '予約の保存に失敗しました');
-      }
-
-      // 保存確認：サーバーからの応答で保存先ファイルと件数を確認
-      if (saveResult && saveResult.file) {
-        console.log('[予約デバッグ] 📁 保存先ファイル:', saveResult.file);
-      }
-      if (saveResult && saveResult.count !== undefined) {
-        console.log('[予約デバッグ] 📊 保存された予約件数:', saveResult.count);
-      }
-
-      // 保存確認：再度取得して確認（sales-data.json から読み込まれたか確認）
-      try {
-        const verifyRes = await fetch(reservationsUrl, { cache: 'no-store' });
-        if (verifyRes.ok) {
-          const verifyData = await verifyRes.json();
-          const verifyList = Array.isArray(verifyData) ? verifyData : (verifyData?.reservations || []);
-          const found = verifyList.find(r => r.id === reservation.id ||
-            (r.name === reservation.name && r.reservationNumber === reservation.reservationNumber && r.date === reservation.date));
-          if (found) {
-            console.log('[予約デバッグ] ✅ 予約の保存が確認されました（sales-data.json から読み込み成功）');
-            console.log('[予約デバッグ] 📋 保存された予約内容:', found);
-          } else {
-            console.warn('[予約デバッグ] ⚠️ 予約の保存確認に失敗（データが見つかりません）');
-            console.warn('[予約デバッグ] 現在の予約一覧:', verifyList);
-          }
-        }
-      } catch (e) {
-        console.warn('[予約デバッグ] 保存確認エラー（無視）:', e);
-      }
-
-      console.log('[予約デバッグ] ✅ 予約が送信されました:', reservation);
-      console.log('[予約デバッグ] 💾 この予約は sales-data.json に保存されました');
       return reservation;
     }
 
-    // 予約番号（3桁）だけをコピー（表示されている .reservation-number の内容をコピー）
     async function copyReservationNumberOnly() {
       const el = document.querySelector('.reservation-number');
       const text = el ? String(el.textContent || '').trim().replace(/\D/g, '').slice(0, 3) : '';
@@ -968,31 +846,9 @@
       }
     }
 
-    // 任意のテキストをコピー（互換用）
-    async function copyReservationInfo(text) {
-      const str = String(text || '').trim();
-      const onlyDigits = str.replace(/\D/g, '');
-      const toCopy = onlyDigits.length <= 3 ? (onlyDigits || '0').padStart(3, '0').slice(-3) : onlyDigits.slice(-3).padStart(3, '0');
-      try {
-        if (navigator.clipboard && typeof navigator.clipboard.writeText === 'function') {
-          await navigator.clipboard.writeText(toCopy);
-          alert('予約番号（' + toCopy + '）をコピーしました！');
-        } else {
-          prompt('予約番号をコピーしてください:', toCopy);
-        }
-      } catch (e) {
-        prompt('予約番号をコピーしてください:', toCopy);
-      }
-    }
-
-    // ページ読み込み時の処理
     document.addEventListener('DOMContentLoaded', function () {
-      console.log('[予約] ページが読み込まれました');
+      loadMenuAndStatus();
 
-      // メニューと予約状況を読み込む
-      loadMenuForPage();
-
-      // フォーム送信処理
       const form = document.getElementById('booking-form');
       if (form) {
         form.addEventListener('submit', async function (e) {
@@ -1003,7 +859,6 @@
             food: document.getElementById('food').value
           };
 
-          // バリデーション
           if (!formData.name) {
             showResult(false, '<h3>❌ エラー</h3><p>お名前を入力してください。</p>');
             return;
@@ -1014,60 +869,31 @@
             return;
           }
 
-          // 送信ボタンを無効化
           const submitButton = document.getElementById('submit-btn');
           const originalText = submitButton.textContent;
           submitButton.disabled = true;
           submitButton.textContent = '送信中...';
 
-          hideResult();
-
           try {
             const reservation = await submitReservation(formData);
-            const num = parseInt(reservation.reservationNumber, 10);
-            const displayNumber = (Number.isFinite(num) && num >= 1 && num <= 999 ? num : (Math.abs(num) % 1000 || 1)).toString().padStart(3, '0');
+            const numStr = String(reservation.reservationNumber).padStart(3, '0');
 
             showResult(true, `
-              <h3>✅ 予約が完了しました！</h3>
-              <p><strong>予約番号:</strong></p>
-              <div class="reservation-number">${escapeHtml(displayNumber)}</div>
-              <p><strong>お名前:</strong> ${escapeHtml(reservation.name)}</p>
-              <p><strong>メニュー:</strong> ${escapeHtml(reservation.food)}</p>
-              <p><strong>日付:</strong> ${escapeHtml(reservation.date)} ${escapeHtml(reservation.time)}</p>
+              <h3>🎉 予約が完了しました！</h3>
+              <p>受け取りの際に以下の<strong>予約番号</strong>を食堂でお伝えください。</p>
+              <div class="reservation-number">No. ${numStr}</div>
+              <p><strong>お名前:</strong> ${escapeHtml(reservation.name)} 様</p>
+              <p><strong>ご希望メニュー:</strong> ${escapeHtml(reservation.food)}</p>
               <div class="result-actions">
-                <button type="button" class="btn-submit" onclick="copyReservationNumberOnly()" style="flex: 1; width: 100%;">
-                  📋 予約番号をコピー（3桁）
-                </button>
+                <button class="btn btn-primary" onclick="copyReservationNumberOnly()">番号をコピー</button>
+                <a href="verification.html" class="btn btn-secondary">予約を確認する</a>
               </div>
-              <p style="margin-top: 15px; font-size: 0.9rem; color: #155724;">
-                ※ この予約番号は受け取り確認に使います。忘れないようにしてください。
-              </p>
             `);
 
-            // データを更新
-            await loadMenuAndStatus();
+            document.getElementById('booking-form').reset();
+            loadMenuAndStatus();
           } catch (error) {
-            console.error('[予約] ❌ 予約の送信に失敗:', error);
-            console.error('[予約] エラー詳細:', {
-              message: error.message,
-              stack: error.stack,
-              name: error.name
-            });
-            const errorMsg = error.message || '不明なエラー';
-            let debugInfo = '';
-            if (error.message && error.message.includes('HTTP')) {
-              debugInfo = '<p style="margin-top: 10px; font-size: 0.9rem; color: #721c24;"><strong>デバッグ情報:</strong><br>ブラウザのコンソール（F12キー）で <code>[予約デバッグ]</code> のログを確認してください。</p>';
-            }
-            showResult(false, `
-              <h3>❌ 予約に失敗しました</h3>
-              <p style="font-weight: bold; font-size: 1.1rem;">${escapeHtml(errorMsg)}</p>
-              ${debugInfo}
-              <p style="margin-top: 15px; font-size: 0.9rem; color: #721c24;">
-                💡 ブラウザのコンソール（F12キー）で詳細なエラー情報を確認できます。<br>
-                InfinityFree環境の場合、<code>data/</code> フォルダの書き込み権限を確認してください。<br>
-                エラーログには <code>[予約デバッグ]</code> というタグが付いています。
-              </p>
-            `);
+            showResult(false, `<h3>❌ 予約エラー</h3><p>${escapeHtml(error.message)}</p>`);
           } finally {
             submitButton.disabled = false;
             submitButton.textContent = originalText;
@@ -1075,12 +901,6 @@
         });
       }
     });
-
-    // メニューと予約状況を読み込む（グローバル関数としても使用可能）
-    async function loadMenuForPage() {
-      await loadMenuAndStatus();
-    }
-
   </script>
 </body>
 
