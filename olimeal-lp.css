@@ -105,3 +105,11 @@
   aspect-ratio: auto;
   object-fit: contain;
 }
+
+/* 中央のロゴを大きく表示 */
+.olimeal-lp .logo-main {
+  width: 500px;
+  max-width: 100%;
+  height: auto;
+  object-fit: contain;
+}
