@@ -545,7 +545,7 @@ function line_uri_button($label, $url) {
 }
 
 function line_menu_version() {
-    return 'v5';
+    return 'v6';
 }
 
 function line_rich_menu_ready() {
@@ -648,7 +648,7 @@ function line_ensure_rich_menu() {
     if ($list[0]) {
         $decoded = json_decode($list[1], true);
         foreach (($decoded['richmenus'] ?? []) as $menu) {
-            if (is_array($menu) && ($menu['name'] ?? '') === 'cafeteria-v5' && !empty($menu['richMenuId'])) {
+            if (is_array($menu) && ($menu['name'] ?? '') === 'cafeteria-v6' && !empty($menu['richMenuId'])) {
                 $existing = (string) $menu['richMenuId'];
                 break;
             }
@@ -697,7 +697,7 @@ function line_ensure_rich_menu() {
     $created = line_api('https://api.line.me/v2/bot/richmenu', [
         'size' => ['width' => 2500, 'height' => 843],
         'selected' => false,
-        'name' => 'cafeteria-v5',
+        'name' => 'cafeteria-v6',
         'chatBarText' => 'メニュー',
         'areas' => $areas,
     ]);
