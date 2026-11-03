@@ -545,7 +545,7 @@ function line_uri_button($label, $url) {
 }
 
 function line_menu_version() {
-    return 'v4';
+    return 'v5';
 }
 
 function line_rich_menu_ready() {
@@ -578,9 +578,10 @@ function line_sync_user_menu($user) {
         return;
     }
     $want = line_survey_finished($user);
-    if (!empty($user['menuOn']) === $want) {
-        return;
-    }
+   if (!empty($user['menuOn']) === $want
+    && ($user['menuVersion'] ?? '') === line_menu_version()) {
+    return;
+}
     $base = 'https://api.line.me/v2/bot/user/' . rawurlencode($userId) . '/richmenu';
     if ($want) {
         $res = line_http($base . '/' . rawurlencode($menuId), 'POST', '{}', 'application/json');
@@ -598,7 +599,8 @@ function line_sync_user_menu($user) {
         return;
     }
     $users[$userId]['menuOn'] = $want;
-    line_save_users($users);
+$users[$userId]['menuVersion'] = line_menu_version();
+line_save_users($users);
 }
 
 function line_http($url, $method, $body, $contentType) {
@@ -646,7 +648,7 @@ function line_ensure_rich_menu() {
     if ($list[0]) {
         $decoded = json_decode($list[1], true);
         foreach (($decoded['richmenus'] ?? []) as $menu) {
-            if (is_array($menu) && ($menu['name'] ?? '') === 'cafeteria-v4' && !empty($menu['richMenuId'])) {
+            if (is_array($menu) && ($menu['name'] ?? '') === 'cafeteria-v5' && !empty($menu['richMenuId'])) {
                 $existing = (string) $menu['richMenuId'];
                 break;
             }
@@ -695,7 +697,7 @@ function line_ensure_rich_menu() {
     $created = line_api('https://api.line.me/v2/bot/richmenu', [
         'size' => ['width' => 2500, 'height' => 843],
         'selected' => false,
-        'name' => 'cafeteria-v4',
+        'name' => 'cafeteria-v5',
         'chatBarText' => 'メニュー',
         'areas' => $areas,
     ]);
@@ -714,15 +716,6 @@ function line_ensure_rich_menu() {
         line_http('https://api.line.me/v2/bot/richmenu/' . rawurlencode($id), 'DELETE', null, '');
         line_write_json(line_data_dir() . '/rich-menu.json', ['version' => '', 'id' => '', 'retryAfter' => time() + 600]);
         return;
-    }
-    if ($list[0]) {
-        $decoded = json_decode($list[1], true);
-        foreach (($decoded['richmenus'] ?? []) as $menu) {
-            $oldId = is_array($menu) ? (string) ($menu['richMenuId'] ?? '') : '';
-            if ($oldId !== '' && $oldId !== $id) {
-                line_http('https://api.line.me/v2/bot/richmenu/' . rawurlencode($oldId), 'DELETE', null, '');
-            }
-        }
     }
     line_remember_menu($id);
 }
