@@ -97,3 +97,11 @@
   margin-left: 0;
   margin-right: auto;
 }
+.olimeal-lp .logo-main {
+  display: block;
+  width: 380px;
+  max-width: 100%;
+  height: auto;
+  aspect-ratio: auto;
+  object-fit: contain;
+}
