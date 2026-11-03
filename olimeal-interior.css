@@ -523,8 +523,17 @@ body.olimeal-interior :is(a.back-link,a#backLink,footer a[href="index.html"]):fo
   object-fit: contain;
 }
 
-/* 古いアイコン・文字ロゴを非表示 */
-.olimeal-interior .logo-nav-icon,
+/* 古い文字ロゴだけ非表示 */
 .olimeal-interior .logo-nav-text {
   display: none;
+}
+
+/* 新しい画像ロゴを表示 */
+.olimeal-interior .site-nav-brand img.logo-nav-icon,
+.olimeal-interior .site-nav-brand img.logo-nav-image {
+  display: block;
+  width: 160px;
+  max-width: 160px;
+  height: auto;
+  object-fit: contain;
 }
