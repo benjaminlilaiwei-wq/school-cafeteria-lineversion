@@ -65,3 +65,22 @@
 @media(max-width:540px){.olimeal-lp{padding:0 12px 40px;}.olimeal-lp .site-nav{padding:14px 3px;gap:15px;}.olimeal-lp .site-nav-links{width:100%;justify-content:center;gap:2px;}.olimeal-lp .site-nav-links a{font-size:11px;padding:8px 10px;}.olimeal-lp .page-intro{min-height:390px;border-radius:26px;padding:36px 24px 145px;justify-content:flex-start;}.olimeal-lp .page-intro::after{top:auto;bottom:-67px;right:5%;width:205px;}.olimeal-lp .page-intro::before{width:450px;height:450px;right:-180px;bottom:-250px;}.olimeal-lp .page-intro h1{font-size:54px;}.olimeal-lp .page-intro .lead{font-size:12px;max-width:310px;}.olimeal-lp main{margin-top:37px;gap:42px;}.olimeal-lp h2{font-size:22px;}.olimeal-lp .link-cards{gap:11px;}.olimeal-lp .link-card{padding:18px 15px;min-height:205px;border-radius:19px;}.olimeal-lp .link-card .link-icon{width:42px;height:42px;border-radius:13px;margin-bottom:15px;font-size:16px;}.olimeal-lp .link-card h3{font-size:15px;}.olimeal-lp .link-card p{font-size:11px;}.olimeal-lp .link-card:first-child::after{right:15px;top:19px;}.olimeal-lp .info-card,.olimeal-lp .status-card{padding:19px 18px;}.olimeal-lp .legend{gap:8px;font-size:11px;}}
 @media(max-width:350px){.olimeal-lp .link-cards{grid-template-columns:1fr;}.olimeal-lp .link-card{min-height:0;}}
 @media(prefers-reduced-motion:reduce){.olimeal-lp .link-card{transition:none;}.olimeal-lp .link-card:hover{transform:none;}}
+/* 本物のOliMealロゴを表示 */
+.olimeal-lp .logo-nav {
+  display: block;
+  width: 160px;
+  height: auto;
+}
+
+.olimeal-lp .logo-main {
+  display: block;
+  width: min(100%, 420px);
+  height: auto;
+}
+
+/* 仮の文字ロゴを削除 */
+.olimeal-lp .site-nav-brand::before,
+.olimeal-lp .site-nav-brand::after,
+.olimeal-lp .page-intro h1::after {
+  display: none;
+}
