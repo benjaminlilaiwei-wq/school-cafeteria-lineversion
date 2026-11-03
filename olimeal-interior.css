@@ -251,3 +251,12 @@ body.olimeal-interior .site-nav-brand img.logo-nav-icon {
   height: auto !important;
   object-fit: contain;
 }
+
+/* 各ページ左上のロゴサイズを調整 */
+body.olimeal-interior .site-nav-brand img.logo-nav-image {
+  width: 160px !important;
+  max-width: 160px !important;
+  height: auto !important;
+  max-height: 80px !important;
+  object-fit: contain !important;
+}
