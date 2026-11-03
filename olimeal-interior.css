@@ -537,3 +537,11 @@ body.olimeal-interior :is(a.back-link,a#backLink,footer a[href="index.html"]):fo
   height: auto;
   object-fit: contain;
 }
+/* 新ロゴの表示サイズを固定 */
+body.olimeal-interior .site-nav-brand img.logo-nav-image {
+  display: block !important;
+  width: 160px !important;
+  max-width: 160px !important;
+  height: auto !important;
+  object-fit: contain !important;
+}
