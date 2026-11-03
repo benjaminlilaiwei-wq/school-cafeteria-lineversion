@@ -544,6 +544,19 @@ function line_uri_button($label, $url) {
     ];
 }
 
+function line_rich_menu_log($stage, $detail = '') {
+    // Keep rich-menu diagnostics separate from the messaging budget's lastError.
+    $file = line_data_dir() . '/rich-menu-debug.json';
+    $rows = line_read_json($file, []);
+    if (!is_array($rows)) $rows = [];
+    $rows[] = [
+        'time' => date('c'),
+        'stage' => (string) $stage,
+        'detail' => line_cut((string) $detail, 500),
+    ];
+    line_write_json($file, array_slice($rows, -30));
+}
+
 function line_menu_version() {
     return 'v6';
 }
@@ -575,6 +588,7 @@ function line_sync_user_menu($user) {
     $menuId = is_array($saved) ? (string) ($saved['id'] ?? '') : '';
     $userId = (string) ($user['userId'] ?? '');
     if ($menuId === '' || $userId === '' || ($saved['version'] ?? '') !== line_menu_version()) {
+        line_rich_menu_log('link_skipped', 'menuId=' . ($menuId !== '' ? 'present' : 'missing') . ', userId=' . ($userId !== '' ? 'present' : 'missing') . ', version=' . (string) ($saved['version'] ?? ''));
         return;
     }
     $want = line_survey_finished($user);
@@ -586,8 +600,10 @@ function line_sync_user_menu($user) {
     if ($want) {
         $res = line_http($base . '/' . rawurlencode($menuId), 'POST', '{}', 'application/json');
         if (!$res[0]) {
+            line_rich_menu_log('link_failed', 'HTTP ' . $res[2] . ' ' . $res[1]);
             return;
         }
+        line_rich_menu_log('link_ok', 'HTTP ' . $res[2]);
     } else {
         $res = line_http($base, 'DELETE', null, '');
         if (!$res[0] && (int) ($res[2] ?? 0) !== 404) {
@@ -637,13 +653,19 @@ function line_http($url, $method, $body, $contentType) {
 
 function line_ensure_rich_menu() {
     $saved = line_read_json(line_data_dir() . '/rich-menu.json', []);
-    if (line_rich_menu_ready() || line_secret()['channelAccessToken'] === '') {
+    if (line_rich_menu_ready()) {
+        return;
+    }
+    if (line_secret()['channelAccessToken'] === '') {
+        line_rich_menu_log('token_missing');
         return;
     }
     if (is_array($saved) && (int) ($saved['retryAfter'] ?? 0) > time()) {
+        line_rich_menu_log('retry_wait', date('c', (int) $saved['retryAfter']));
         return;
     }
     $list = line_http('https://api.line.me/v2/bot/richmenu/list', 'GET', null, '');
+    if (!$list[0]) line_rich_menu_log('list_failed', 'HTTP ' . $list[2] . ' ' . $list[1]);
     $existing = '';
     if ($list[0]) {
         $decoded = json_decode($list[1], true);
@@ -655,11 +677,13 @@ function line_ensure_rich_menu() {
         }
     }
     if ($existing !== '') {
+        line_rich_menu_log('existing_found', 'cafeteria-v6');
         line_remember_menu($existing);
         return;
     }
     $image = __DIR__ . '/../images/rich-menu.png';
     if (!is_file($image)) {
+        line_rich_menu_log('image_missing', $image);
         return;
     }
     $padX = 18;
@@ -702,21 +726,25 @@ function line_ensure_rich_menu() {
         'areas' => $areas,
     ]);
     if (!$created[0]) {
+        line_rich_menu_log('create_failed', 'HTTP ' . $created[2] . ' ' . $created[1]);
         line_write_json(line_data_dir() . '/rich-menu.json', ['version' => '', 'id' => '', 'retryAfter' => time() + 600]);
         return;
     }
     $meta = json_decode($created[1], true);
     $id = is_array($meta) ? (string) ($meta['richMenuId'] ?? '') : '';
     if ($id === '') {
+        line_rich_menu_log('create_no_id', $created[1]);
         return;
     }
     $bin = file_get_contents($image);
     $uploaded = line_http('https://api-data.line.me/v2/bot/richmenu/' . rawurlencode($id) . '/content', 'POST', $bin, 'image/png');
     if (!$uploaded[0]) {
+        line_rich_menu_log('upload_failed', 'HTTP ' . $uploaded[2] . ' ' . $uploaded[1] . ', bytes=' . strlen((string) $bin));
         line_http('https://api.line.me/v2/bot/richmenu/' . rawurlencode($id), 'DELETE', null, '');
         line_write_json(line_data_dir() . '/rich-menu.json', ['version' => '', 'id' => '', 'retryAfter' => time() + 600]);
         return;
     }
+    line_rich_menu_log('upload_ok', 'bytes=' . strlen((string) $bin));
     line_remember_menu($id);
 }
 
