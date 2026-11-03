@@ -84,3 +84,16 @@
 .olimeal-lp .page-intro h1::after {
   display: none;
 }
+/* メインロゴを左側に配置 */
+.olimeal-lp .page-intro h1 {
+  width: 100%;
+  max-width: 480px;
+  align-self: flex-start;
+  text-align: left;
+}
+
+.olimeal-lp .logo-main {
+  width: min(100%, 300px);
+  margin-left: 0;
+  margin-right: auto;
+}
