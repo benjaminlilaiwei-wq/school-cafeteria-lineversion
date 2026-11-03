@@ -232,3 +232,14 @@ body.olimeal-interior :is(a.back-link,a#backLink,footer a[href="index.html"]):fo
     font-size:.88rem !important;
   }
 }
+/* 全内部ページの新しいロゴ */
+.olimeal-interior .site-nav-brand::before {
+  display: none;
+}
+
+.olimeal-interior .logo-nav-image {
+  display: block;
+  width: 160px;
+  max-width: 100%;
+  height: auto;
+}
