@@ -1,5 +1,6 @@
 <?php
 require_once __DIR__ . '/env.php';
+require_once __DIR__ . '/crowd-predict.php';
 // エラー出力を抑制（JSON出力を汚染しないように）
 error_reporting(E_ALL);
 ini_set('display_errors', 0);
@@ -302,29 +303,8 @@ function getTodayCafeteriaContextForPrompt() {
         $reservationCount = (int) $todayData['reservations'];
     }
     $predictionNumber = null;
-    $attendanceJsonPath = $dataDir . '/attendance-data.json';
-    if (file_exists($attendanceJsonPath)) {
-        $attendanceJson = json_decode(file_get_contents($attendanceJsonPath), true);
-        if (is_array($attendanceJson)) {
-            $attendanceData = $attendanceJson['attendance'] ?? [];
-            $attendanceDataWithDays = $attendanceJson['attendanceWithDays'] ?? [];
-            if (!empty($attendanceDataWithDays)) {
-                $todayDayOfWeek = ['日', '月', '火', '水', '木', '金', '土'][(int) date('w')];
-                $dayData = [];
-                foreach ($attendanceDataWithDays as $item) {
-                    if (isset($item['day']) && $item['day'] === $todayDayOfWeek) {
-                        $dayData[] = $item['attendance'];
-                    }
-                }
-                if (!empty($dayData)) {
-                    $predictionNumber = round(array_sum($dayData) / count($dayData));
-                }
-            }
-            if ($predictionNumber === null && !empty($attendanceData)) {
-                $predictionNumber = round(array_sum($attendanceData) / count($attendanceData));
-            }
-        }
-    }
+    $crowdToday = crowd_prediction_payload($today);
+    $predictionNumber = $crowdToday['predictionNumber'];
     $lines = ["\n\n【今日の食堂状況と回答ルール】"];
     if ($todayHoliday) {
         $reason = $todayHoliday['reason'] ?? '休業日';
@@ -1619,72 +1599,16 @@ function answerFromCafeteriaData($userMessage) {
         }
     }
 
-    // 来客数予測を取得（ai-advice.phpから）
+    // 来客数は営業日だけの回帰で計算する（LLMには計算させない）
     $predictionData = null;
     $predictionNumber = null;
     $congestion = 'データ不足';
     $congestionColor = '#6c757d';
-    
-    // ai-advice.phpから予測データを取得
-    $adviceApiPath = __DIR__ . '/ai-advice.php';
-    if (file_exists($adviceApiPath)) {
-        // 来客数データを読み込む
-        $attendanceData = [];
-        $attendanceDataWithDays = [];
-        $attendanceJsonPath = $dataDir . '/attendance-data.json';
-        if (file_exists($attendanceJsonPath)) {
-            $attendanceContent = file_get_contents($attendanceJsonPath);
-            $attendanceJson = json_decode($attendanceContent, true);
-            if (is_array($attendanceJson)) {
-                $attendanceData = $attendanceJson['attendance'] ?? [];
-                $attendanceDataWithDays = $attendanceJson['attendanceWithDays'] ?? [];
-            }
-        }
-        
-        // 予測数を計算
-        if (!empty($attendanceData)) {
-            $todayDayOfWeek = ['日', '月', '火', '水', '木', '金', '土'][(int)date('w')];
-            
-            // 曜日別統計を計算
-            if (!empty($attendanceDataWithDays)) {
-                $dayStats = [];
-                foreach (['日', '月', '火', '水', '木', '金', '土'] as $day) {
-                    $dayData = [];
-                    foreach ($attendanceDataWithDays as $item) {
-                        if (isset($item['day']) && $item['day'] === $day) {
-                            $dayData[] = $item['attendance'];
-                        }
-                    }
-                    if (!empty($dayData)) {
-                        $dayStats[$day] = round(array_sum($dayData) / count($dayData));
-                    }
-                }
-                
-                if (isset($dayStats[$todayDayOfWeek])) {
-                    $predictionNumber = $dayStats[$todayDayOfWeek];
-                }
-            }
-            
-            // 曜日別統計がない場合は全体平均を使用
-            if ($predictionNumber === null) {
-                $predictionNumber = round(array_sum($attendanceData) / count($attendanceData));
-            }
-            
-            // 混雑度を判定
-            if ($predictionNumber >= 55) {
-                $congestion = '非常に混雑しそう';
-                $congestionColor = '#dc3545';
-            } else if ($predictionNumber >= 40) {
-                $congestion = '混雑しそう';
-                $congestionColor = '#fd7e14';
-            } else if ($predictionNumber >= 15) {
-                $congestion = 'やや混雑しそう';
-                $congestionColor = '#ffc107';
-            } else {
-                $congestion = '空いていそう';
-                $congestionColor = '#28a745';
-            }
-        }
+    $crowdToday = crowd_prediction_payload($today);
+    $predictionNumber = $crowdToday['predictionNumber'];
+    if ($predictionNumber !== null) {
+        $congestion = (string) ($crowdToday['congestion']['text'] ?? $congestion);
+        $congestionColor = (string) ($crowdToday['congestion']['color'] ?? $congestionColor);
     }
     
     // 予約人数ベースの混雑予測（フォールバック）

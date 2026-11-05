@@ -5,6 +5,10 @@ data/reservations-archive.json
 data/reviews.json
 data/shifts.json
 data/line-users.json
+data/line-users.json.bak
+data/line-users.lock
+data/attendance-predictions.json
 data/line-settings.json
 data/line-push.json
 data/rich-menu.json
+data/rich-menu-debug.json

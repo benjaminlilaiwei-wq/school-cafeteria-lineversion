@@ -695,7 +695,7 @@
               <div class="admin-card" style="margin-top: 20px;">
                 <h3>混みぐあいの予想</h3>
                 <p style="color: #5c5146; margin-bottom: 15px;">
-                  日付を選ぶと、その日に来そうな人数と、メニューごとの見込みが出ます。日付を空けると、きょうの予想になります。
+                  日付を選ぶと、その日に来そうな人数と、メニューごとの見込みが出ます。人数は、曜日の平均と中央値、同じ曜日の傾向、直近の営業日、メニューごとの平均、同じ定食の日をサーバーで合わせて出します。ChatGPTはこの計算には使いません。結果は保存して、あとから実績と比べられます。
                 </p>
                 <div class="form-group" style="margin-bottom: 15px;">
                   <label for="attendance-prediction-date">日付</label>
@@ -723,6 +723,9 @@
             <div class="accordion-body">
               <div class="help-note">
                 生徒がトークでボタンを押したときの返事は、LINEの通数に入りません。こちらから送るのは、平日にその日の定食が好きそうな人だけです。1人1通で、月200通を超えたらその月は送りません。全員への一斉送信はしません。判定はこのサーバーの中だけで行い、有料のAIは使いません。
+              </div>
+              <div class="help-note">
+                アンケートは、LINEのトークから別のページを開いて、ボタンで答えます。名前は空白や姓だけでは送れず、フルネームが必要です。例: 瀬尾 太郎。答えた名前・好きな食べ方・予約は、日付が変わっても消えません。毎朝元に戻るのは、売っているメニューの残り数だけです。友だち削除すると、その人のアンケートは消えます。
               </div>
               <div class="admin-card">
                 <h3>1. LINEとつなぐ</h3>
@@ -3510,12 +3513,14 @@
     async function getAttendancePrediction() {
       const displayDiv = document.getElementById('attendance-prediction-display');
       const dateInput = document.getElementById('attendance-prediction-date');
-      const selectedDate = dateInput && dateInput.value ? dateInput.value : new Date().toISOString().slice(0, 10);
+      const nowLocal = new Date();
+      const todayLocal = nowLocal.getFullYear() + '-' + String(nowLocal.getMonth() + 1).padStart(2, '0') + '-' + String(nowLocal.getDate()).padStart(2, '0');
+      const selectedDate = dateInput && dateInput.value ? dateInput.value : todayLocal;
       if (dateInput && !dateInput.value) {
         dateInput.value = selectedDate;
       }
 
-      displayDiv.innerHTML = '<p style="color: #666;">🤖 AIが来客数とメニュー別の販売見込みを分析しています...</p>';
+      displayDiv.innerHTML = '<p style="color: #666;">営業日の記録から来客数を計算しています...</p>';
 
       try {
         const response = await fetch('api/ai-advice.php?action=attendance&date=' + encodeURIComponent(selectedDate));
@@ -3529,30 +3534,36 @@
           return;
         }
 
-        // 予測結果を表示
         let predictionText = '';
         if (typeof data.prediction === 'string') {
-          predictionText = data.prediction.replace(/\n/g, '<br>');
+          predictionText = escapeHtml(data.prediction).replace(/\n/g, '<br>');
         } else {
-          predictionText = `予測来客数: 約${data.prediction}人<br>${data.details || ''}`;
+          predictionText = '予測来客数: ' + escapeHtml(data.prediction) + '人';
         }
-        const apiNames = {
-          gemini: 'Google Gemini',
-          openai: 'OpenAI'
-        };
-        const usedApiLabel = data.usedApi ? (apiNames[data.usedApi] || data.usedApi) : null;
-        const apiInfoHtml = usedApiLabel
-          ? `<div style="margin-top: 12px; font-size: 12px; color: #555; background: #f7f7f7; display: inline-block; padding: 4px 8px; border-radius: 6px;">使用API: ${usedApiLabel}</div>`
-          : '';
-        const dateLine = data.date
-          ? `<p style="margin: 0 0 10px 0; color: #495057; font-weight: 600;">📅 予測対象日: ${data.date}</p>`
-          : '';
-
+        const history = Array.isArray(data.history) ? data.history : [];
+        let historyHtml = '';
+        if (history.length) {
+          const rows = history.map(function (row) {
+            const predicted = row.predicted === null || row.predicted === undefined ? '—' : (row.predicted + '人');
+            const actual = row.actual === null || row.actual === undefined ? 'まだ' : (row.actual + '人');
+            const diff = row.absError === null || row.absError === undefined ? '—' : (row.absError + '人');
+            return '<tr><td style="border:1px solid #ddd;padding:6px;">' + escapeHtml(row.date) + '</td>'
+              + '<td style="border:1px solid #ddd;padding:6px;">' + escapeHtml(predicted) + '</td>'
+              + '<td style="border:1px solid #ddd;padding:6px;">' + escapeHtml(actual) + '</td>'
+              + '<td style="border:1px solid #ddd;padding:6px;">' + escapeHtml(diff) + '</td></tr>';
+          }).join('');
+          historyHtml = '<h4 style="margin:16px 0 8px;">保存した予測と実績</h4>'
+            + '<p style="margin:0 0 8px;color:#666;">各日の最初に出した人数は残し、あとから実績と比べます。</p>'
+            + '<div style="overflow-x:auto;"><table style="border-collapse:collapse;min-width:360px;">'
+            + '<thead><tr style="background:#f8f9fa;"><th style="border:1px solid #ddd;padding:6px;">日付</th>'
+            + '<th style="border:1px solid #ddd;padding:6px;">予測</th><th style="border:1px solid #ddd;padding:6px;">実績</th>'
+            + '<th style="border:1px solid #ddd;padding:6px;">差</th></tr></thead><tbody>'
+            + rows + '</tbody></table></div>';
+        }
         displayDiv.innerHTML = `
-          <div style="white-space: pre-wrap; line-height: 1.8;">
-            ${dateLine}
+          <div style="line-height: 1.8;">
             ${predictionText}
-            ${apiInfoHtml}
+            ${historyHtml}
           </div>
         `;
       } catch (error) {
@@ -3738,12 +3749,16 @@
           const users = data.users || [];
           const box = document.getElementById('line-users');
           if (box) {
-            if (!users.length) {
+            if (data.usersReadable === false) {
+              box.innerHTML = '<p>登録している人を読み込めませんでした。記録が壊れているので、空にはしていません。ページを開き直してください。</p>';
+            } else if (!users.length) {
               box.innerHTML = '<p>まだ登録した人はいません。LINEで友だち追加すると、アンケートが始まります。</p>';
             } else {
-              box.innerHTML = '<ul>' + users.map(function (user) {
+              box.innerHTML = '<p>登録している人: ' + users.length + '人。日付が変わっても、この一覧からは消えません。</p><ul>' + users.map(function (user) {
                 const state = user.done ? '登録済み' : 'アンケートの途中';
-                return '<li>' + escapeLine(user.name || '名前なし') + ' / ' + state + ' / 好き: ' + escapeLine((user.likes || []).join('、')) + ' / ' + escapeLine(user.times || '') + '</li>';
+                const saved = user.updatedAt ? (' / 最終保存: ' + String(user.updatedAt).replace('T', ' ').slice(0, 16)) : '';
+                const since = user.createdAt ? (' / 登録開始: ' + String(user.createdAt).replace('T', ' ').slice(0, 16)) : '';
+                return '<li>' + escapeLine(user.name || '名前なし') + ' / ' + state + ' / 好き: ' + escapeLine((user.likes || []).join('、')) + ' / ' + escapeLine(user.times || '') + saved + since + '</li>';
               }).join('') + '</ul>';
             }
           }

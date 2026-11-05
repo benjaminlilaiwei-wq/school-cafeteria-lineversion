@@ -1,5 +1,6 @@
 <?php
 require_once __DIR__ . '/env.php';
+require_once __DIR__ . '/crowd-predict.php';
 header('Content-Type: application/json; charset=utf-8');
 header('Access-Control-Allow-Origin: *');
 header('Access-Control-Allow-Methods: GET, POST, OPTIONS');
@@ -1224,311 +1225,19 @@ function generateMenuAdvice($dayOfWeek, $attendanceData = [], $date = null) {
     return $result;
 }
 
-// 曜日別の統計を計算
-function calculateDayOfWeekStats($attendanceDataWithDays) {
-    $stats = [];
-    $days = ['日', '月', '火', '水', '木', '金', '土'];
-    
-    foreach ($days as $day) {
-        $dayData = [];
-        foreach ($attendanceDataWithDays as $item) {
-            if (isset($item['day']) && $item['day'] === $day) {
-                $dayData[] = $item['attendance'];
-            }
-        }
-        
-        if (!empty($dayData)) {
-            $stats[$day] = [
-                'count' => count($dayData),
-                'avg' => round(array_sum($dayData) / count($dayData)),
-                'max' => max($dayData),
-                'min' => min($dayData),
-                'total' => array_sum($dayData)
-            ];
-        }
-    }
-    
-    return $stats;
-}
-
-// 来客数予測＋メニュー別売上（販売数）予測を生成（曜日別分析・売上実績を含む）
+// 来客数予測＋メニュー別売上（販売数）予測を生成（営業日だけの回帰。LLMでは計算しない）
 // $targetDate: Y-m-d（null または不正なら当日）
 function predictAttendance($attendanceData = [], $attendanceDataWithDays = [], $targetDate = null) {
-    $config = getAIConfig();
-
-    $hasGemini = ($config['gemini']['enabled'] ?? false) && !empty($config['gemini']['api_key']);
-    $hasOpenAI = ($config['openai']['enabled'] ?? false) && !empty($config['openai']['api_key']);
-    if (!$hasGemini && !$hasOpenAI) {
-        return ['error' => 'Gemini/OpenAI APIが設定されていません'];
-    }
-    
-    if (empty($attendanceData)) {
-        return ['prediction' => 'データ不足のため予測できません', 'confidence' => 'low'];
-    }
-    
-    if ($targetDate === null || !is_string($targetDate) || !preg_match('/^\d{4}-\d{2}-\d{2}$/', $targetDate)) {
-        $targetDate = date('Y-m-d');
-    }
-    $predictTs = strtotime($targetDate);
-    if ($predictTs === false) {
-        $targetDate = date('Y-m-d');
-        $predictTs = strtotime($targetDate);
-    }
-    $targetDayOfWeek = getDayOfWeekForDate($targetDate);
-    $dateLabel = date('Y年n月j日', $predictTs);
-
-    // 祝日・行事お知らせ情報（予測対象日）
-    $holidays = readHolidays();
-    $events = readEvents();
-    $todayHoliday = null;
-    foreach ($holidays as $h) {
-        if (($h['date'] ?? '') === $targetDate) {
-            $todayHoliday = $h;
-            break;
-        }
-    }
-    $todayEvents = [];
-    foreach ($events as $e) {
-        if (($e['date'] ?? '') === $targetDate) {
-            $todayEvents[] = trim((string)($e['description'] ?? ''));
-        }
-    }
-    
-    // 全体統計
-    $avgAttendance = array_sum($attendanceData) / count($attendanceData);
-    $maxAttendance = max($attendanceData);
-    $minAttendance = min($attendanceData);
-    $medianAttendance = 0;
-    $sortedData = $attendanceData;
-    sort($sortedData);
-    $count = count($sortedData);
-    if ($count > 0) {
-        $medianAttendance = $count % 2 === 0 
-            ? ($sortedData[$count/2 - 1] + $sortedData[$count/2]) / 2 
-            : $sortedData[($count-1)/2];
-    }
-    
-    // 曜日別統計
-    $dayOfWeekStats = [];
-    if (!empty($attendanceDataWithDays)) {
-        $dayOfWeekStats = calculateDayOfWeekStats($attendanceDataWithDays);
-    }
-    
-    // 最近の傾向（直近7日分の平均）
-    $recentAvg = 0;
-    if (count($attendanceData) >= 7) {
-        $recentData = array_slice($attendanceData, -7);
-        $recentAvg = round(array_sum($recentData) / count($recentData));
-    }
-    
-    $menuSalesBlock = buildMenuSalesContextForPrediction($targetDate, $targetDayOfWeek);
-
-    $systemPrompt = "あなたは学校食堂の運営分析の専門家です。指定された予測対象日について、(1)来客数の予測、(2)メニュー別の販売数量の見込み（売上予測）を一貫した根拠で示してください。"
-        . "来客数は過去の来客データ・曜日傾向・祝日/休業・行事の影響を必ず考慮すること。"
-        . "メニュー別は、提示された販売実績に加え、【メニュー別の統計分析】にある各メニューの1日平均・中央値・最大最小・曜日別平均・予測対象曜日との比較（来客数分析と同様の観点）を必ず踏まえ、各メニューの「見込み人数（予約・選択）」を整数で示すこと。"
-        . "【必須】1人がその日に主として1食を選ぶ前提とし、メニュー別に示す人数の合計は、必ず「予測来客数」と同じ人数になるように配分すること（端数や漏れは「その他」行で調整し、合計一致を明記すること）。"
-        . "定食が献立に設定されている日で、かつ予測来客数が35人以上程度ある場合は、定食の見込み人数はおおよそ20〜30人を目安にすること（来客数が少ない日は定食人数を来客数以下に抑え、20〜30に固執しない）。"
-        . "定食が未設定の日は定食向け人数は0とし、単品メニューのみで合計が予測来客数になること。"
-        . "実績データが乏しいメニューは推定であることを明記し、無理に数値を捏造しないこと。";
-    
-    $userPrompt = "【過去の来客数データ - 全体統計】\n";
-    $userPrompt .= "- 平均：約" . round($avgAttendance) . "人\n";
-    $userPrompt .= "- 中央値：約" . round($medianAttendance) . "人\n";
-    $userPrompt .= "- 最大：{$maxAttendance}人\n";
-    $userPrompt .= "- 最小：{$minAttendance}人\n";
-    $userPrompt .= "- データ数：" . count($attendanceData) . "件\n";
-    if ($recentAvg > 0) {
-        $userPrompt .= "- 直近7日平均：約{$recentAvg}人\n";
-    }
-    
-    // 曜日別統計を追加
-    if (!empty($dayOfWeekStats)) {
-        $userPrompt .= "\n【曜日別統計】\n";
-        foreach ($dayOfWeekStats as $day => $stat) {
-            $userPrompt .= "- {$day}曜日：平均{$stat['avg']}人（最大{$stat['max']}人、最小{$stat['min']}人、データ数{$stat['count']}件）\n";
-        }
-        
-        // 予測対象曜日の統計を強調
-        if (isset($dayOfWeekStats[$targetDayOfWeek])) {
-            $todayStat = $dayOfWeekStats[$targetDayOfWeek];
-            $userPrompt .= "\n【予測対象日（{$targetDayOfWeek}曜日）の過去データ】\n";
-            $userPrompt .= "- 平均：{$todayStat['avg']}人\n";
-            $userPrompt .= "- 最大：{$todayStat['max']}人\n";
-            $userPrompt .= "- 最小：{$todayStat['min']}人\n";
-            $userPrompt .= "- データ数：{$todayStat['count']}件\n";
-        }
-    }
-    
-    $userPrompt .= "\n【予測の観点】\n";
-    $userPrompt .= "以下の観点から総合的に分析して予測してください：\n";
-    $userPrompt .= "1. 曜日別の傾向（同じ曜日の過去データ）\n";
-    $userPrompt .= "2. 最近の傾向（直近の来客数）\n";
-    $userPrompt .= "3. 統計的な分析（平均、中央値、最大、最小）\n";
-    $userPrompt .= "4. 季節や時期による変動\n";
-    $userPrompt .= "5. データの信頼性（データ数が多いほど信頼性が高い）\n\n";
-    $userPrompt .= "6. 祝日・休業日の影響\n";
-    $userPrompt .= "7. 行事・お知らせ（学校イベント等）の影響\n";
-    $userPrompt .= "8. メニュー別販売実績と定食設定に基づく需要構成\n\n";
-    $userPrompt .= $menuSalesBlock;
-    $userPrompt .= "予測対象日は {$dateLabel}（{$targetDayOfWeek}曜日）です。\n\n";
-    if ($todayHoliday) {
-        $reason = (string)($todayHoliday['reason'] ?? '休業日');
-        $userPrompt .= "【予測対象日の祝日/休業情報】\n- {$targetDate} は休業扱い（理由: {$reason}）\n";
-        $userPrompt .= "- 休業日であれば来客数は通常より大幅減（必要に応じて0〜ごく少数）を優先して見積もってください。\n\n";
-    } else {
-        $userPrompt .= "【予測対象日の祝日/休業情報】\n- {$targetDate} は通常営業日（休業登録なし）\n\n";
-    }
-    if (!empty($todayEvents)) {
-        $userPrompt .= "【予測対象日の行事・お知らせ】\n";
-        foreach ($todayEvents as $ev) {
-            if ($ev !== '') {
-                $userPrompt .= "- {$ev}\n";
-            }
-        }
-        $userPrompt .= "行事内容に応じて来客増減を見積もってください。\n\n";
-    } else {
-        $userPrompt .= "【予測対象日の行事・お知らせ】\n- 特記事項なし\n\n";
-    }
-    $userPrompt .= "これらのデータを基に、多角的な分析を行い、{$dateLabel}の来客数とメニュー別の販売見込みを予測してください。\n\n";
-    $userPrompt .= "【厳守】まず予測来客数を1つの整数（N人）として決め、その後メニュー別の「見込み人数」を整数で割り振り、全メニュー（定食・各単品・その他）の人数の合計が必ずN人と一致するようにすること。最後に「メニュー別内訳の合計：N人（＝予測来客数）」と1行で明示すること。\n\n";
-    $userPrompt .= "以下の形式で回答してください（見出し名はそのまま使用すること）：\n\n";
-    $userPrompt .= "【来客数予測】\n\n予測来客数：約[N]人（Nは整数。ここで確定したNをメニュー別の合計と一致させる）\n\n";
-    $userPrompt .= "【メニュー別売上予測（販売数量の見込み）】\n";
-    $userPrompt .= "※ 各メニューは「見込み人数：○○人」と整数で記載（1人1食のカウント）。主要メニューは実績ランキングを優先し、漏れを拾うため必要なら「その他：○○人」を設ける。\n";
-    $userPrompt .= "※ 想定シェア（％）も併記してよいが、シェアは上記人数から計算し、人数合計がNと一致すること。\n";
-    $userPrompt .= "※ 定食が献立に設定されている日で予測来客数が35人以上のとき、定食の見込み人数は目安としておおよそ20〜30人を採用すること。単品のみの日は定食0人とし、単品の合計がN人になること。\n\n";
-    $userPrompt .= "【分析根拠】\n";
-    $userPrompt .= "1. 曜日別分析：[同じ曜日の来客・メニュー傾向]\n";
-    $userPrompt .= "2. 最近の傾向：[直近の来客数の傾向]\n";
-    $userPrompt .= "3. 統計的分析：[平均値、中央値などの統計]\n";
-    $userPrompt .= "4. メニュー別実績の解釈：[累計に加え、各メニューの平均・中央値・曜日別平均・予測曜日との比較をどう予測に反映したか]\n";
-    $userPrompt .= "5. その他の要因：[季節、行事、休業など]\n\n";
-    $userPrompt .= "【信頼度】\n来客数・メニュー別それぞれについて、データ数と分析の質に基づいた信頼度：[高/中/低]（簡潔に理由も）";
-    
-    $messages = [
-        ['role' => 'system', 'content' => $systemPrompt],
-        ['role' => 'user', 'content' => $userPrompt]
-    ];
-
-    $aiCallResult = callAIForAttendancePrediction($messages, $config, 3500);
-    $aiResponses = $aiCallResult['responses'] ?? [];
-    $apiStatuses = $aiCallResult['statuses'] ?? [];
-
-    if (empty($aiResponses)) {
-        // AI APIが失敗した場合、曜日別統計があればそれを使用
-        if (!empty($dayOfWeekStats) && isset($dayOfWeekStats[$targetDayOfWeek])) {
-            $prediction = $dayOfWeekStats[$targetDayOfWeek]['avg'];
-            return [
-                'prediction' => $prediction,
-                'confidence' => 'medium',
-                'method' => 'day_of_week_statistical',
-                'details' => "{$targetDayOfWeek}曜日の過去平均値（{$prediction}人）を基に予測しました。"
-            ];
-        }
-        
-        // 曜日別統計がない場合は全体平均を使用
-        $prediction = round($avgAttendance);
-        return [
-            'prediction' => $prediction,
-            'confidence' => 'medium',
-            'method' => 'statistical',
-            'details' => "過去の平均値（{$prediction}人）を基に予測しました。"
-        ];
-    }
-
-    $geminiResponse = $aiResponses['gemini'] ?? null;
-    $openaiResponse = $aiResponses['openai'] ?? null;
-    $geminiNumber = extractAttendancePredictionNumber($geminiResponse);
-    $openaiNumber = extractAttendancePredictionNumber($openaiResponse);
-
-    // 両APIが成功した場合は統合
-    if ($geminiResponse !== null && $openaiResponse !== null) {
-        $mergedPredictionNumber = null;
-        if ($geminiNumber !== null && $openaiNumber !== null) {
-            $mergedPredictionNumber = round(($geminiNumber + $openaiNumber) / 2);
-        } elseif ($geminiNumber !== null) {
-            $mergedPredictionNumber = $geminiNumber;
-        } elseif ($openaiNumber !== null) {
-            $mergedPredictionNumber = $openaiNumber;
-        }
-
-        $mergedText = "【統合：来客数予測・メニュー別売上予測】\n";
-        if ($mergedPredictionNumber !== null) {
-            $mergedText .= "予測来客数：約{$mergedPredictionNumber}人（Gemini/OpenAI統合）\n\n";
-        } else {
-            $mergedText .= "予測来客数：両APIの文章分析結果を統合（数値抽出不可）\n\n";
-        }
-        $mergedText .= "【Geminiの分析】\n" . $geminiResponse . "\n\n";
-        $mergedText .= "【OpenAIの分析】\n" . $openaiResponse;
-
-        return [
-            'prediction' => $mergedText,
-            'confidence' => 'high',
-            'method' => 'ai_dual_ensemble',
-            'usedApi' => 'gemini+openai',
-            'usedApis' => ['gemini', 'openai'],
-            'apiStatuses' => $apiStatuses,
-            'predictionNumber' => $mergedPredictionNumber,
-            'individualPredictions' => [
-                'gemini' => $geminiNumber,
-                'openai' => $openaiNumber
-            ]
-        ];
-    }
-
-    // 片方のみ成功した場合は、その結果を返す
-    if ($geminiResponse !== null) {
-        return [
-            'prediction' => $geminiResponse,
-            'confidence' => 'high',
-            'method' => 'ai_advanced',
-            'usedApi' => 'gemini',
-            'usedApis' => ['gemini'],
-            'apiStatuses' => $apiStatuses,
-            'predictionNumber' => $geminiNumber
-        ];
-    }
-
-    return [
-        'prediction' => $openaiResponse,
-        'confidence' => 'high',
-        'method' => 'ai_advanced',
-        'usedApi' => 'openai',
-        'usedApis' => ['openai'],
-        'apiStatuses' => $apiStatuses,
-        'predictionNumber' => $openaiNumber
-    ];
+    return crowd_prediction_payload($targetDate);
 }
 
-// 来客数予測の数値を取得（簡易版：統計的な予測）
-// $targetDate: Y-m-d（null または不正なら当日）
 function getAttendancePredictionNumber($attendanceData = [], $attendanceDataWithDays = [], $targetDate = null) {
-    if (empty($attendanceData)) {
+    $payload = crowd_prediction_payload($targetDate);
+    if (!empty($payload['closed'])) {
         return null;
     }
-    
-    if ($targetDate === null || !is_string($targetDate) || !preg_match('/^\d{4}-\d{2}-\d{2}$/', $targetDate)) {
-        $targetDate = date('Y-m-d');
-    }
-    if (strtotime($targetDate) === false) {
-        $targetDate = date('Y-m-d');
-    }
-    $targetDayOfWeek = getDayOfWeekForDate($targetDate);
-    
-    // 曜日別統計があればそれを使用
-    if (!empty($attendanceDataWithDays)) {
-        $dayOfWeekStats = calculateDayOfWeekStats($attendanceDataWithDays);
-        if (isset($dayOfWeekStats[$targetDayOfWeek])) {
-            return $dayOfWeekStats[$targetDayOfWeek]['avg'];
-        }
-    }
-    
-    // 曜日別統計がない場合は全体平均を使用
-    $avgAttendance = array_sum($attendanceData) / count($attendanceData);
-    return round($avgAttendance);
+    return $payload['predictionNumber'];
 }
-
-// 混雑度を判定（来客数から）
 function getCongestionLevel($attendanceNumber) {
     if ($attendanceNumber === null) {
         return ['level' => 'unknown', 'text' => 'データ不足', 'color' => '#6c757d'];
@@ -1609,18 +1318,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
         }
         echo json_encode($result, JSON_UNESCAPED_UNICODE);
     } elseif ($action === 'prediction-number') {
-        // 来客数予測の数値のみを返す（簡易版・date で対象日指定可）
+        // 来客数はサーバーで計算する（date で対象日指定可。未指定は当日）
         $predictionDate = isset($_GET['date']) && preg_match('/^\d{4}-\d{2}-\d{2}$/', $_GET['date']) ? $_GET['date'] : date('Y-m-d');
-        $attendanceData = readAttendanceData();
-        $attendanceDataWithDays = readAttendanceDataWithDays();
-        
-        $predictionNumber = getAttendancePredictionNumber($attendanceData, $attendanceDataWithDays, $predictionDate);
-        $congestion = getCongestionLevel($predictionNumber);
-        
+        $payload = crowd_prediction_payload($predictionDate);
         echo json_encode([
-            'prediction' => $predictionNumber,
-            'congestion' => $congestion,
-            'date' => $predictionDate
+            'prediction' => $payload['predictionNumber'],
+            'congestion' => $payload['congestion'],
+            'date' => $predictionDate,
+            'closed' => !empty($payload['closed']),
+            'method' => $payload['method'] ?? '',
         ], JSON_UNESCAPED_UNICODE);
     } else {
         http_response_code(400);

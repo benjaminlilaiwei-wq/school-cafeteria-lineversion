@@ -37,8 +37,32 @@ function line_read_json($file, $fallback) {
 }
 
 function line_write_json($file, $data) {
-    $json = json_encode($data, JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT);
-    return @file_put_contents($file, $json, LOCK_EX);
+    $flags = JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT;
+    if (defined('JSON_INVALID_UTF8_SUBSTITUTE')) {
+        $flags |= JSON_INVALID_UTF8_SUBSTITUTE;
+    }
+    $json = json_encode($data, $flags);
+    if (!is_string($json) || $json === '') {
+        return false;
+    }
+    $dir = dirname($file);
+    if (!is_dir($dir)) {
+        @mkdir($dir, 0777, true);
+    }
+    $tmp = $file . '.' . str_replace('.', '', uniqid('tmp', true));
+    if (@file_put_contents($tmp, $json, LOCK_EX) === false) {
+        return false;
+    }
+    if (@rename($tmp, $file)) {
+        return true;
+    }
+    @unlink($file);
+    if (@rename($tmp, $file)) {
+        return true;
+    }
+    $written = @file_put_contents($file, $json, LOCK_EX);
+    @unlink($tmp);
+    return $written !== false;
 }
 
 function line_cut($text, $len) {
@@ -129,13 +153,132 @@ function line_save_secret($token, $secret) {
     return @file_put_contents(__DIR__ . '/line-secret.php', $php, LOCK_EX) !== false;
 }
 
+function line_with_user_lock($callback) {
+    static $held = false;
+    if ($held) {
+        return $callback();
+    }
+    $fp = fopen(line_data_dir() . '/line-users.lock', 'c');
+    if ($fp === false) {
+        return $callback();
+    }
+    flock($fp, LOCK_EX);
+    $held = true;
+    try {
+        return $callback();
+    } finally {
+        $held = false;
+        flock($fp, LOCK_UN);
+        fclose($fp);
+    }
+}
+
+function line_decode_user_file($file) {
+    if (!is_file($file)) {
+        return null;
+    }
+    $raw = @file_get_contents($file);
+    if ($raw === false || trim($raw) === '') {
+        return null;
+    }
+    $json = json_decode($raw, true);
+    if (!is_array($json)) {
+        return null;
+    }
+    $clean = [];
+    foreach ($json as $id => $user) {
+        if (!is_array($user)) {
+            continue;
+        }
+        $clean[(string) $id] = $user;
+    }
+    return $clean;
+}
+
+function line_users_from_disk() {
+    $file = line_data_dir() . '/line-users.json';
+    $bak = $file . '.bak';
+    if (!is_file($file)) {
+        $restored = line_decode_user_file($bak);
+        if (is_array($restored) && count($restored) > 0) {
+            line_write_json($file, $restored);
+            return $restored;
+        }
+        return [];
+    }
+    $decoded = line_decode_user_file($file);
+    if (is_array($decoded)) {
+        return $decoded;
+    }
+    $restored = line_decode_user_file($bak);
+    if (is_array($restored)) {
+        line_write_json($file, $restored);
+        return $restored;
+    }
+    return null;
+}
+
 function line_users() {
-    $users = line_read_json(line_data_dir() . '/line-users.json', []);
+    $users = line_with_user_lock(function () {
+        return line_users_from_disk();
+    });
     return is_array($users) ? $users : [];
 }
 
+function line_users_status() {
+    return line_with_user_lock(function () {
+        $users = line_users_from_disk();
+        if (!is_array($users)) {
+            return ['ok' => false, 'users' => []];
+        }
+        return ['ok' => true, 'users' => $users];
+    });
+}
+
+function line_write_users_file($users) {
+    $file = line_data_dir() . '/line-users.json';
+    $current = line_decode_user_file($file);
+    if (is_array($current) && count($current) > 0) {
+        line_write_json($file . '.bak', $current);
+    }
+    return line_write_json($file, $users);
+}
+
 function line_save_users($users) {
-    return line_write_json(line_data_dir() . '/line-users.json', $users);
+    if (!is_array($users)) {
+        return false;
+    }
+    return line_with_user_lock(function () use ($users) {
+        $disk = line_users_from_disk();
+        if (!is_array($disk)) {
+            $file = line_data_dir() . '/line-users.json';
+            if (count($users) === 0 || (is_file($file) && (int) @filesize($file) > 2)) {
+                return false;
+            }
+            return line_write_users_file($users);
+        }
+        foreach ($users as $id => $user) {
+            if (is_array($user)) {
+                $disk[(string) $id] = $user;
+            }
+        }
+        return line_write_users_file($disk);
+    });
+}
+
+function line_remove_user($userId) {
+    $userId = (string) $userId;
+    if ($userId === '') {
+        return false;
+    }
+    return line_with_user_lock(function () use ($userId) {
+        $users = line_users_from_disk();
+        if (!is_array($users)) {
+            return false;
+        }
+        unset($users[$userId]);
+        return line_write_users_file($users);
+    });
 }
 
 function line_budget() {
@@ -592,10 +735,9 @@ function line_sync_user_menu($user) {
         return;
     }
     $want = line_survey_finished($user);
-   if (!empty($user['menuOn']) === $want
-    && ($user['menuVersion'] ?? '') === line_menu_version()) {
-    return;
-}
+    if (!empty($user['menuOn']) === $want && ($user['menuVersion'] ?? '') === line_menu_version()) {
+        return;
+    }
     $base = 'https://api.line.me/v2/bot/user/' . rawurlencode($userId) . '/richmenu';
     if ($want) {
         $res = line_http($base . '/' . rawurlencode($menuId), 'POST', '{}', 'application/json');
@@ -615,8 +757,8 @@ function line_sync_user_menu($user) {
         return;
     }
     $users[$userId]['menuOn'] = $want;
-$users[$userId]['menuVersion'] = line_menu_version();
-line_save_users($users);
+    $users[$userId]['menuVersion'] = line_menu_version();
+    line_save_users($users);
 }
 
 function line_http($url, $method, $body, $contentType) {
@@ -1443,6 +1585,7 @@ function line_preview() {
     }
     $budget = line_budget();
     $secret = line_secret();
+    $userStatus = line_users_status();
     return [
         'food' => $food,
         'people' => $people,
@@ -1453,14 +1596,18 @@ function line_preview() {
         'hasToken' => $secret['channelAccessToken'] !== '',
         'hasSecret' => $secret['channelSecret'] !== '',
         'settings' => line_settings(),
-        'users' => line_user_summaries(),
-        'registered' => count(line_user_summaries()),
+        'users' => line_user_summaries($userStatus['users']),
+        'usersReadable' => $userStatus['ok'],
+        'registered' => count($userStatus['users']),
     ];
 }
 
-function line_user_summaries() {
+function line_user_summaries($users = null) {
+    if ($users === null) {
+        $users = line_users();
+    }
     $list = [];
-    foreach (line_users() as $user) {
+    foreach ($users as $user) {
         if (!is_array($user)) {
             continue;
         }
@@ -1724,29 +1871,51 @@ function line_store_user($user) {
 }
 
 function line_load_user($userId, $displayName) {
-    $users = line_users();
-    if (!isset($users[$userId]) || !is_array($users[$userId])) {
-        $users[$userId] = [
-            'userId' => $userId,
-            'displayName' => $displayName,
-            'name' => '',
-            'likes' => [],
-            'avoids' => [],
-            'timesPerWeek' => '',
-            'step' => 'new',
-            'active' => true,
-            'viewKey' => bin2hex(random_bytes(8)),
-            'createdAt' => date('c'),
-            'updatedAt' => '',
-        ];
-        line_save_users($users);
+    $loaded = line_with_user_lock(function () use ($userId, $displayName) {
+        $users = line_users_from_disk();
+        if (!is_array($users)) {
+            return null;
+        }
+        if (!isset($users[$userId]) || !is_array($users[$userId])) {
+            $users[$userId] = [
+                'userId' => $userId,
+                'displayName' => $displayName,
+                'name' => '',
+                'likes' => [],
+                'avoids' => [],
+                'timesPerWeek' => '',
+                'step' => 'new',
+                'active' => true,
+                'viewKey' => bin2hex(random_bytes(8)),
+                'createdAt' => date('c'),
+                'updatedAt' => '',
+            ];
+        } else {
+            $users[$userId]['active'] = true;
+            if ($displayName !== '') {
+                $users[$userId]['displayName'] = $displayName;
+            }
+            $users[$userId]['userId'] = $userId;
+        }
+        line_write_users_file($users);
+        return $users[$userId];
+    });
+    if (is_array($loaded)) {
+        return $loaded;
     }
-    $users[$userId]['active'] = true;
-    if ($displayName !== '') {
-        $users[$userId]['displayName'] = $displayName;
-    }
-    $users[$userId]['userId'] = $userId;
-    return $users[$userId];
+    return [
+        'userId' => $userId,
+        'displayName' => $displayName,
+        'name' => '',
+        'likes' => [],
+        'avoids' => [],
+        'timesPerWeek' => '',
+        'step' => 'new',
+        'active' => true,
+        'viewKey' => '',
+        'createdAt' => date('c'),
+        'updatedAt' => '',
+    ];
 }
 
 function line_handle_postback($user, $data) {
@@ -1833,9 +2002,7 @@ function line_handle_event($event) {
     }
     if ($type === 'unfollow') {
         line_http('https://api.line.me/v2/bot/user/' . rawurlencode($userId) . '/richmenu', 'DELETE', null, '');
-        $users = line_users();
-        unset($users[$userId]);
-        line_save_users($users);
+        line_remove_user($userId);
         return;
     }
     $user = line_load_user($userId, '');
