@@ -722,10 +722,10 @@
           <div class="accordion-content active">
             <div class="accordion-body">
               <div class="help-note">
-                生徒がトークでボタンを押したときの返事は、LINEの通数に入りません。こちらから送るのは、平日にその日の定食が好きそうな人だけです。1人1通で、月200通を超えたらその月は送りません。全員への一斉送信はしません。判定はこのサーバーの中だけで行い、有料のAIは使いません。
+                生徒がトークでボタンを押したときの返事は、LINEの月200通に入りません。こちらから送るのは、ラッキー予約のお知らせと、アンケートを保存したときの確認です。1人1通で、月200通を超えたらその月は送りません。質問のうち、定食・予約・休み・時間は決まった文で返します。それ以外はChatGPTが返します。LINEの返信は無料ですが、ChatGPTを呼んだ回数だけOpenAIの利用料がかかります。
               </div>
               <div class="help-note">
-                アンケートは、LINEのトークから別のページを開いて、ボタンで答えます。名前は空白や姓だけでは送れず、フルネームが必要です。例: 瀬尾 太郎。答えた名前・好きな食べ方・予約は、日付が変わっても消えません。毎朝元に戻るのは、売っているメニューの残り数だけです。友だち削除すると、その人のアンケートは消えます。
+                アンケートは、LINEのトークから別のページを開いて答えます。好きなもの・苦手・アレルギーはボタンか、自分で書いた文字です。名前は空白や姓だけでは送れず、フルネームが必要です。例: 瀬尾 太郎。送り終わったら「答えた」と送らなくて大丈夫です。答えた内容と予約は、日付が変わっても消えません。友だち削除すると、その人のアンケートは消えます。
               </div>
               <div class="admin-card">
                 <h3>1. LINEとつなぐ</h3>
@@ -750,10 +750,10 @@
                 <p id="line-secret-state"></p>
               </div>
               <div class="admin-card">
-                <h3>2. 早めに予約できる人</h3>
-                <p>平日の朝、その日の定食が好きそうな人にだけメッセージを送ります。その人たちは、ふつうの予約時間より早く予約できます。予約できる時間は「毎日の設定」の時間を使います。</p>
+                <h3>2. ラッキー予約</h3>
+                <p>アンケートが終わった人の中から、1日に決めた人数へ朝のお知らせを送ります。届いた人は、いつもの予約開始より早く予約できます。特定の人の名前を選ぶ画面ではありません。</p>
                 <div class="form-group">
-                  <label><input type="checkbox" id="line-early-on" style="width:24px;height:24px;margin-right:8px;"> このお知らせを使う</label>
+                  <label><input type="checkbox" id="line-early-on" style="width:24px;height:24px;margin-right:8px;"> ラッキー予約を使う</label>
                 </div>
                 <div class="form-group">
                   <label for="line-early-count">1日に送る人数（最大7人）</label>
@@ -768,7 +768,7 @@
                   </select>
                 </div>
                 <div class="form-group">
-                  <label for="line-send-hour">送り始める時刻</label>
+                  <label for="line-send-hour">朝の送信を始める時刻</label>
                   <select id="line-send-hour">
                     <option value="6">6時</option>
                     <option value="7" selected>7時</option>
@@ -776,13 +776,13 @@
                     <option value="9">9時</option>
                   </select>
                 </div>
-                <p>自動で送るには、この時刻のあとに誰かが食堂のページを開く必要があります。別の有料サービスは使いません。すぐ送りたいときは下のボタンです。</p>
+                <p>「今すぐ送る」を押すと、その場で届きます。届かないときは、この下にLINEからのエラーが出ます。朝の時刻を過ぎたあとは、誰かがLINEで話すか食堂のページを開いたときにも送られます。時計だけでは送れません。</p>
                 <button type="button" class="btn btn-primary" onclick="saveLineSettings()">この内容を保存する</button>
-                <button type="button" class="btn btn-secondary" onclick="sendLineEarly()">きょうの人に今すぐ送る</button>
+                <button type="button" class="btn btn-secondary" onclick="sendLineEarly()">今すぐ送る</button>
                 <p id="line-save-state"></p>
               </div>
               <div class="admin-card">
-                <h3>3. 今月の通数と、きょうの相手</h3>
+                <h3>3. 今月の通数と、きょうの候補</h3>
                 <p id="line-count"></p>
                 <div id="line-preview"></div>
                 <h3 style="margin-top:18px;">登録している人</h3>
@@ -3734,12 +3734,12 @@
           const preview = document.getElementById('line-preview');
           if (preview) {
             if (!data.food) {
-              preview.innerHTML = '<p>きょうの定食がまだないので、送る相手は選べません。</p>';
+              preview.innerHTML = '<p>きょうの定食がまだないので、ラッキー予約は送れません。</p>';
             } else if (!people.length) {
-              preview.innerHTML = '<p>きょうの定食「' + escapeLine(data.food) + '」が好きそうな人は、まだいません。</p>';
+              preview.innerHTML = '<p>きょうの定食「' + escapeLine(data.food) + '」を送れる人がまだいません。アンケートが終わった人がいるか、苦手やアレルギーに当たっていないかを見てください。</p>';
             } else {
-              preview.innerHTML = '<p>きょうの定食「' + escapeLine(data.food) + '」が好きそうな人</p><ul>' + people.map(function (person) {
-                return '<li>' + escapeLine(person.name) + '（' + escapeLine((person.likes || []).join('、')) + '）</li>';
+              preview.innerHTML = '<p>きょうの定食「' + escapeLine(data.food) + '」のラッキー予約の候補</p><ul>' + people.map(function (person) {
+                return '<li>' + escapeLine(person.name) + '（好き: ' + escapeLine((person.likes || []).join('、')) + '）</li>';
               }).join('') + '</ul>';
             }
             if (data.lastError) {
@@ -3758,7 +3758,8 @@
                 const state = user.done ? '登録済み' : 'アンケートの途中';
                 const saved = user.updatedAt ? (' / 最終保存: ' + String(user.updatedAt).replace('T', ' ').slice(0, 16)) : '';
                 const since = user.createdAt ? (' / 登録開始: ' + String(user.createdAt).replace('T', ' ').slice(0, 16)) : '';
-                return '<li>' + escapeLine(user.name || '名前なし') + ' / ' + state + ' / 好き: ' + escapeLine((user.likes || []).join('、')) + ' / ' + escapeLine(user.times || '') + saved + since + '</li>';
+                const allergy = (user.allergies || []).length ? (' / アレルギー: ' + escapeLine(user.allergies.join('、'))) : '';
+                return '<li>' + escapeLine(user.name || '名前なし') + ' / ' + state + ' / 好き: ' + escapeLine((user.likes || []).join('、')) + allergy + ' / ' + escapeLine(user.times || '') + saved + since + '</li>';
               }).join('') + '</ul>';
             }
           }
@@ -3809,7 +3810,11 @@
         .then(function (res) { return res.json(); })
         .then(function (data) {
           const sent = data.sent || 0;
-          lineText('line-save-state', sent > 0 ? (sent + '人に送りました。今月 ' + (data.monthSent || 0) + ' / 200通です。') : (data.reason || '送りませんでした。'));
+          let msg = sent > 0 ? (sent + '人に送りました。今月 ' + (data.monthSent || 0) + ' / 200通です。') : (data.reason || '送りませんでした。');
+          if (data.lastError) {
+            msg += ' LINEの返答: ' + data.lastError;
+          }
+          lineText('line-save-state', msg);
           loadLineAdmin();
         })
         .catch(function () {

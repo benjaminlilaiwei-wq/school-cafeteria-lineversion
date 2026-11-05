@@ -42,3 +42,19 @@ if (is_array($data) && isset($data['events']) && is_array($data['events'])) {
 
 header('Content-Type: text/plain; charset=utf-8');
 echo 'ok';
+ignore_user_abort(true);
+if (function_exists('fastcgi_finish_request')) {
+    fastcgi_finish_request();
+} else {
+    while (ob_get_level() > 0) {
+        @ob_end_flush();
+    }
+    @flush();
+}
+try {
+    line_send_early(false);
+} catch (Throwable $e) {
+    $budget = line_budget();
+    $budget['lastError'] = line_cut($e->getMessage(), 300);
+    line_save_budget($budget);
+}

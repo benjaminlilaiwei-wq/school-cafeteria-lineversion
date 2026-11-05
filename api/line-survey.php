@@ -37,9 +37,16 @@ if (!$user) {
 if (!$ok) {
     line_survey_fail(400, $error);
 }
+$notified = false;
 try {
     line_ensure_rich_menu();
     line_sync_user_menu($saved);
+    $userId = (string) ($saved['userId'] ?? '');
+    if ($userId !== '') {
+        $plain = trim((string) ($saved['name'] ?? '')) . "さん、アンケートを保存したよ。\nこのトークに「答えた」と送らなくていいよ。下のメニューから予約できるよ。";
+        $pushed = line_push_notice($userId, line_survey_ack_messages($saved), $plain);
+        $notified = !empty($pushed[0]);
+    }
 } catch (Throwable $e) {
     $budget = line_budget();
     $budget['lastError'] = line_cut($e->getMessage(), 300);
@@ -47,4 +54,5 @@ try {
 }
 $payload = line_survey_public($saved);
 $payload['saved'] = true;
+$payload['lineNotified'] = $notified;
 echo json_encode($payload, JSON_UNESCAPED_UNICODE);

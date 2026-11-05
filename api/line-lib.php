@@ -318,26 +318,68 @@ function line_site_base() {
 
 function line_like_words() {
     return [
+        'ごはん' => ['ごはん', 'ご飯', '白米'],
         'カレー' => ['カレー'],
-        '肉' => ['肉', '豚', '牛', '鶏', 'チキン', 'ハンバーグ', '唐揚', 'から揚', 'からあげ', '生姜', 'カツ', '焼肉', 'ステーキ'],
-        '魚' => ['魚', 'サバ', 'さば', '鮭', 'イワシ', 'いわし', '刺身', '煮魚', '南蛮', 'あじ', 'アジ'],
-        '麺' => ['麺', 'ラーメン', 'うどん', 'そば', 'パスタ'],
-        '揚げ物' => ['揚', 'フライ', 'カツ', '唐揚', 'から揚', 'コロッケ', '磯部'],
-        '和食' => ['煮', '味噌', '焼き魚', '肉じゃが', '生姜', '定食', '煮付け'],
-        '野菜' => ['野菜', 'サラダ', '煮物', 'ひじき'],
+        '丼' => ['丼', 'どん'],
         'どんぶり' => ['丼', 'どん', 'カツ丼', '親子'],
+        'チャーハン' => ['チャーハン', '炒飯', 'やきめし'],
+        'パン' => ['パン'],
+        '麺' => ['麺', 'ラーメン', 'うどん', 'そば', 'パスタ'],
+        'ラーメン' => ['ラーメン'],
+        'うどん' => ['うどん'],
+        'そば' => ['そば', '蕎麦'],
+        'パスタ' => ['パスタ'],
+        '和食' => ['煮', '味噌', '焼き魚', '肉じゃが', '生姜', '定食', '煮付け'],
+        '肉' => ['肉', '豚', '牛', '鶏', 'チキン', 'ハンバーグ', '唐揚', 'から揚', 'からあげ', '生姜', 'カツ', '焼肉', 'ステーキ'],
+        'から揚げ' => ['から揚', '唐揚', 'からあげ'],
+        'とんかつ' => ['とんかつ', '豚カツ', 'ヒレカツ'],
+        'ハンバーグ' => ['ハンバーグ'],
+        '生姜焼き' => ['生姜', 'しょうが焼'],
+        '焼肉' => ['焼肉', '焼き肉'],
+        '鶏肉' => ['鶏', 'チキン'],
+        '魚' => ['魚', 'サバ', 'さば', '鮭', 'イワシ', 'いわし', '刺身', '煮魚', '南蛮', 'あじ', 'アジ'],
+        '焼き魚' => ['焼き魚', '塩焼', 'サバ', 'さば'],
+        '刺身' => ['刺身'],
+        '煮魚' => ['煮魚', '煮付け', '味噌煮'],
+        'サバ' => ['サバ', 'さば'],
+        '揚げ物' => ['揚', 'フライ', 'カツ', '唐揚', 'から揚', 'コロッケ', '磯部'],
+        '野菜' => ['野菜', 'サラダ', '煮物', 'ひじき'],
+        '卵' => ['卵', '玉子', 'たまご', 'オム'],
+        'サラダ' => ['サラダ'],
+        '汁物' => ['汁', 'スープ', 'みそ汁', '味噌汁'],
+        '辛いもの' => ['辛', 'ラー油', 'キムチ', 'からい'],
     ];
 }
 
-function line_food_matches($food, $label) {
-    $words = line_like_words();
-    $keys = $words[$label] ?? [$label];
+function line_allergy_words() {
+    return [
+        '卵' => ['卵', '玉子', 'たまご'],
+        '乳' => ['乳', 'チーズ', '牛乳', 'バター'],
+        '小麦' => ['小麦', 'パン'],
+        'えび' => ['えび', 'エビ', '海老'],
+        'かに' => ['かに', 'カニ', '蟹'],
+        'そば' => ['そば', '蕎麦'],
+        '落花生' => ['落花生', 'ピーナッツ'],
+        'くるみ' => ['くるみ', 'クルミ'],
+    ];
+}
+
+function line_words_match($food, $label, $dict) {
+    $keys = $dict[$label] ?? [$label];
     foreach ($keys as $word) {
         if ($word !== '' && mb_strpos($food, $word) !== false) {
             return true;
         }
     }
     return false;
+}
+
+function line_food_matches($food, $label) {
+    return line_words_match($food, $label, line_like_words());
+}
+
+function line_allergy_matches($food, $label) {
+    return line_words_match($food, $label, line_allergy_words());
 }
 
 function line_score_user($user, $food) {
@@ -350,6 +392,11 @@ function line_score_user($user, $food) {
     foreach (($user['avoids'] ?? []) as $avoid) {
         if ($avoid !== '' && $avoid !== 'とくにない' && line_food_matches($food, $avoid)) {
             $score -= 5;
+        }
+    }
+    foreach (($user['allergies'] ?? []) as $allergy) {
+        if ($allergy !== '' && line_allergy_matches($food, $allergy)) {
+            $score -= 8;
         }
     }
     $times = $user['timesPerWeek'] ?? '';
@@ -1001,6 +1048,14 @@ function line_reply($token, $messages) {
     ]);
 }
 
+function line_push_notice($to, $messages, $plain) {
+    $pushed = line_push_one($to, $messages);
+    if (!empty($pushed[0]) || (int) ($pushed[2] ?? 0) !== 400) {
+        return $pushed;
+    }
+    return line_push_one($to, [line_text($plain)]);
+}
+
 function line_push_one($to, $messages) {
     $settings = line_settings();
     $budget = line_budget();
@@ -1259,7 +1314,7 @@ function line_today_text($user) {
     return $text . "\n" . line_hours_text() . "\n予約は、下のメニューの緑「予約する」から。";
 }
 
-function line_allergy_text() {
+function line_allergy_text($user = null) {
     $data = line_read_json(line_data_dir() . '/allergies.json', []);
     $rows = $data['allergies'] ?? [];
     $todayFood = line_daily_food(date('Y-m-d'));
@@ -1273,15 +1328,27 @@ function line_allergy_text() {
             $hits[] = $menu . ': ' . implode('、', $row['allergens'] ?? []);
         }
     }
-    if (!count($hits)) {
-        return "きょうの定食のアレルギーは、ここにまだ入っていないよ。\n心配なときは食堂の人に聞いてね。";
+    $mine = [];
+    if (is_array($user)) {
+        foreach (($user['allergies'] ?? []) as $allergy) {
+            $allergy = trim((string) $allergy);
+            if ($allergy !== '') {
+                $mine[] = $allergy;
+            }
+        }
     }
-    return "きょう関係しそうなアレルギーだよ。\n" . implode("\n", $hits) . "\n心配なときは食堂の人に聞いてね。";
+    $text = count($hits)
+        ? "きょう関係しそうなアレルギーだよ。\n" . implode("\n", $hits)
+        : "きょうの定食のアレルギーは、ここにまだ入っていないよ。";
+    if (count($mine)) {
+        $text .= "\nあなたが登録したアレルギー: " . implode('、', $mine);
+    }
+    return $text . "\n心配なときは食堂の人に聞いてね。";
 }
 
 function line_answer($text, $user) {
     if (preg_match('/アレルギ/u', $text)) {
-        return line_allergy_text();
+        return line_allergy_text($user);
     }
     if (preg_match('/予約(を)?確認|番号/u', $text)) {
         return line_check_text($user);
@@ -1308,7 +1375,7 @@ function line_answer($text, $user) {
     if (preg_match('/混|こみ|込/u', $text)) {
         return "混みぐあいは、その日の定食と今までの人数から食堂のページでも見られるよ。\n早めに行きたい日は、予約しておくと安心だよ。";
     }
-    return "定食、予約、休み、アレルギー、時間について聞けるよ。\n画面下の「メニュー」からも選べるよ。";
+    return false;
 }
 
 function line_check_text($user) {
@@ -1433,7 +1500,7 @@ function line_pick_users($food, $limit) {
         if (!is_array($user) || ($user['step'] ?? '') !== 'done' || empty($user['active'])) {
             continue;
         }
-        $score = line_score_user($user, $food);
+        $score = 2 + line_score_user($user, $food);
         if (isset($recent[$id])) {
             $score -= 2;
         }
@@ -1461,55 +1528,71 @@ function line_send_early($ignoreHour) {
         'people' => [],
     ];
     if (empty($settings['earlyEnabled'])) {
-        $result['reason'] = '早予約のお知らせはオフです。';
+        $result['reason'] = 'ラッキー予約はオフです。';
+        $result['lastError'] = (string) (line_budget()['lastError'] ?? '');
         return $result;
     }
     if (line_secret()['channelAccessToken'] === '') {
         $result['ok'] = false;
-        $result['reason'] = 'LINEのトークンがまだありません。';
+        $result['reason'] = 'LINEのトークンがまだありません。管理画面の「チャネルアクセストークン」を保存してください。';
+        $result['lastError'] = (string) (line_budget()['lastError'] ?? '');
         return $result;
     }
     $weekday = (int) date('N');
     if ($weekday >= 6) {
         $result['reason'] = '土日は送りません。';
+        $result['lastError'] = (string) (line_budget()['lastError'] ?? '');
         return $result;
     }
     $holiday = line_holiday($today);
     if ($holiday !== null) {
         $result['reason'] = 'きょうは休みなので送りません。';
+        $result['lastError'] = (string) (line_budget()['lastError'] ?? '');
         return $result;
     }
     if (!$ignoreHour && (int) date('G') < (int) $settings['sendHour']) {
-        $result['reason'] = '送りは ' . (int) $settings['sendHour'] . ' 時からです。';
+        $result['reason'] = '送りは ' . (int) $settings['sendHour'] . ' 時からです。今すぐ試すときは「今すぐ送る」を押してください。';
+        $result['lastError'] = (string) (line_budget()['lastError'] ?? '');
         return $result;
     }
     $food = line_daily_food($today);
     $result['food'] = $food;
     if ($food === '') {
         $result['reason'] = 'きょうの定食がまだないので送りません。';
+        $result['lastError'] = (string) (line_budget()['lastError'] ?? '');
         return $result;
     }
-    return line_with_lock(function () use ($settings, $today, $food, $result) {
+    return line_with_lock(function () use ($settings, $today, $food, $result, $ignoreHour) {
         $budget = line_budget();
         $day = $budget['days'][$today] ?? ['sentIds' => [], 'tries' => 0, 'closed' => false];
-        if (!empty($day['closed'])) {
+        $already = $day['sentIds'] ?? [];
+        if (!empty($day['closed']) && count($already) > 0) {
             $result['reason'] = 'きょうはもう送っています。';
             $result['monthSent'] = $budget['sent'];
-            $result['sent'] = count($day['sentIds']);
+            $result['sent'] = count($already);
+            $result['lastError'] = (string) ($budget['lastError'] ?? '');
             return $result;
         }
-        if ((int) ($day['tries'] ?? 0) >= 3) {
+        if (!empty($day['closed']) && count($already) === 0) {
+            $day['closed'] = false;
+        }
+        if ($ignoreHour && count($already) === 0) {
+            $day['tries'] = 0;
+        }
+        if ((int) ($day['tries'] ?? 0) >= 3 && !$ignoreHour) {
             $day['closed'] = true;
             $budget['days'][$today] = $day;
             line_save_budget($budget);
-            $result['reason'] = 'きょうは送るのを途中でやめました。LINEの設定を確認してください。';
+            $result['ok'] = false;
+            $result['reason'] = 'きょうは3回送ろうとして届きませんでした。トークンを確認して「今すぐ送る」を押してください。';
+            $result['lastError'] = (string) ($budget['lastError'] ?? '');
             return $result;
         }
-        $day['tries'] = (int) ($day['tries'] ?? 0) + 1;
         $picked = line_pick_users($food, (int) $settings['earlyCount']);
-        $already = $day['sentIds'] ?? [];
         $base = line_site_base();
+        $attempted = false;
         foreach ($picked as $row) {
+            $budget = line_budget();
             if ($budget['sent'] >= 200) {
                 $result['reason'] = '今月の200通に達したので、ここまでです。';
                 break;
@@ -1528,19 +1611,21 @@ function line_send_early($ignoreHour) {
                     }
                 }
             }
+            $minutes = (int) $settings['earlyMinutes'];
             if ($alreadyOpen) {
-                $text = $name . "さん、おはよう。\nきょうの定食は「" . $food . "」。\n好きそうだよ。「予約する」を押してね。";
+                $text = $name . "さん、ラッキー予約だよ。\nきょうの定食は「" . $food . "」。\nいまから予約できるよ。「予約する」を押してね。";
             } else {
-                $text = $name . "さん、おはよう。\nきょうの定食は「" . $food . "」。\n好きそうだから、ふつうの人より" . (int) $settings['earlyMinutes'] . "分早く予約できるよ。\n「予約する」を押してね。";
+                $text = $name . "さん、ラッキー予約だよ。\nきょうの定食は「" . $food . "」。\nふつうより" . $minutes . "分早く予約できるよ。\n「予約する」を押してね。";
             }
             $key = $row['user']['viewKey'] ?? '';
             if ($key !== '' && $base !== '') {
                 $text .= "\n\n星つきのカレンダー\n" . $base . '/line.html?key=' . rawurlencode($key);
             }
-            $messages = [line_survey_card('おはよう', $food, $text, [
+            $messages = [line_survey_card('ラッキー予約', $food, $text, [
                 line_postback_button('予約する', 'home:reserve', true),
             ], 1)];
-            $pushed = line_push_one($row['id'], $messages);
+            $attempted = true;
+            $pushed = line_push_notice($row['id'], $messages, $text);
             $budget = line_budget();
             if ($pushed[0]) {
                 $already[] = $row['id'];
@@ -1548,23 +1633,29 @@ function line_send_early($ignoreHour) {
                 $result['people'][] = ['name' => $name, 'score' => $row['score']];
             } else {
                 $result['ok'] = false;
-                $result['reason'] = 'LINEへ送れませんでした。トークンを確認してください。';
+                $result['reason'] = 'LINEが受け取りませんでした。' . line_cut((string) ($pushed[1] ?? ''), 180);
                 break;
             }
         }
-        if ($result['sent'] === 0 && $result['reason'] === '') {
-            $result['reason'] = '好きそうな人がいないので、きょうは送りません。';
+        if (!$attempted && $result['reason'] === '') {
+            $result['reason'] = count($picked) === 0
+                ? 'アンケートが終わった人がいないか、きょうの定食が苦手・アレルギーに当たる人だけなので送りません。'
+                : '選んだ人には、きょうもう送っています。';
         }
-        $stopForToday = $result['ok'] || (int) $day['tries'] >= 3;
-        if (!$result['ok'] && $result['sent'] > 0) {
-            $stopForToday = true;
+        if ($attempted && !$result['ok']) {
+            $day['tries'] = (int) ($day['tries'] ?? 0) + 1;
         }
-        $day['sentIds'] = $already;
-        $day['closed'] = $stopForToday;
+        $day['sentIds'] = array_values($already);
+        $day['closed'] = $result['sent'] > 0 && $result['ok'];
+        if (!$result['ok'] && (int) ($day['tries'] ?? 0) >= 3 && !$ignoreHour) {
+            $day['closed'] = true;
+        }
         $day['food'] = $food;
+        $budget = line_budget();
         $budget['days'][$today] = $day;
         line_save_budget($budget);
         $result['monthSent'] = $budget['sent'];
+        $result['lastError'] = (string) ($budget['lastError'] ?? '');
         return $result;
     });
 }
@@ -1616,6 +1707,7 @@ function line_user_summaries($users = null) {
             'likes' => $user['likes'] ?? [],
             'times' => (string) ($user['timesPerWeek'] ?? ''),
             'avoids' => $user['avoids'] ?? [],
+            'allergies' => $user['allergies'] ?? [],
             'done' => ($user['step'] ?? '') === 'done',
             'active' => !empty($user['active']),
             'createdAt' => (string) ($user['createdAt'] ?? ''),
@@ -1666,9 +1758,42 @@ function line_times_labels() {
 
 function line_like_groups() {
     return [
-        ['title' => 'ごはん・主食', 'items' => ['カレー', '麺', 'どんぶり', '和食']],
-        ['title' => 'おかず', 'items' => ['肉', '魚', '揚げ物', '野菜']],
+        ['title' => 'ごはん・主食', 'items' => ['ごはん', 'カレー', '丼', 'チャーハン', 'パン', '麺']],
+        ['title' => '麺', 'items' => ['ラーメン', 'うどん', 'そば', 'パスタ']],
+        ['title' => '肉', 'items' => ['から揚げ', 'とんかつ', 'ハンバーグ', '生姜焼き', '焼肉', '鶏肉']],
+        ['title' => '魚', 'items' => ['焼き魚', '刺身', '煮魚', 'サバ']],
+        ['title' => 'その他のおかず', 'items' => ['揚げ物', '野菜', '卵', 'サラダ', '汁物', '辛いもの']],
     ];
+}
+
+function line_clean_choice($label) {
+    $label = line_normalize_name($label);
+    $label = str_replace(['<', '>', '"', "'"], '', $label);
+    if (preg_match_all('/./u', $label, $chars) && count($chars[0]) > 20) {
+        $label = implode('', array_slice($chars[0], 0, 20));
+    }
+    if ($label === '' || $label === 'とくにない') {
+        return '';
+    }
+    if (!preg_match('/\p{L}|\p{N}/u', $label)) {
+        return '';
+    }
+    return $label;
+}
+
+function line_collect_choices($input, $limit) {
+    $out = [];
+    foreach ((array) $input as $label) {
+        $label = line_clean_choice($label);
+        if ($label === '' || in_array($label, $out, true)) {
+            continue;
+        }
+        $out[] = $label;
+        if (count($out) >= $limit) {
+            break;
+        }
+    }
+    return $out;
 }
 
 function line_survey_url($user) {
@@ -1686,7 +1811,7 @@ function line_is_survey_return_word($text) {
 
 function line_survey_invite($user) {
     $name = trim((string) ($user['name'] ?? ''));
-    $note = "アンケートはこのボタンのページで答えてね。\n名前は空白だと送れないよ。姓と名を入れてね。\n例: 瀬尾 太郎\n好きなものはボタンを押すだけ。\n答え終わったら、このトークに戻って「答えた」と送ってね。";
+    $note = "アンケートはこのボタンのページで答えてね。\n名前は空白だと送れないよ。姓と名を入れてね。\n例: 瀬尾 太郎\n好きなもの、苦手、アレルギーはボタンで選べるよ。ないものは自分で書けるよ。\n送り終わったら、このトークに戻るだけで大丈夫。「答えた」と送らなくていいよ。";
     if ($name !== '') {
         $note = "いまの名前: " . $name . "\n" . $note;
     }
@@ -1701,7 +1826,9 @@ function line_survey_ack_messages($user) {
     $name = (string) ($user['name'] ?? '');
     $likes = implode('、', is_array($user['likes'] ?? null) ? $user['likes'] : []);
     $avoids = is_array($user['avoids'] ?? null) ? $user['avoids'] : [];
+    $allergies = is_array($user['allergies'] ?? null) ? $user['allergies'] : [];
     $avoidText = count($avoids) ? implode('、', $avoids) : 'とくにない';
+    $allergyText = count($allergies) ? implode('、', $allergies) : 'なし';
     $times = (string) ($user['timesPerWeek'] ?? '');
     $when = (string) ($user['updatedAt'] ?? '');
     if ($when !== '') {
@@ -1711,7 +1838,8 @@ function line_survey_ack_messages($user) {
         . '好き: ' . ($likes !== '' ? $likes : '未設定')
         . "\n来る回数: " . ($times !== '' ? $times : '未設定')
         . "\n苦手: " . $avoidText
-        . "\n\nこの答えは、日付が変わっても消えないよ。";
+        . "\nアレルギー: " . $allergyText
+        . "\n\nこの答えは、日付が変わっても消えないよ。\n「答えた」と送らなくていいよ。";
     if ($when !== '') {
         $note .= "\n最後に保存したとき: " . $when;
     }
@@ -1742,6 +1870,7 @@ function line_survey_public($user) {
         'name' => (string) ($user['name'] ?? ''),
         'likes' => array_values(is_array($user['likes'] ?? null) ? $user['likes'] : []),
         'avoids' => array_values(is_array($user['avoids'] ?? null) ? $user['avoids'] : []),
+        'allergies' => array_values(is_array($user['allergies'] ?? null) ? $user['allergies'] : []),
         'timesPerWeek' => (string) ($user['timesPerWeek'] ?? ''),
         'done' => ($user['step'] ?? '') === 'done',
         'createdAt' => (string) ($user['createdAt'] ?? ''),
@@ -1749,6 +1878,7 @@ function line_survey_public($user) {
         'groups' => line_like_groups(),
         'timeChoices' => line_times_labels(),
         'avoidChoices' => line_avoid_labels(),
+        'allergyChoices' => line_allergy_labels(),
         'addUrl' => (string) (line_settings()['addUrl'] ?? ''),
     ];
 }
@@ -1762,31 +1892,16 @@ function line_apply_survey($user, $input) {
     if ($error !== '') {
         return [false, $error, $user];
     }
-    $allowed = array_keys(line_like_words());
-    $likes = [];
-    foreach (($input['likes'] ?? []) as $label) {
-        $label = (string) $label;
-        if (in_array($label, $allowed, true) && !in_array($label, $likes, true)) {
-            $likes[] = $label;
-        }
-        if (count($likes) >= 8) {
-            break;
-        }
-    }
+    $likes = line_collect_choices($input['likes'] ?? [], 12);
     if (!count($likes)) {
-        return [false, '好きな食べ方を、1つ以上押してね。', $user];
+        return [false, '好きな食べ方を、1つ以上選ぶか、自分で書いてね。', $user];
     }
     $times = (string) ($input['timesPerWeek'] ?? '');
     if (!in_array($times, line_times_labels(), true)) {
         return [false, '週に何回来るか、1つ押してね。', $user];
     }
-    $avoids = [];
-    foreach (($input['avoids'] ?? []) as $label) {
-        $label = (string) $label;
-        if (in_array($label, line_avoid_labels(), true) && !in_array($label, $avoids, true)) {
-            $avoids[] = $label;
-        }
-    }
+    $avoids = line_collect_choices($input['avoids'] ?? [], 8);
+    $allergies = line_collect_choices($input['allergies'] ?? [], 8);
     if (empty($user['createdAt'])) {
         $user['createdAt'] = date('c');
     }
@@ -1797,17 +1912,22 @@ function line_apply_survey($user, $input) {
     $user['likes'] = $likes;
     $user['timesPerWeek'] = $times;
     $user['avoids'] = $avoids;
+    $user['allergies'] = $allergies;
     $user['updatedAt'] = date('c');
     $user['step'] = 'done';
     $user['active'] = true;
-    $user['needsLineAck'] = true;
+    $user['needsLineAck'] = false;
     $user['pendingFood'] = '';
     line_store_user($user);
     return [true, '', $user];
 }
 
 function line_avoid_labels() {
-    return ['魚', '肉', 'からいもの', '野菜', '乳製品'];
+    return ['魚', '肉', 'からいもの', '野菜', '乳製品', '卵', 'きのこ', '納豆'];
+}
+
+function line_allergy_labels() {
+    return ['卵', '乳', '小麦', 'えび', 'かに', 'そば', '落花生', 'くるみ'];
 }
 
 function line_start_survey($user) {
@@ -1857,7 +1977,153 @@ function line_handle_text($user, $text) {
         return line_reserve_prompt($user);
     }
     $answer = line_answer($text, $user);
-    return [line_text($answer === null ? line_today_text($user) : $answer)];
+    if ($answer === null) {
+        return [line_text(line_today_text($user))];
+    }
+    if ($answer === false) {
+        return [line_text(line_ai_reply($text, $user))];
+    }
+    return [line_text($answer)];
+}
+
+function line_openai_settings() {
+    static $openai = null;
+    if (is_array($openai)) {
+        return $openai;
+    }
+    $config = [];
+    $path = __DIR__ . '/ollama-config.php';
+    if (is_file($path)) {
+        $loaded = require $path;
+        if (is_array($loaded)) {
+            $config = $loaded;
+        }
+    }
+    $config = apply_openai_env($config);
+    $openai = $config['openai'] ?? [];
+    if (!is_array($openai)) {
+        $openai = [];
+    }
+    return $openai;
+}
+
+function line_crowd_hint() {
+    $file = __DIR__ . '/crowd-predict.php';
+    if (!is_file($file)) {
+        return '混雑の人数は自分で計算しない。聞かれたら、食堂のページで見てね、と返す。';
+    }
+    require_once $file;
+    if (!function_exists('crowd_prediction_payload')) {
+        return '混雑の人数は自分で計算しない。聞かれたら、食堂のページで見てね、と返す。';
+    }
+    try {
+        $payload = crowd_prediction_payload(date('Y-m-d'));
+    } catch (Throwable $e) {
+        return '混雑の人数は自分で計算しない。聞かれたら、食堂のページで見てね、と返す。';
+    }
+    if (!is_array($payload) || ($payload['predictionNumber'] ?? null) === null) {
+        return '今日の混雑人数は出していない。聞かれたら食堂のページを見てね、と返す。人数は自分で計算しない。';
+    }
+    return '今日の来客見込みはサーバー計算で約' . $payload['predictionNumber'] . '人。この数字を変えない。自分で計算し直さない。';
+}
+
+function line_ai_reply($text, $user) {
+    $fallback = "定食、予約、休み、アレルギー、時間は下のメニューから聞けるよ。\nいまはそれ以外の質問にうまく答えられないよ。";
+    $openai = line_openai_settings();
+    $key = trim((string) ($openai['api_key'] ?? ''));
+    if ($key === '' || empty($openai['enabled'])) {
+        return $fallback;
+    }
+    $today = date('Y-m-d');
+    $food = line_daily_food($today);
+    $holiday = line_holiday($today);
+    $name = trim((string) ($user['name'] ?? ''));
+    $allergies = [];
+    foreach (($user['allergies'] ?? []) as $allergy) {
+        $allergy = trim((string) $allergy);
+        if ($allergy !== '') {
+            $allergies[] = $allergy;
+        }
+    }
+    $context = "今日: " . $today . "\n";
+    if ($holiday !== null && $holiday !== '') {
+        $context .= "今日は休み。理由: " . $holiday . "\n";
+    } else {
+        $context .= "今日の定食: " . ($food !== '' ? $food : '未定') . "\n";
+    }
+    $context .= line_hours_text() . "\n";
+    $context .= line_crowd_hint() . "\n";
+    if ($name !== '') {
+        $context .= "相手の名前: " . $name . "\n";
+    }
+    if (count($allergies)) {
+        $context .= "相手が登録したアレルギー: " . implode('、', $allergies) . "\n";
+    }
+    $system = "あなたは学校食堂OliMealの案内係です。生徒の質問に、短い日本語で答えてください。"
+        . "食堂の定食、予約、休み、アレルギーのほか、学校生活の短い質問にも答えてよいです。"
+        . "医務、個人情報、危険な頼みには答えず、先生に聞いてねと返してください。"
+        . "混雑の人数は、渡された数字以外を作らないでください。"
+        . "回答は300文字以内です。\n" . $context;
+    $model = (string) ($openai['model'] ?? 'gpt-4o-mini');
+    if ($model === '' || strpos($model, 'gpt-3.5') === 0) {
+        $model = 'gpt-4o-mini';
+    }
+    $base = rtrim((string) ($openai['base_url'] ?? ''), '/');
+    if ($base === '') {
+        $base = 'https://api.openai.com/v1';
+    }
+    $body = json_encode([
+        'model' => $model,
+        'temperature' => 0.4,
+        'max_tokens' => 350,
+        'messages' => [
+            ['role' => 'system', 'content' => $system],
+            ['role' => 'user', 'content' => function_exists('mb_substr') ? mb_substr($text, 0, 500) : substr($text, 0, 500)],
+        ],
+    ], JSON_UNESCAPED_UNICODE);
+    $url = $base . '/chat/completions';
+    $raw = false;
+    $code = 0;
+    if (function_exists('curl_init')) {
+        $ch = curl_init($url);
+        curl_setopt_array($ch, [
+            CURLOPT_POST => true,
+            CURLOPT_HTTPHEADER => ['Content-Type: application/json', 'Authorization: Bearer ' . $key],
+            CURLOPT_POSTFIELDS => $body,
+            CURLOPT_RETURNTRANSFER => true,
+            CURLOPT_TIMEOUT => 8,
+            CURLOPT_CONNECTTIMEOUT => 4,
+            CURLOPT_SSL_VERIFYPEER => true,
+        ]);
+        $raw = curl_exec($ch);
+        $code = (int) curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        curl_close($ch);
+    }
+    if ($raw === false || $code === 0) {
+        $contextHttp = stream_context_create([
+            'http' => [
+                'method' => 'POST',
+                'header' => "Content-Type: application/json\r\nAuthorization: Bearer " . $key . "\r\n",
+                'content' => $body,
+                'timeout' => 8,
+                'ignore_errors' => true,
+            ],
+        ]);
+        $raw = @file_get_contents($url, false, $contextHttp);
+        $code = 0;
+        if (isset($http_response_header[0]) && preg_match('/\s(\d{3})\s/', $http_response_header[0], $m)) {
+            $code = (int) $m[1];
+        }
+    }
+    if ($raw === false || $code < 200 || $code >= 300) {
+        return $fallback;
+    }
+    $json = json_decode((string) $raw, true);
+    $reply = trim((string) ($json['choices'][0]['message']['content'] ?? ''));
+    if ($reply === '') {
+        return $fallback;
+    }
+    return function_exists('mb_substr') ? mb_substr($reply, 0, 500) : substr($reply, 0, 500);
 }
 
 function line_store_user($user) {
@@ -1883,6 +2149,7 @@ function line_load_user($userId, $displayName) {
                 'name' => '',
                 'likes' => [],
                 'avoids' => [],
+                'allergies' => [],
                 'timesPerWeek' => '',
                 'step' => 'new',
                 'active' => true,
@@ -1909,6 +2176,7 @@ function line_load_user($userId, $displayName) {
         'name' => '',
         'likes' => [],
         'avoids' => [],
+        'allergies' => [],
         'timesPerWeek' => '',
         'step' => 'new',
         'active' => true,

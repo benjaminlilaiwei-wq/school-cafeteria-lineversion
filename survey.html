@@ -91,6 +91,18 @@
       border-color: #e2ae3a;
       color: var(--on-ink);
     }
+    .add-row { display: flex; gap: 8px; margin-top: 10px; }
+    .add-row input { flex: 1; }
+    .add-row button {
+      border: 1.5px solid #eadfce;
+      background: #fff;
+      color: var(--ink);
+      border-radius: 999px;
+      font-weight: 800;
+      padding: 0 16px;
+      min-height: 48px;
+      cursor: pointer;
+    }
     .tray {
       margin-top: 22px;
       background: #fff6ee;
@@ -149,7 +161,7 @@
     const params = new URLSearchParams(location.search);
     const key = params.get('key') || '';
     const card = document.getElementById('card');
-    const state = { likes: [], avoids: [], times: '', none: false };
+    const state = { likes: [], avoids: [], allergies: [], times: '', none: false };
 
     function esc(value) {
       return String(value || '').replace(/[&<>"']/g, function (ch) {
@@ -180,6 +192,7 @@
       if (state.times) bits.push(state.times);
       if (state.none) bits.push('苦手はとくにない');
       else if (state.avoids.length) bits.push('苦手: ' + state.avoids.join('、'));
+      if (state.allergies.length) bits.push('アレルギー: ' + state.allergies.join('、'));
       return bits.length ? bits.join('  /  ') : 'まだ選ばれていないよ';
     }
 
@@ -192,11 +205,31 @@
       return '<button type="button" class="chip" data-group="' + esc(group) + '" data-label="' + esc(label) + '" aria-pressed="' + (pressed ? 'true' : 'false') + '">' + esc(label) + '</button>';
     }
 
+    function knownLabels(groups) {
+      const known = {};
+      (groups || []).forEach(function (group) {
+        (group.items || []).forEach(function (label) { known[label] = true; });
+      });
+      return known;
+    }
+
+    function extraChips(labels, known, group) {
+      return labels.filter(function (label) { return !known[label]; }).map(function (label) {
+        return chip(label, true, group);
+      }).join('');
+    }
+
+    function addRow(kind, placeholder) {
+      return '<div class="add-row"><input id="' + kind + '-custom" type="text" maxlength="20" placeholder="' + esc(placeholder) + '"><button type="button" id="' + kind + '-add">追加</button></div>';
+    }
+
     function renderForm(data) {
       state.likes = (data.likes || []).slice();
       state.avoids = (data.avoids || []).slice();
+      state.allergies = (data.allergies || []).slice();
       state.times = data.timesPerWeek || '';
       state.none = state.avoids.length === 0 && !!data.done;
+      const likeKnown = knownLabels(data.groups || []);
       const groups = (data.groups || []).map(function (group) {
         const buttons = (group.items || []).map(function (label) {
           return chip(label, state.likes.indexOf(label) !== -1, 'like');
@@ -206,20 +239,29 @@
       const times = (data.timeChoices || []).map(function (label) {
         return chip(label, state.times === label, 'time');
       }).join('');
+      const avoidKnown = {};
+      (data.avoidChoices || []).forEach(function (label) { avoidKnown[label] = true; });
       const avoids = chip('とくにない', state.none, 'avoid') + (data.avoidChoices || []).map(function (label) {
         return chip(label, state.avoids.indexOf(label) !== -1, 'avoid');
       }).join('');
+      const allergyKnown = {};
+      (data.allergyChoices || []).forEach(function (label) { allergyKnown[label] = true; });
+      const allergies = (data.allergyChoices || []).map(function (label) {
+        return chip(label, state.allergies.indexOf(label) !== -1, 'allergy');
+      }).join('');
       card.innerHTML = ''
         + '<h1>食堂のアンケート</h1>'
-        + '<p class="lead">好きなものはボタンを押すだけ。名前は、姓と名の両方を入れてね。空白では送れないよ。</p>'
+        + '<p class="lead">ボタンで選んでね。ないものは下の欄に自分で書いて「追加」を押してね。名前は姓と名の両方。空白では送れないよ。</p>'
         + '<form id="survey-form">'
         + '<label for="full-name">名前 <span class="req">必須</span></label>'
         + '<input id="full-name" name="name" type="text" maxlength="20" autocomplete="name" placeholder="例: 瀬尾 太郎" value="' + esc(data.name || '') + '" required>'
         + '<p class="hint">姓と名。例: 瀬尾 太郎</p>'
         + '<p class="error" id="name-error" role="alert"></p>'
         + groups
+        + '<section class="group"><h2>好きなものを自分で追加</h2><div class="chips" id="extra-like">' + extraChips(state.likes, likeKnown, 'like') + '</div>' + addRow('like', '例: オムライス') + '</section>'
         + '<section class="group"><h2>週に何回来る？</h2><div class="chips">' + times + '</div></section>'
-        + '<section class="group"><h2>苦手なもの</h2><div class="chips">' + avoids + '</div></section>'
+        + '<section class="group"><h2>苦手なもの</h2><div class="chips">' + avoids + '</div><div class="chips" id="extra-avoid">' + extraChips(state.avoids, avoidKnown, 'avoid') + '</div>' + addRow('avoid', '例: ピーマン') + '</section>'
+        + '<section class="group"><h2>アレルギー</h2><p class="hint">当てはまるものを押すか、自分で書いてね。なければ空で大丈夫だよ。</p><div class="chips">' + allergies + '</div><div class="chips" id="extra-allergy">' + extraChips(state.allergies, allergyKnown, 'allergy') + '</div>' + addRow('allergy', '例: ごま') + '</section>'
         + '<div class="tray"><strong>選択中</strong><p id="tray-text"></p></div>'
         + '<p class="error" id="form-error" role="alert"></p>'
         + '<button class="send" type="submit">この内容で答える</button>'
@@ -227,6 +269,9 @@
       paintTray();
       card.querySelectorAll('.chip').forEach(function (button) {
         button.addEventListener('click', function () { toggle(button); });
+      });
+      ['like', 'avoid', 'allergy'].forEach(function (kind) {
+        document.getElementById(kind + '-add').addEventListener('click', function () { addCustom(kind); });
       });
       document.getElementById('survey-form').addEventListener('submit', submitForm);
       const nameInput = document.getElementById('full-name');
@@ -241,7 +286,7 @@
       if (group === 'like') {
         const on = state.likes.indexOf(label) === -1;
         if (on) {
-          if (state.likes.length >= 8) return;
+          if (state.likes.length >= 12) return;
           state.likes.push(label);
           state.avoids = state.avoids.filter(function (item) { return item !== label; });
           const other = card.querySelector('[data-group="avoid"][data-label="' + label + '"]');
@@ -255,6 +300,15 @@
         card.querySelectorAll('[data-group="time"]').forEach(function (el) {
           el.setAttribute('aria-pressed', el === button ? 'true' : 'false');
         });
+      } else if (group === 'allergy') {
+        const on = state.allergies.indexOf(label) === -1;
+        if (on) {
+          if (state.allergies.length >= 8) return;
+          state.allergies.push(label);
+        } else {
+          state.allergies = state.allergies.filter(function (item) { return item !== label; });
+        }
+        button.setAttribute('aria-pressed', on ? 'true' : 'false');
       } else if (label === 'とくにない') {
         state.none = true;
         state.avoids = [];
@@ -265,6 +319,7 @@
         state.none = false;
         const on = state.avoids.indexOf(label) === -1;
         if (on) {
+          if (state.avoids.length >= 8) return;
           state.avoids.push(label);
           state.likes = state.likes.filter(function (item) { return item !== label; });
           const other = card.querySelector('[data-group="like"][data-label="' + label + '"]');
@@ -278,20 +333,56 @@
       paintTray();
     }
 
+    function addCustom(kind) {
+      const input = document.getElementById(kind + '-custom');
+      const formError = document.getElementById('form-error');
+      if (!input) return;
+      let label = normalizeName(input.value);
+      if ([...label].length > 20) label = [...label].slice(0, 20).join('');
+      if (!label) return;
+      const bucket = kind === 'like' ? 'likes' : (kind === 'avoid' ? 'avoids' : 'allergies');
+      const max = kind === 'like' ? 12 : 8;
+      if (state[bucket].indexOf(label) !== -1) return;
+      if (state[bucket].length >= max) {
+        if (formError) formError.textContent = max + '個までだよ。';
+        return;
+      }
+      state[bucket].push(label);
+      if (kind === 'avoid') {
+        state.none = false;
+        const none = card.querySelector('[data-label="とくにない"]');
+        if (none) none.setAttribute('aria-pressed', 'false');
+      }
+      input.value = '';
+      if (formError) formError.textContent = '';
+      const box = document.getElementById('extra-' + kind);
+      if (box) {
+        box.insertAdjacentHTML('beforeend', chip(label, true, kind));
+        const button = box.lastElementChild;
+        if (button) button.addEventListener('click', function () { toggle(button); });
+      }
+      paintTray();
+    }
+
     function renderDone(data) {
       const avoids = (data.avoids || []).length ? data.avoids.join('、') : 'とくにない';
+      const allergies = (data.allergies || []).length ? data.allergies.join('、') : 'なし';
       const back = data.addUrl
         ? '<a class="back" href="' + esc(data.addUrl) + '">LINEのトークに戻る</a>'
         : '';
+      const lead = data.lineNotified
+        ? '保存したよ。LINEにも確認を送った。「答えた」と送らなくていいよ。'
+        : '保存したよ。LINEに戻れば予約できる。「答えた」と送らなくていいよ。';
       card.innerHTML = ''
         + '<div class="done"><h1>保存したよ</h1>'
-        + '<p class="lead">LINEに戻って「答えた」と送ってね。トークにこの内容が届くよ。</p>'
+        + '<p class="lead">' + esc(lead) + '</p>'
         + '<div class="summary"><strong>' + esc(data.name) + 'さん</strong><br>好き: ' + esc((data.likes || []).join('、'))
         + '<br>来る回数: ' + esc(data.timesPerWeek || '')
         + '<br>苦手: ' + esc(avoids)
+        + '<br>アレルギー: ' + esc(allergies)
         + '<br>この答えは、日付が変わっても残るよ。</div>'
         + back
-        + '<p class="hint">戻ったあとに下のメニューも開くよ。トークで「答えた」と送ると、この内容がカードで返ってくるよ。</p></div>';
+        + '<p class="hint">トークに戻ると、下のメニューから予約できるよ。</p></div>';
     }
 
     function renderMissing(message) {
@@ -310,7 +401,7 @@
         return;
       }
       if (!state.likes.length) {
-        formError.textContent = '好きな食べ方を、1つ以上押してね。';
+        formError.textContent = '好きな食べ方を、1つ以上選ぶか、自分で書いてね。';
         return;
       }
       if (!state.times) {
@@ -328,7 +419,8 @@
             name: normalizeName(name),
             likes: state.likes,
             timesPerWeek: state.times,
-            avoids: state.none ? [] : state.avoids
+            avoids: state.none ? [] : state.avoids,
+            allergies: state.allergies
           })
         });
         const data = await res.json();
