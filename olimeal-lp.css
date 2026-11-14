@@ -100,3 +100,22 @@
   object-fit: contain;
   margin: 0;
 }
+
+/* ホーム画面だけ：ロゴとナビゲーションの余白を縮小 */
+@media (max-width: 600px) {
+  body.olimeal-lp .site-nav {
+    gap: 0 !important;
+    padding-top: 8px;
+    padding-bottom: 8px;
+  }
+
+  body.olimeal-lp .site-nav-brand {
+    margin: 0 auto;
+    padding: 0;
+  }
+
+  body.olimeal-lp .site-nav-links {
+    margin-top: 0 !important;
+    padding-top: 0;
+  }
+}
