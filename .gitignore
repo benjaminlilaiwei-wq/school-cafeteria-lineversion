@@ -8,6 +8,7 @@ data/line-users.json
 data/line-users.json.bak
 data/line-users.lock
 data/attendance-predictions.json
+data/weather-forecast.json
 data/line-settings.json
 data/line-push.json
 data/rich-menu.json

@@ -915,11 +915,15 @@
                 let predictionNumber = null;
                 let congestion = 'データ不足';
                 let congestionColor = '#6c757d';
+                let weatherNote = '';
 
                 try {
                     const predictionResponse = await fetch('api/ai-advice.php?action=prediction-number');
                     if (predictionResponse.ok) {
                         const predictionData = await predictionResponse.json();
+                        if (typeof predictionData.weatherNote === 'string') {
+                            weatherNote = predictionData.weatherNote;
+                        }
                         if (predictionData.prediction !== null && predictionData.prediction !== undefined) {
                             predictionNumber = predictionData.prediction;
                             if (predictionData.congestion) {
@@ -970,6 +974,7 @@
                         <p><strong>🍽️ 本日の定食:</strong> ${todayMenu ? todayMenu.food : '未設定'}</p>
                         <p>${timeHtml}<strong>👥 本日の予約人数:</strong> ${reservationCount}人<br>
                         ${predictionNumber !== null ? `<strong>📊 予測来客数:</strong> 約${predictionNumber}人<br>` : ''}
+                        ${weatherNote ? `<strong>🌤 天気:</strong> ${weatherNote.replace(/[&<>]/g, function (ch) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;' }[ch]; })}<br>` : ''}
                         <strong>📈 混雑予測:</strong> <span style="color: ${congestionColor}; font-weight: bold;">${congestion}</span></p>
                     </div>
                 `;
