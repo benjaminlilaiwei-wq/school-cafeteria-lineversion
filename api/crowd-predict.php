@@ -522,6 +522,13 @@ function crowd_open_meteo_url($raw) {
     if (!isset($query['timezone']) || trim((string) $query['timezone']) === '') {
         $query['timezone'] = 'Asia/Tokyo';
     }
+    $hourlyFields = array_filter(array_map('trim', explode(',', (string) ($query['hourly'] ?? ''))));
+    if (!in_array('weather_code', $hourlyFields, true)) {
+        $hourlyFields[] = 'weather_code';
+    }
+    if (count($hourlyFields) > 0) {
+        $query['hourly'] = implode(',', $hourlyFields);
+    }
     return 'https://api.open-meteo.com/v1/forecast?' . http_build_query($query);
 }
 
@@ -615,6 +622,8 @@ function crowd_lunch_hours($hourly, $date) {
         'precipitation' => 'precipitation',
         'apparent' => 'apparent_temperature',
         'humidity' => 'relative_humidity_2m',
+        'temperature' => 'temperature_2m',
+        'code' => 'weather_code',
     ];
     foreach ($times as $i => $time) {
         $time = (string) $time;
@@ -638,6 +647,130 @@ function crowd_lunch_hours($hourly, $date) {
         $out[] = $row;
     }
     return $out;
+}
+
+function crowd_weather_code_label($code) {
+    $code = (int) $code;
+    if ($code >= 95) {
+        return '雷雨';
+    }
+    if ($code >= 85) {
+        return 'にわか雪';
+    }
+    if ($code >= 80) {
+        return 'にわか雨';
+    }
+    if ($code >= 71) {
+        return '雪';
+    }
+    if ($code >= 61) {
+        return '雨';
+    }
+    if ($code >= 51) {
+        return '弱い雨';
+    }
+    if ($code === 45 || $code === 48) {
+        return '霧';
+    }
+    if ($code === 3) {
+        return '曇り';
+    }
+    if ($code >= 1) {
+        return '晴れのち曇り';
+    }
+    if ($code === 0) {
+        return '晴れ';
+    }
+    return '';
+}
+
+function crowd_weather_code_rank($code) {
+    $code = (int) $code;
+    if ($code >= 95) {
+        return 80;
+    }
+    if ($code >= 85) {
+        return 70;
+    }
+    if ($code >= 71 && $code <= 77) {
+        return 65;
+    }
+    if ($code >= 80) {
+        return 60;
+    }
+    if ($code >= 61) {
+        return 55;
+    }
+    if ($code >= 51) {
+        return 40;
+    }
+    if ($code === 45 || $code === 48) {
+        return 20;
+    }
+    if ($code === 3) {
+        return 10;
+    }
+    if ($code >= 1) {
+        return 5;
+    }
+    return 0;
+}
+
+function crowd_weather_sentence($hours) {
+    if (count($hours) === 0) {
+        return 'この日の天気は、昼の予報が範囲にないので出せません。';
+    }
+    $rain = 0.0;
+    $temps = [];
+    $bestCode = null;
+    $bestRank = -1;
+    foreach ($hours as $row) {
+        $wet = 0.0;
+        if ($row['rain'] !== null) {
+            $wet = max($wet, (float) $row['rain']);
+        }
+        if ($row['precipitation'] !== null) {
+            $wet = max($wet, (float) $row['precipitation']);
+        }
+        if ($wet > $rain) {
+            $rain = $wet;
+        }
+        if (isset($row['temperature']) && $row['temperature'] !== null) {
+            $temps[] = (float) $row['temperature'];
+        }
+        if (isset($row['code']) && $row['code'] !== null) {
+            $rank = crowd_weather_code_rank($row['code']);
+            if ($rank > $bestRank) {
+                $bestRank = $rank;
+                $bestCode = (int) $row['code'];
+            }
+        }
+    }
+    $label = '';
+    if ($rain >= 4.0) {
+        $label = '強い雨';
+    } elseif ($rain >= 1.0) {
+        $label = '雨';
+    } elseif ($rain >= 0.2) {
+        $label = '弱い雨';
+    } elseif ($bestCode !== null) {
+        $label = crowd_weather_code_label($bestCode);
+    }
+    if ($label === '') {
+        $label = '雨の降らない予報';
+    }
+    $sentence = 'この日の天気は' . $label . 'です。';
+    $extra = [];
+    if ($rain >= 0.2) {
+        $extra[] = '昼の雨は最大' . number_format($rain, 1) . 'mm';
+    }
+    if (count($temps) > 0) {
+        $extra[] = '気温は約' . (int) round(array_sum($temps) / count($temps)) . '℃';
+    }
+    if (count($extra) > 0) {
+        $sentence .= implode('、', $extra) . 'です。';
+    }
+    return $sentence;
 }
 
 function crowd_weather_multiplier($hours) {
@@ -707,6 +840,7 @@ function crowd_weather_multiplier($hours) {
         'multiplier' => $multiplier,
         'public' => implode('。', $public),
         'detail' => count($bits) > 0 ? implode('。', $bits) . '。' : '昼の天気は、人数を変えるほどではありません。',
+        'sentence' => crowd_weather_sentence($hours),
         'changed' => $multiplier < 0.999,
     ];
 }
@@ -820,10 +954,50 @@ function crowd_recent_bias_people($targetDate) {
     ];
 }
 
+function crowd_weather_view($date) {
+    $bundle = crowd_load_weather_hourly();
+    $view = [
+        'status' => $bundle['status'],
+        'multiplier' => 1.0,
+        'changed' => false,
+        'adjustPublic' => '',
+        'detail' => '',
+        'sentence' => '',
+        'showPublic' => false,
+    ];
+    if ($bundle['status'] === 'unset') {
+        $view['sentence'] = 'この日の天気は、予報のURLが未設定なので出せません。';
+        $view['detail'] = '天気はまだ使っていません。Renderの環境変数 OPEN_METEO_FORECAST_URL に予報のURLを入れると、雨の日を反映します。';
+        return $view;
+    }
+    if ($bundle['status'] === 'bad-url') {
+        $view['sentence'] = 'この日の天気は、予報のURLが正しくないので出せません。';
+        $view['detail'] = 'OPEN_METEO_FORECAST_URL の値が予報のURLになっていないので、天気は入れていません。';
+        return $view;
+    }
+    if ($bundle['hourly'] === null) {
+        $view['sentence'] = 'この日の天気は、予報を取れなかったので出せません。';
+        $view['detail'] = '天気予報を取れなかったので、天気なしで計算しています。';
+        return $view;
+    }
+    $weather = crowd_weather_multiplier(crowd_lunch_hours($bundle['hourly'], $date));
+    $view['multiplier'] = $weather['multiplier'];
+    $view['changed'] = $weather['changed'];
+    $view['adjustPublic'] = $weather['public'];
+    $view['detail'] = $weather['detail'];
+    $view['sentence'] = $weather['sentence'];
+    $view['showPublic'] = true;
+    if ($bundle['status'] === 'stale') {
+        $view['detail'] = rtrim($view['detail'], '。') . '。新しい予報は取れなかったので、前に保存した予報を使っています。';
+    }
+    return $view;
+}
+
 function crowd_day_context($targetDate, $prediction) {
     $context = [
         'prediction' => $prediction,
         'public' => '',
+        'sentence' => '',
         'lines' => [],
         'reserved' => 0,
         'weatherStatus' => 'skipped',
@@ -840,27 +1014,21 @@ function crowd_day_context($targetDate, $prediction) {
         }
         $context['lines'][] = $bias['detail'];
     }
-    $bundle = crowd_load_weather_hourly();
-    $context['weatherStatus'] = $bundle['status'];
     $publicBits = [];
-    if ($bundle['status'] === 'unset') {
-        $context['lines'][] = '天気はまだ使っていません。Renderの環境変数 OPEN_METEO_FORECAST_URL に予報のURLを入れると、雨の日を反映します。';
-    } elseif ($bundle['status'] === 'bad-url') {
-        $context['lines'][] = 'OPEN_METEO_FORECAST_URL の値が予報のURLになっていないので、天気は入れていません。';
-    } elseif ($bundle['hourly'] === null) {
-        $context['lines'][] = '天気予報を取れなかったので、天気なしで計算しています。';
-    } else {
-        $weather = crowd_weather_multiplier(crowd_lunch_hours($bundle['hourly'], $targetDate));
-        if ($weather['changed']) {
-            $prediction = (int) round($prediction * $weather['multiplier']);
-        }
-        $context['lines'][] = $weather['detail'];
-        if ($weather['public'] !== '') {
-            $publicBits[] = $weather['public'];
-        }
-        if ($bundle['status'] === 'stale') {
-            $context['lines'][] = '新しい予報は取れなかったので、前に保存した予報を使っています。';
-        }
+    $view = crowd_weather_view($targetDate);
+    $context['weatherStatus'] = $view['status'];
+    $context['sentence'] = $view['sentence'];
+    if ($view['detail'] !== '') {
+        $context['lines'][] = $view['detail'];
+    }
+    if ($view['changed']) {
+        $prediction = (int) round($prediction * $view['multiplier']);
+    }
+    if ($view['showPublic'] && $view['sentence'] !== '') {
+        $publicBits[] = rtrim($view['sentence'], '。');
+    }
+    if ($view['adjustPublic'] !== '') {
+        $publicBits[] = $view['adjustPublic'];
     }
     $event = crowd_event_multiplier(crowd_event_message($targetDate));
     if ($event['detail'] !== '') {
@@ -1036,6 +1204,7 @@ function crowd_build_prediction($targetDate) {
     $context = [
         'prediction' => $prediction,
         'public' => '',
+        'sentence' => '',
         'lines' => [],
         'reserved' => 0,
         'weatherStatus' => 'skipped',
@@ -1043,6 +1212,13 @@ function crowd_build_prediction($targetDate) {
     if ($closedReason === null && $prediction !== null) {
         $context = crowd_day_context($targetDate, $prediction);
         $prediction = $context['prediction'];
+    } elseif ($closedReason !== null) {
+        $closedWeather = crowd_weather_view($targetDate);
+        $context['sentence'] = $closedWeather['sentence'];
+        $context['weatherStatus'] = $closedWeather['status'];
+        if ($closedWeather['showPublic']) {
+            $context['public'] = $closedWeather['sentence'];
+        }
     }
 
     $menus = [];
@@ -1070,11 +1246,17 @@ function crowd_build_prediction($targetDate) {
     if ($closedReason !== null) {
         $lines[] = '予測来客数: 0人';
         $lines[] = 'この日は休業です（' . $closedReason . '）。来客は見込んでいません。';
+        if (($context['sentence'] ?? '') !== '') {
+            $lines[] = $context['sentence'];
+        }
         $lines[] = 'この判断にChatGPTは使っていません。';
     } elseif ($prediction === null) {
         $lines[] = '営業日の来客記録が足りないので、人数は出せません。';
     } else {
         $lines[] = '予測来客数: ' . $prediction . '人';
+        if (($context['sentence'] ?? '') !== '') {
+            $lines[] = $context['sentence'];
+        }
         $lines[] = '人数はサーバーで計算しています。ChatGPTはこの計算に入っていません。';
         $lines[] = '休業日の0人は ' . $excluded . ' 日分を除いています。';
         if ($blended !== null) {

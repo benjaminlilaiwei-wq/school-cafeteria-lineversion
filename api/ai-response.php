@@ -320,6 +320,11 @@ function getTodayCafeteriaContextForPrompt() {
         $lines[] = "- 混雑予測を聞かれたら、予約人数と予測来客数を伝え、混雑度も簡潔に説明する。";
         $lines[] = "- パンと食堂のどちらがいいか聞かれたら、混雑に応じてパンまたは食堂を推奨する（休業日ではないので通常の推奨）。";
     }
+    $weatherNote = trim((string) ($crowdToday['weatherNote'] ?? ''));
+    if ($weatherNote !== '') {
+        $lines[] = '- ' . $weatherNote;
+        $lines[] = '- 天気を聞かれたら、上の「この日の天気は」からそのまま伝える。';
+    }
 
     // メニュー価格・定食日程（AIの根拠として渡す）
     $menuItems = readJsonSafe($dataDir . '/menu.json');
