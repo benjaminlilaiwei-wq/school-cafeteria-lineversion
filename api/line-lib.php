@@ -2024,7 +2024,12 @@ function line_crowd_hint() {
     if (!is_array($payload) || ($payload['predictionNumber'] ?? null) === null) {
         return '今日の混雑人数は出していない。聞かれたら食堂のページを見てね、と返す。人数は自分で計算しない。';
     }
-    return '今日の来客見込みはサーバー計算で約' . $payload['predictionNumber'] . '人。この数字を変えない。自分で計算し直さない。';
+    $hint = '今日の来客見込みはサーバー計算で約' . $payload['predictionNumber'] . '人。';
+    $weatherNote = trim((string) ($payload['weatherNote'] ?? ''));
+    if ($weatherNote !== '') {
+        $hint .= $weatherNote;
+    }
+    return $hint . 'この数字を変えない。自分で計算し直さない。';
 }
 
 function line_ai_reply($text, $user) {

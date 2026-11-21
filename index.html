@@ -147,11 +147,16 @@
             const predictionData = await predictionResponse.json();
             if (predictionData.prediction !== null && predictionData.prediction !== undefined && predictionData.congestion) {
               const congestion = predictionData.congestion;
+              const weatherNote = typeof predictionData.weatherNote === 'string' ? predictionData.weatherNote : '';
+              const weatherHtml = weatherNote
+                ? `<p>${weatherNote.replace(/[&<>]/g, function (ch) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;' }[ch]; })}</p>`
+                : '';
               congestionDiv.innerHTML = `
                 <div class="crowd" style="border-left-color: ${congestion.color};">
                   <p class="menu-label">きょうの混みぐあい</p>
                   <p class="crowd-level" style="color: ${congestion.color};">${congestion.text}</p>
                   ${predictionData.prediction !== null ? `<p>だいたい ${predictionData.prediction} 人くらい来そうです。</p>` : ''}
+                  ${weatherHtml}
                 </div>
               `;
             } else {

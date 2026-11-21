@@ -1327,6 +1327,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
             'date' => $predictionDate,
             'closed' => !empty($payload['closed']),
             'method' => $payload['method'] ?? '',
+            'weatherNote' => (string) ($payload['weatherNote'] ?? ''),
         ], JSON_UNESCAPED_UNICODE);
     } else {
         http_response_code(400);
