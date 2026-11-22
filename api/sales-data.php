@@ -14,23 +14,24 @@ if (!defined('SALES_DATA_INTERNAL')) {
     }
 }
 
+require_once __DIR__ . '/supabase-store.php';
 $dataDir = __DIR__ . '/../data';
 $file = $dataDir . '/sales-data.json';
 $GLOBALS['SALES_DATA_FILE'] = $file;
-
-if (!is_dir($dataDir)) {
-    mkdir($dataDir, 0777, true);
-}
-
-if (!file_exists($file)) {
-    file_put_contents($file, json_encode([], JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT));
-}
 
 function salesDataFile() {
     return (string) ($GLOBALS['SALES_DATA_FILE'] ?? '');
 }
 
 function readJsonSafe($file) {
+    if (cafeteria_id_from_path($file) !== null) {
+        $loaded = cafeteria_load($file);
+        if ($loaded['state'] === 'error') {
+            $GLOBALS['sales_read_error'] = true;
+            return [];
+        }
+        return ($loaded['state'] === 'ok' && is_array($loaded['data'])) ? $loaded['data'] : [];
+    }
     if (!file_exists($file)) return [];
     $content = @file_get_contents($file);
     if ($content === false || $content === '') return [];
@@ -39,6 +40,12 @@ function readJsonSafe($file) {
 }
 
 function writeJsonSafe($file, $data) {
+    if (!empty($GLOBALS['sales_read_error'])) {
+        return false;
+    }
+    if (cafeteria_id_from_path($file) !== null) {
+        return cafeteria_write($file, $data);
+    }
     $result = @file_put_contents($file, json_encode($data, JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT), LOCK_EX);
     if ($result !== false) {
         @chmod($file, 0666);
@@ -307,11 +314,23 @@ function verifyReservationByNameAndNumber($name, $reservationNumber) {
 if (!defined('SALES_DATA_INTERNAL')) {
     switch ($_SERVER['REQUEST_METHOD']) {
     case 'GET':
-        // クエリパラメータで予約リストのみを取得する場合
+        $GLOBALS['sales_read_error'] = false;
         if (isset($_GET['reservations']) && $_GET['reservations'] === 'true') {
-            echo json_encode(getAllReservations(), JSON_UNESCAPED_UNICODE);
+            $rows = getAllReservations();
+            if (!empty($GLOBALS['sales_read_error'])) {
+                http_response_code(500);
+                echo json_encode(['error' => 'Supabaseから予約を読めませんでした。' . cafeteria_last_error()], JSON_UNESCAPED_UNICODE);
+                break;
+            }
+            echo json_encode($rows, JSON_UNESCAPED_UNICODE);
         } else {
-            echo json_encode(readJsonSafe($file), JSON_UNESCAPED_UNICODE);
+            $loaded = cafeteria_load($file);
+            if ($loaded['state'] === 'error') {
+                http_response_code(500);
+                echo json_encode(['error' => 'Supabaseから予約を読めませんでした。' . cafeteria_last_error()], JSON_UNESCAPED_UNICODE);
+                break;
+            }
+            echo json_encode($loaded['state'] === 'ok' ? $loaded['data'] : [], JSON_UNESCAPED_UNICODE);
         }
         break;
         

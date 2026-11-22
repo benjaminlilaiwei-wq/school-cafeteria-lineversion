@@ -1,5 +1,6 @@
 <?php
 require_once __DIR__ . '/env.php';
+require_once __DIR__ . '/supabase-store.php';
 date_default_timezone_set('Asia/Tokyo');
 
 if (!function_exists('mb_strpos')) {
@@ -25,6 +26,9 @@ function line_data_dir() {
 }
 
 function line_read_json($file, $fallback) {
+    if (cafeteria_id_from_path($file) !== null) {
+        return cafeteria_read($file, $fallback);
+    }
     if (!file_exists($file)) {
         return $fallback;
     }
@@ -37,6 +41,9 @@ function line_read_json($file, $fallback) {
 }
 
 function line_write_json($file, $data) {
+    if (cafeteria_id_from_path($file) !== null) {
+        return cafeteria_write($file, $data);
+    }
     $flags = JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT;
     if (defined('JSON_INVALID_UTF8_SUBSTITUTE')) {
         $flags |= JSON_INVALID_UTF8_SUBSTITUTE;
@@ -197,6 +204,23 @@ function line_decode_user_file($file) {
 
 function line_users_from_disk() {
     $file = line_data_dir() . '/line-users.json';
+    if (cafeteria_id_from_path($file) !== null && cafeteria_configured()) {
+        $loaded = cafeteria_load($file);
+        if ($loaded['state'] === 'error') {
+            return null;
+        }
+        if ($loaded['state'] !== 'ok' || !is_array($loaded['data'])) {
+            return [];
+        }
+        $clean = [];
+        foreach ($loaded['data'] as $id => $user) {
+            if (!is_array($user)) {
+                continue;
+            }
+            $clean[(string) $id] = $user;
+        }
+        return $clean;
+    }
     $bak = $file . '.bak';
     if (!is_file($file)) {
         $restored = line_decode_user_file($bak);
@@ -237,6 +261,9 @@ function line_users_status() {
 
 function line_write_users_file($users) {
     $file = line_data_dir() . '/line-users.json';
+    if (cafeteria_id_from_path($file) !== null && cafeteria_configured()) {
+        return line_write_json($file, $users);
+    }
     $current = line_decode_user_file($file);
     if (is_array($current) && count($current) > 0) {
         line_write_json($file . '.bak', $current);
@@ -252,6 +279,9 @@ function line_save_users($users) {
         $disk = line_users_from_disk();
         if (!is_array($disk)) {
             $file = line_data_dir() . '/line-users.json';
+            if (cafeteria_id_from_path($file) !== null && cafeteria_configured()) {
+                return false;
+            }
             if (count($users) === 0 || (is_file($file) && (int) @filesize($file) > 2)) {
                 return false;
             }

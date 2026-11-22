@@ -12,6 +12,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
     exit;
 }
 
+require_once __DIR__ . '/supabase-store.php';
 $dataDir = __DIR__ . '/../data';
 
 if (!is_dir($dataDir)) {
@@ -19,6 +20,9 @@ if (!is_dir($dataDir)) {
 }
 
 function readJsonSafe($file) {
+    if (function_exists('cafeteria_id_from_path') && cafeteria_id_from_path($file) !== null) {
+        return cafeteria_read($file, []);
+    }
     if (!file_exists($file)) return [];
     $content = @file_get_contents($file);
     if ($content === false || $content === '') return [];

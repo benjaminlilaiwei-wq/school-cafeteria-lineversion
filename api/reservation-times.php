@@ -11,39 +11,40 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
     exit;
 }
 
-$dataDir = __DIR__ . '/../data';
-$file = $dataDir . '/reservation-times.json';
-
-if (!is_dir($dataDir)) {
-    mkdir($dataDir, 0777, true);
-}
-
-if (!file_exists($file)) {
-    // デフォルトの予約時間設定（複数時間帯対応）
-    $defaultSettings = [
-        'enabled' => false,
-        'timeSlots' => [
-            ['startTime' => '11:30', 'endTime' => '12:45']
-        ],
-        'message' => '予約時間: 11:30-12:45'
-    ];
-    file_put_contents($file, json_encode($defaultSettings, JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT));
-}
+require_once __DIR__ . '/supabase-store.php';
+$file = __DIR__ . '/../data/reservation-times.json';
+$defaultSettings = [
+    'enabled' => false,
+    'timeSlots' => [
+        ['startTime' => '11:30', 'endTime' => '12:45']
+    ],
+    'message' => '予約時間: 11:30-12:45'
+];
 
 function readJsonSafe($file) {
-    $content = @file_get_contents($file);
-    if ($content === false || $content === '') return [];
-    $json = json_decode($content, true);
-    return is_array($json) ? $json : [];
+    $loaded = cafeteria_load($file);
+    if ($loaded['state'] === 'ok' && is_array($loaded['data'])) {
+        return $loaded['data'];
+    }
+    return [];
 }
 
 function writeJsonSafe($file, $data) {
-    return file_put_contents($file, json_encode($data, JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT));
+    return cafeteria_write($file, $data);
 }
 
 switch ($_SERVER['REQUEST_METHOD']) {
     case 'GET':
-        $data = readJsonSafe($file);
+        $loaded = cafeteria_load($file);
+        if ($loaded['state'] === 'error') {
+            http_response_code(500);
+            echo json_encode(['error' => 'Supabaseから読めませんでした。' . cafeteria_last_error()], JSON_UNESCAPED_UNICODE);
+            break;
+        }
+        $data = $loaded['state'] === 'ok' ? $loaded['data'] : $defaultSettings;
+        if ($loaded['state'] === 'empty') {
+            writeJsonSafe($file, $data);
+        }
         // 後方互換性: 古い形式（startTime/endTime）を新しい形式（timeSlots）に変換
         if (isset($data['startTime']) && isset($data['endTime']) && !isset($data['timeSlots'])) {
             $data['timeSlots'] = [
@@ -108,7 +109,11 @@ switch ($_SERVER['REQUEST_METHOD']) {
             $input['message'] = '予約時間: ' . implode(', ', $timeStrings);
         }
         
-        writeJsonSafe($file, $input);
+        if (!writeJsonSafe($file, $input)) {
+            http_response_code(500);
+            echo json_encode(['error' => 'Supabaseに保存できませんでした。' . cafeteria_last_error()], JSON_UNESCAPED_UNICODE);
+            break;
+        }
         echo json_encode(['success' => true, 'message' => '予約時間設定を更新しました'], JSON_UNESCAPED_UNICODE);
         break;
         

@@ -11,29 +11,36 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
   exit;
 }
 
-$dataDir = __DIR__ . '/../data';
-$file = $dataDir . '/reviews.json';
-if (!is_dir($dataDir)) {
-  mkdir($dataDir, 0777, true);
-}
-if (!file_exists($file)) {
-  file_put_contents($file, json_encode([] , JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT));
-}
+require_once __DIR__ . '/supabase-store.php';
+$file = __DIR__ . '/../data/reviews.json';
 
 function read_json($file) {
-  $content = @file_get_contents($file);
-  if ($content === false || $content === '') return [];
-  $json = json_decode($content, true);
-  return is_array($json) ? $json : [];
+  $loaded = cafeteria_load($file);
+  if ($loaded['state'] === 'error') {
+    $GLOBALS['reviews_read_error'] = true;
+    return [];
+  }
+  $data = ($loaded['state'] === 'ok' && is_array($loaded['data'])) ? $loaded['data'] : [];
+  return array_values($data);
 }
 
 function write_json($file, $data) {
-  return file_put_contents($file, json_encode($data, JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT));
+  if (!empty($GLOBALS['reviews_read_error'])) {
+    return false;
+  }
+  return cafeteria_write($file, $data);
 }
 
 switch ($_SERVER['REQUEST_METHOD']) {
   case 'GET':
-    $reviews = read_json($file);
+    $GLOBALS['reviews_read_error'] = false;
+    $loaded = cafeteria_load($file);
+    if ($loaded['state'] === 'error') {
+      http_response_code(500);
+      echo json_encode([ 'error' => 'Supabaseから感想を読めませんでした。' . cafeteria_last_error() ], JSON_UNESCAPED_UNICODE);
+      break;
+    }
+    $reviews = ($loaded['state'] === 'ok' && is_array($loaded['data'])) ? array_values($loaded['data']) : [];
     // 新しい順にソート（idで降順）
     usort($reviews, function($a, $b) {
       $idA = isset($a['id']) ? $a['id'] : 0;
@@ -65,12 +72,20 @@ switch ($_SERVER['REQUEST_METHOD']) {
       }
       
       $reviews[] = $newReview;
-      write_json($file, $reviews);
+      if (!write_json($file, $reviews)) {
+        http_response_code(500);
+        echo json_encode([ 'error' => 'Supabaseに保存できませんでした。' . cafeteria_last_error() ], JSON_UNESCAPED_UNICODE);
+        break;
+      }
       echo json_encode([ 'ok' => true, 'review' => $newReview ], JSON_UNESCAPED_UNICODE);
     } 
     // 既存のレビュー配列を置き換える場合（管理者用）
     else if (is_array($data)) {
-      write_json($file, $data);
+      if (!write_json($file, $data)) {
+        http_response_code(500);
+        echo json_encode([ 'error' => 'Supabaseに保存できませんでした。' . cafeteria_last_error() ], JSON_UNESCAPED_UNICODE);
+        break;
+      }
       echo json_encode([ 'ok' => true ], JSON_UNESCAPED_UNICODE);
     } else {
       http_response_code(400);
@@ -94,7 +109,11 @@ switch ($_SERVER['REQUEST_METHOD']) {
     });
     $reviews = array_values($reviews); // インデックスを再構築
     
-    write_json($file, $reviews);
+    if (!write_json($file, $reviews)) {
+      http_response_code(500);
+      echo json_encode([ 'error' => 'Supabaseに保存できませんでした。' . cafeteria_last_error() ], JSON_UNESCAPED_UNICODE);
+      break;
+    }
     echo json_encode([ 'ok' => true ], JSON_UNESCAPED_UNICODE);
     break;
     

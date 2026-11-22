@@ -260,23 +260,13 @@
 
       try {
         let allergiesData = { allergies: [] };
-        try {
-          allergiesData = await apiGet('allergies.php');
-        } catch (e) {
-          const res = await fetch('data/allergies.json', { cache: 'no-store' });
-          if (res.ok) allergiesData = await res.json();
-        }
+        allergiesData = await apiGet('allergies.php');
         const allergies = allergiesData.allergies || [];
 
         const rows = [];
 
         let dailyMenus = [];
-        try {
-          dailyMenus = await apiGet('daily-menu.php');
-        } catch (e) {
-          const fallback = await fetch('data/daily-menu.json', { cache: 'no-store' }).then(r => r.ok ? r.json() : []);
-          dailyMenus = Array.isArray(fallback) ? fallback : [];
-        }
+        dailyMenus = await apiGet('daily-menu.php');
         const todayMenu = Array.isArray(dailyMenus) ? dailyMenus.find(m => (m.date || '') === today) : null;
         const todayFood = todayMenu ? (todayMenu.food || '').trim() : '';
 

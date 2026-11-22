@@ -11,29 +11,26 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
   exit;
 }
 
-$dataDir = __DIR__ . '/../data';
-$file = $dataDir . '/daily-menu.json';
-if (!is_dir($dataDir)) {
-  mkdir($dataDir, 0777, true);
-}
-if (!file_exists($file)) {
-  file_put_contents($file, json_encode([] , JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT));
-}
+require_once __DIR__ . '/supabase-store.php';
+$file = __DIR__ . '/../data/daily-menu.json';
 
 function read_json($file) {
-  $content = @file_get_contents($file);
-  if ($content === false || $content === '') return [];
-  $json = json_decode($content, true);
-  return is_array($json) ? $json : [];
+  return cafeteria_read($file, []);
 }
 
 function write_json($file, $data) {
-  return file_put_contents($file, json_encode($data, JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT));
+  return cafeteria_write($file, $data);
 }
 
 switch ($_SERVER['REQUEST_METHOD']) {
   case 'GET':
-    echo json_encode(read_json($file), JSON_UNESCAPED_UNICODE);
+    $loaded = cafeteria_load($file);
+    if ($loaded['state'] === 'error') {
+      http_response_code(500);
+      echo json_encode([ 'error' => 'Supabaseから読めませんでした。' . cafeteria_last_error() ], JSON_UNESCAPED_UNICODE);
+      break;
+    }
+    echo json_encode($loaded['state'] === 'ok' ? $loaded['data'] : [], JSON_UNESCAPED_UNICODE);
     break;
   case 'POST':
     $input = file_get_contents('php://input');
@@ -43,7 +40,11 @@ switch ($_SERVER['REQUEST_METHOD']) {
       echo json_encode([ 'error' => 'Invalid JSON array' ], JSON_UNESCAPED_UNICODE);
       break;
     }
-    write_json($file, $data);
+    if (!write_json($file, $data)) {
+      http_response_code(500);
+      echo json_encode([ 'error' => 'Supabaseに保存できませんでした。' . cafeteria_last_error() ], JSON_UNESCAPED_UNICODE);
+      break;
+    }
     echo json_encode([ 'ok' => true ], JSON_UNESCAPED_UNICODE);
     break;
   default:

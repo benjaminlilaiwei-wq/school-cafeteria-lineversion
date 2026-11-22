@@ -4,6 +4,7 @@
  * 休業日（来客0かつ販売なし、祝日、土日の0人）は平均に入れない。
  */
 date_default_timezone_set('Asia/Tokyo');
+require_once __DIR__ . '/supabase-store.php';
 
 function crowd_data_dir() {
     return __DIR__ . '/../data';
@@ -18,6 +19,9 @@ function crowd_now_iso() {
 }
 
 function crowd_read_json($file, $fallback) {
+    if (cafeteria_id_from_path($file) !== null) {
+        return cafeteria_read($file, $fallback);
+    }
     if (!is_file($file)) {
         return $fallback;
     }
@@ -30,6 +34,9 @@ function crowd_read_json($file, $fallback) {
 }
 
 function crowd_write_json($file, $data) {
+    if (cafeteria_id_from_path($file) !== null) {
+        return cafeteria_write($file, $data);
+    }
     $flags = JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT;
     if (defined('JSON_INVALID_UTF8_SUBSTITUTE')) {
         $flags |= JSON_INVALID_UTF8_SUBSTITUTE;

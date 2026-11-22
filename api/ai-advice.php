@@ -195,23 +195,11 @@ function callAIForAttendancePrediction($messages, $config, $maxTokens = 3500) {
 }
 
 function readHolidays() {
-    global $dataDir;
-    $file = $dataDir . '/holidays.json';
-    if (!file_exists($file)) return [];
-    $content = @file_get_contents($file);
-    if ($content === false || $content === '') return [];
-    $json = json_decode($content, true);
-    return is_array($json) ? $json : [];
+    return cafeteria_read(__DIR__ . '/../data/holidays.json', []);
 }
 
 function readEvents() {
-    global $dataDir;
-    $file = $dataDir . '/events.json';
-    if (!file_exists($file)) return [];
-    $content = @file_get_contents($file);
-    if ($content === false || $content === '') return [];
-    $json = json_decode($content, true);
-    return is_array($json) ? $json : [];
+    return cafeteria_read(__DIR__ . '/../data/events.json', []);
 }
 
 // OpenAI互換の messages を Gemini 用の単一プロンプトにまとめる
@@ -357,28 +345,18 @@ function callOpenAIAPIWithStatus($messages, $apiConfig, $timeout = 120, $connect
 
 // 来客数データを読み込む
 function readAttendanceData() {
-    global $dataDir;
-    $jsonPath = $dataDir . '/attendance-data.json';
-    if (file_exists($jsonPath)) {
-        $content = file_get_contents($jsonPath);
-        $data = json_decode($content, true);
-        if (is_array($data) && isset($data['attendance'])) {
-            return $data['attendance'];
-        }
+    $data = cafeteria_read(__DIR__ . '/../data/attendance-data.json', []);
+    if (is_array($data) && isset($data['attendance']) && is_array($data['attendance'])) {
+        return $data['attendance'];
     }
     return [];
 }
 
 // 来客数データ（曜日情報付き）を読み込む
 function readAttendanceDataWithDays() {
-    global $dataDir;
-    $jsonPath = $dataDir . '/attendance-data.json';
-    if (file_exists($jsonPath)) {
-        $content = file_get_contents($jsonPath);
-        $data = json_decode($content, true);
-        if (is_array($data) && isset($data['attendanceWithDays'])) {
-            return $data['attendanceWithDays'];
-        }
+    $data = cafeteria_read(__DIR__ . '/../data/attendance-data.json', []);
+    if (is_array($data) && isset($data['attendanceWithDays']) && is_array($data['attendanceWithDays'])) {
+        return $data['attendanceWithDays'];
     }
     return [];
 }
@@ -422,31 +400,12 @@ function statisticalMedianFromInts(array $nums) {
 
 // 予約・売上データ（メニュー別集計用）
 function readSalesDataJson() {
-    global $dataDir;
-    $file = $dataDir . '/sales-data.json';
-    if (!file_exists($file)) {
-        return [];
-    }
-    $content = @file_get_contents($file);
-    if ($content === false || $content === '') {
-        return [];
-    }
-    $decoded = json_decode($content, true);
-    return is_array($decoded) ? $decoded : [];
+    return cafeteria_read(__DIR__ . '/../data/sales-data.json', []);
 }
 
 // アップロードされた月次表から取り込んだ日別レコード [{date, day, attendance, menuSales}, ...]
 function readAttendanceDailyRecords() {
-    global $dataDir;
-    $jsonPath = $dataDir . '/attendance-data.json';
-    if (!file_exists($jsonPath)) {
-        return [];
-    }
-    $content = @file_get_contents($jsonPath);
-    if ($content === false || $content === '') {
-        return [];
-    }
-    $data = json_decode($content, true);
+    $data = cafeteria_read(__DIR__ . '/../data/attendance-data.json', []);
     if (!is_array($data)) {
         return [];
     }
@@ -876,17 +835,7 @@ function getTodayDayOfWeek() {
 
 // 定食設定（日別メニュー）を読み込む
 function readDailyMenu() {
-    global $dataDir;
-    $file = $dataDir . '/daily-menu.json';
-    if (!file_exists($file)) {
-        return [];
-    }
-    $content = @file_get_contents($file);
-    if ($content === false || $content === '') {
-        return [];
-    }
-    $data = json_decode($content, true);
-    return is_array($data) ? $data : [];
+    return cafeteria_read(__DIR__ . '/../data/daily-menu.json', []);
 }
 
 function getHolidayEntryForDate($date) {
@@ -933,30 +882,22 @@ function getMonthlyMenusBeforeDate($dailyMenus, $date) {
 
 // 定食提案をキャッシュから読み込む
 function getCachedMenuAdvice($date) {
-    global $dataDir;
-    $cacheFile = $dataDir . '/menu-advice-cache.json';
-    if (file_exists($cacheFile)) {
-        $cache = json_decode(file_get_contents($cacheFile), true);
-        if (is_array($cache) && isset($cache[$date])) {
-            return $cache[$date];
-        }
+    $cache = cafeteria_read(__DIR__ . '/../data/menu-advice-cache.json', []);
+    if (is_array($cache) && isset($cache[$date])) {
+        return $cache[$date];
     }
     return null;
 }
 
 // 定食提案をキャッシュに保存
 function saveCachedMenuAdvice($date, $advice) {
-    global $dataDir;
-    $cacheFile = $dataDir . '/menu-advice-cache.json';
-    $cache = [];
-    if (file_exists($cacheFile)) {
-        $cache = json_decode(file_get_contents($cacheFile), true);
-        if (!is_array($cache)) {
-            $cache = [];
-        }
+    $cacheFile = __DIR__ . '/../data/menu-advice-cache.json';
+    $cache = cafeteria_read($cacheFile, []);
+    if (!is_array($cache)) {
+        $cache = [];
     }
     $cache[$date] = $advice;
-    file_put_contents($cacheFile, json_encode($cache, JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT));
+    cafeteria_write($cacheFile, $cache);
 }
 
 // 既に設定されている定食メニューについて、作り方・アドバイスを生成

@@ -1883,6 +1883,9 @@ function answerFromCafeteriaData($userMessage) {
 }
 
 function readJsonSafe($path) {
+    if (function_exists('cafeteria_id_from_path') && cafeteria_id_from_path($path) !== null) {
+        return cafeteria_read($path, []);
+    }
     if (!file_exists($path)) return [];
     $txt = @file_get_contents($path);
     if ($txt === false || $txt === '') return [];

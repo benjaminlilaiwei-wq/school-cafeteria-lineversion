@@ -12,38 +12,29 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
   exit;
 }
 
-$dataDir = __DIR__ . '/../data';
-$file = $dataDir . '/menu.json';
-$lastResetFile = $dataDir . '/last-stock-reset.json';
-if (!is_dir($dataDir)) {
-  mkdir($dataDir, 0777, true);
-}
-if (!file_exists($file)) {
-  file_put_contents($file, json_encode([] , JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT));
-}
+require_once __DIR__ . '/supabase-store.php';
+$file = __DIR__ . '/../data/menu.json';
+$lastResetFile = __DIR__ . '/../data/last-stock-reset.json';
 
 function read_json($file) {
-  $content = @file_get_contents($file);
-  if ($content === false || $content === '') return [];
-  $json = json_decode($content, true);
-  return is_array($json) ? $json : [];
+  return cafeteria_read($file, []);
 }
 
 function write_json($file, $data) {
-  return file_put_contents($file, json_encode($data, JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT));
+  return cafeteria_write($file, $data);
 }
 
 // 日付が変わったとき、または手動リセット時にメニュー残数を initialStock に戻す
 function maybe_reset_stock_by_day($menus, $file, $lastResetFile, $force = false) {
   $today = date('Y-m-d');
   $lastDate = '';
-  if (!$force && file_exists($lastResetFile)) {
-    $raw = @file_get_contents($lastResetFile);
-    if ($raw !== false) {
-      $data = json_decode($raw, true);
-      if (is_array($data) && !empty($data['date'])) {
-        $lastDate = $data['date'];
-      }
+  if (!$force) {
+    $loaded = cafeteria_load($lastResetFile);
+    if ($loaded['state'] === 'error') {
+      return $menus;
+    }
+    if ($loaded['state'] === 'ok' && is_array($loaded['data']) && !empty($loaded['data']['date'])) {
+      $lastDate = $loaded['data']['date'];
     }
   }
   if (!$force && $lastDate === $today) {
@@ -67,7 +58,13 @@ function maybe_reset_stock_by_day($menus, $file, $lastResetFile, $force = false)
 
 switch ($_SERVER['REQUEST_METHOD']) {
   case 'GET':
-    $menus = read_json($file);
+    $loaded = cafeteria_load($file);
+    if ($loaded['state'] === 'error') {
+      http_response_code(500);
+      echo json_encode([ 'error' => 'Supabaseから読めませんでした。' . cafeteria_last_error() ], JSON_UNESCAPED_UNICODE);
+      break;
+    }
+    $menus = $loaded['state'] === 'ok' ? $loaded['data'] : [];
     $forceReset = isset($_GET['reset']) && $_GET['reset'] === '1';
     $menus = maybe_reset_stock_by_day($menus, $file, $lastResetFile, $forceReset);
     echo json_encode($menus, JSON_UNESCAPED_UNICODE);
@@ -80,7 +77,11 @@ switch ($_SERVER['REQUEST_METHOD']) {
       echo json_encode([ 'error' => 'Invalid JSON array' ], JSON_UNESCAPED_UNICODE);
       break;
     }
-    write_json($file, $data);
+    if (!write_json($file, $data)) {
+      http_response_code(500);
+      echo json_encode([ 'error' => 'Supabaseに保存できませんでした。' . cafeteria_last_error() ], JSON_UNESCAPED_UNICODE);
+      break;
+    }
     echo json_encode([ 'ok' => true ], JSON_UNESCAPED_UNICODE);
     break;
   default:

@@ -11,27 +11,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
     exit;
 }
 
-$dataDir = __DIR__ . '/../data';
-$allergiesFile = $dataDir . '/allergies.json';
-$dailyMenuFile = $dataDir . '/daily-menu.json';
-
-if (!is_dir($dataDir)) {
-    mkdir($dataDir, 0777, true);
-}
-if (!file_exists($allergiesFile)) {
-    file_put_contents($allergiesFile, json_encode(['allergies' => []], JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT));
-}
+require_once __DIR__ . '/supabase-store.php';
+$allergiesFile = __DIR__ . '/../data/allergies.json';
+$dailyMenuFile = __DIR__ . '/../data/daily-menu.json';
 
 function readJson($file) {
-    if (!file_exists($file)) return [];
-    $content = @file_get_contents($file);
-    if ($content === false || $content === '') return [];
-    $data = json_decode($content, true);
-    return is_array($data) ? $data : [];
+    $loaded = cafeteria_load($file);
+    if ($loaded['state'] === 'ok' && is_array($loaded['data'])) {
+        return $loaded['data'];
+    }
+    return [];
 }
 
 function writeJson($file, $data) {
-    return file_put_contents($file, json_encode($data, JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT));
+    return cafeteria_write($file, $data);
 }
 
 // 定食に毎回つくもの: お米・お味噌汁 のアレルギー
@@ -126,13 +119,21 @@ function syncAllergiesFromDailyMenu($allergiesFile, $dailyMenuFile) {
 
     $newAllergies = array_merge($other, $newSetMealList);
     $allergiesData['allergies'] = $newAllergies;
-    writeJson($allergiesFile, $allergiesData);
+    if (!writeJson($allergiesFile, $allergiesData)) {
+        return ['ok' => false, 'synced' => 0];
+    }
     return ['ok' => true, 'synced' => count($newSetMealList)];
 }
 
 switch ($_SERVER['REQUEST_METHOD']) {
     case 'GET':
-        $data = readJson($allergiesFile);
+        $loaded = cafeteria_load($allergiesFile);
+        if ($loaded['state'] === 'error') {
+            http_response_code(500);
+            echo json_encode(['error' => 'Supabaseから読めませんでした。' . cafeteria_last_error()], JSON_UNESCAPED_UNICODE);
+            break;
+        }
+        $data = $loaded['state'] === 'ok' ? $loaded['data'] : [];
         if (!isset($data['allergies'])) {
             $data = ['allergies' => []];
         }
@@ -146,13 +147,22 @@ switch ($_SERVER['REQUEST_METHOD']) {
             $body = [];
         }
         if (isset($body['action']) && $body['action'] === 'sync_from_daily_menu') {
-            syncAllergiesFromDailyMenu($allergiesFile, $dailyMenuFile);
+            $synced = syncAllergiesFromDailyMenu($allergiesFile, $dailyMenuFile);
+            if (empty($synced['ok'])) {
+                http_response_code(500);
+                echo json_encode(['error' => 'Supabaseに保存できませんでした。' . cafeteria_last_error()], JSON_UNESCAPED_UNICODE);
+                break;
+            }
             echo json_encode(['ok' => true, 'message' => '定食のアレルギー情報を反映しました'], JSON_UNESCAPED_UNICODE);
             break;
         }
         if (isset($body['allergies']) && is_array($body['allergies'])) {
             $data = ['allergies' => $body['allergies']];
-            writeJson($allergiesFile, $data);
+            if (!writeJson($allergiesFile, $data)) {
+                http_response_code(500);
+                echo json_encode(['error' => 'Supabaseに保存できませんでした。' . cafeteria_last_error()], JSON_UNESCAPED_UNICODE);
+                break;
+            }
             echo json_encode(['ok' => true], JSON_UNESCAPED_UNICODE);
             break;
         }
