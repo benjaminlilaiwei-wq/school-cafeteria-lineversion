@@ -226,9 +226,15 @@ function cafeteria_load($path) {
         cafeteria_cache_set($id, 'empty', null);
         return $result;
     }
-    if (!is_array($rows) || !isset($rows[0]) || !is_array($rows[0]) || !array_key_exists('data', $rows[0]) || $rows[0]['data'] === null) {
+    if (!is_array($rows) || !isset($rows[0]) || !is_array($rows[0]) || !array_key_exists('data', $rows[0])) {
         $GLOBALS['cafeteria_last_error'] = 'Supabaseの応答に data 列がありません。テーブル cafeteria の列は id と data です。応答: ' . substr((string) $raw, 0, 180);
         return ['state' => 'error', 'data' => null];
+    }
+    // 行はあるが data が NULL のときは、まだ未入力。エラーにするとカレンダーも追加もできなくなる。
+    if ($rows[0]['data'] === null) {
+        $result = ['state' => 'empty', 'data' => null];
+        cafeteria_cache_set($id, 'empty', null);
+        return $result;
     }
     $data = cafeteria_normalize_data($rows[0]['data']);
     if ($data === null) {
