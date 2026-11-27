@@ -726,11 +726,36 @@ function recommend_date_label($date) {
     return date('n月j日', $stamp) . '（' . $names[$index] . '）';
 }
 
+function recommend_pick_open_dates($startDate, $isClosed, $limit = 2) {
+    $days = [];
+    $cursor = strtotime($startDate . ' 00:00:00');
+    if ($cursor === false) {
+        return $days;
+    }
+    for ($i = 0; $i < 45 && count($days) < $limit; $i++) {
+        $date = date('Y-m-d', $cursor);
+        if (!$isClosed($date)) {
+            $days[] = [$date, $date === $startDate ? 'today' : 'later'];
+        }
+        $cursor = strtotime('+1 day', $cursor);
+    }
+    return $days;
+}
+
 function recommend_days() {
-    return [
-        [date('Y-m-d'), 'today'],
-        [date('Y-m-d', strtotime('+1 day')), 'tomorrow'],
-    ];
+    return recommend_pick_open_dates(date('Y-m-d'), function ($date) {
+        return line_holiday($date) !== null;
+    });
+}
+
+function recommend_day_word($date) {
+    if ($date === date('Y-m-d')) {
+        return '今日';
+    }
+    if ($date === date('Y-m-d', strtotime('+1 day'))) {
+        return '明日';
+    }
+    return '';
 }
 
 function recommend_food_is_current($food) {
@@ -791,7 +816,7 @@ function recommend_card($date, $when, $user, $votes, $impressions) {
         'date' => $date,
         'when' => $when,
         'label' => $label,
-        'dayWord' => $when === 'today' ? '今日' : '明日',
+        'dayWord' => recommend_day_word($date),
         'food' => '',
         'holiday' => $holiday,
         'blurb' => '',
@@ -879,7 +904,7 @@ function recommend_payload($user) {
                 'date' => $day[0],
                 'when' => $day[1],
                 'label' => recommend_date_label($day[0]),
-                'dayWord' => $day[1] === 'today' ? '今日' : '明日',
+                'dayWord' => recommend_day_word($day[0]),
                 'food' => '',
                 'holiday' => null,
                 'blurb' => 'この日のおすすめを表示できませんでした。',
@@ -981,10 +1006,12 @@ function recommend_submit_feedback($input) {
     if (!preg_match('/^\d{4}-\d{2}-\d{2}$/', $date)) {
         return recommend_fail(400, '日付が正しくありません。');
     }
-    $today = date('Y-m-d');
-    $tomorrow = date('Y-m-d', strtotime('+1 day'));
-    if ($date !== $today && $date !== $tomorrow) {
-        return recommend_fail(400, '今日か明日の定食だけ評価できます。');
+    $allowed = [];
+    foreach (recommend_days() as $day) {
+        $allowed[$day[0]] = true;
+    }
+    if (!isset($allowed[$date])) {
+        return recommend_fail(400, '表示中の定食だけ評価できます。');
     }
     if (line_holiday($date) !== null) {
         return recommend_fail(400, '休みの日は評価できません。');
@@ -1819,6 +1846,31 @@ function recommend_ensure_image($food) {
     return ['ok' => true, 'image' => recommend_image_payload($image)];
 }
 
+function recommend_self_check_open_days() {
+    $sunday = ['2026-11-29' => true];
+    $skipSunday = recommend_pick_open_dates('2026-11-28', function ($date) use ($sunday) {
+        return !empty($sunday[$date]);
+    });
+    $weekend = ['2026-11-28' => true, '2026-11-29' => true];
+    $skipWeekend = recommend_pick_open_dates('2026-11-28', function ($date) use ($weekend) {
+        return !empty($weekend[$date]);
+    });
+    $open = recommend_pick_open_dates('2026-11-30', function () {
+        return false;
+    });
+    return count($skipSunday) === 2
+        && $skipSunday[0][0] === '2026-11-28'
+        && $skipSunday[0][1] === 'today'
+        && $skipSunday[1][0] === '2026-11-30'
+        && count($skipWeekend) === 2
+        && $skipWeekend[0][0] === '2026-11-30'
+        && $skipWeekend[1][0] === '2026-12-01'
+        && $skipWeekend[0][1] === 'later'
+        && $open[0][0] === '2026-11-30'
+        && $open[0][1] === 'today'
+        && $open[1][0] === '2026-12-01';
+}
+
 function recommend_self_check() {
     $chicken = '鶏の照り焼き定食';
     $a = ['userId' => 'a', 'likes' => ['鶏肉'], 'avoids' => [], 'allergies' => [], 'timesPerWeek' => 'ほぼ毎日'];
@@ -1895,6 +1947,7 @@ function recommend_self_check() {
         'blurb_rejects_invention' => recommend_blurb_acceptable($chicken, '鶏の照り焼き定食です。卵とチーズを使った絶品です。') === false,
         'blurb_rejects_sides' => recommend_blurb_acceptable($chicken, '鶏の照り焼き定食は、甘辛いタレで焼いた鶏肉です。ご飯と味噌汁、サラダがつきます。') === false,
         'vision_model' => recommend_model_accepts_images('gpt-4o-mini') === true && recommend_model_accepts_images('gpt-3.5-turbo') === false,
+        'skip_sunday' => recommend_self_check_open_days(),
     ];
     $failed = [];
     foreach ($checks as $name => $ok) {

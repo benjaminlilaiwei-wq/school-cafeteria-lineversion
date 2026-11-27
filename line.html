@@ -242,7 +242,7 @@
 
       <section id="for-you" class="reco-section" aria-live="polite">
         <h2>あなたへのおすすめ</h2>
-        <p class="reco-lead" id="reco-lead">今日と明日の定食を、アンケートとこれまでの評価から紹介します。</p>
+        <p class="reco-lead" id="reco-lead">次に営業する日の定食を、アンケートとこれまでの評価から紹介します。休みの日は飛ばします。</p>
         <div id="reco-cards">
           <p>おすすめを読み込んでいます…</p>
         </div>
@@ -402,7 +402,7 @@
     }
 
     function fitText(card) {
-      if (card.fit === 'plain') return card.dayWord + 'の定食';
+      if (card.fit === 'plain') return (card.dayWord || 'この日') + 'の定食';
       return fitNames[card.fit] || '定食';
     }
 
@@ -560,7 +560,9 @@
         }
         var body = makeNode('div', 'reco-body');
         var kicker = makeNode('div', 'reco-kicker');
-        kicker.appendChild(makeNode('span', '', (card.label || '') + '・' + (card.dayWord || '')));
+        var heading = card.label || '';
+        if (card.dayWord) heading += (heading ? '・' : '') + card.dayWord;
+        kicker.appendChild(makeNode('span', '', heading));
         var badge = makeNode('span', 'reco-badge' + (card.fit === 'low' || card.fit === 'blocked' ? ' ' + card.fit : ''), fitText(card));
         kicker.appendChild(badge);
         body.appendChild(kicker);
