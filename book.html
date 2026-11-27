@@ -559,6 +559,21 @@
       }
     }
 
+    function applyBookingPreset(foodSelect) {
+      let params;
+      try { params = new URLSearchParams(window.location.search); } catch (e) { return; }
+      const presetName = params.get('name') || '';
+      const presetFood = params.get('food') || '';
+      const nameInput = document.getElementById('student-name');
+      if (nameInput && presetName && !nameInput.value) nameInput.value = presetName;
+      if (foodSelect && presetFood) {
+        const option = Array.from(foodSelect.options).find(function (item) {
+          return item.value === presetFood && !item.disabled;
+        });
+        if (option) foodSelect.value = presetFood;
+      }
+    }
+
     async function loadMenuAndStatus() {
       const foodSelect = document.getElementById('food');
       const menuDisplay = document.getElementById('menu-display');
@@ -569,6 +584,7 @@
       const submitBtn = document.getElementById('submit-btn');
 
       try {
+        applyBookingPreset(null);
         const apiBase = await resolveApiBase();
         const closedResult = await isTodayClosed();
         const closed = closedResult && (closedResult.closed === true || closedResult === true);
@@ -619,6 +635,7 @@
                   const disabled = (m.stock !== -1 && m.stock <= 0) ? ' disabled' : '';
                   return `<option value="${escapeHtml(m.name)}"${disabled}>${escapeHtml(label)}</option>`;
                 }).join('');
+              applyBookingPreset(foodSelect);
             }
 
             if (menuDisplay) {

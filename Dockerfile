@@ -1,8 +1,9 @@
 FROM php:8.3-apache
 
 RUN apt-get update \
-    && apt-get install -y --no-install-recommends libcurl4-openssl-dev \
-    && docker-php-ext-install curl \
+    && apt-get install -y --no-install-recommends libcurl4-openssl-dev libpng-dev libjpeg-dev libwebp-dev libfreetype6-dev \
+    && docker-php-ext-configure gd --with-freetype --with-jpeg --with-webp \
+    && docker-php-ext-install curl gd mbstring \
     && rm -rf /var/lib/apt/lists/* \
     && echo "date.timezone=Asia/Tokyo" > /usr/local/etc/php/conf.d/timezone.ini \
     && sed -ri "s/AllowOverride None/AllowOverride All/g" /etc/apache2/apache2.conf \

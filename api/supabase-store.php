@@ -18,6 +18,8 @@ function cafeteria_ids() {
         'reviews.json' => 11,
         'line-users.json' => 12,
         'reservations-archive.json' => 13,
+        'recommend-assets.json' => 14,
+        'recommend-feedback.json' => 15,
     ];
 }
 

@@ -51,6 +51,158 @@
       background-color: var(--accent-sun-light);
       border: 1.5px solid var(--accent-sun);
     }
+
+    .reco-section h2 {
+      font-size: 1.45rem;
+      margin-bottom: 6px;
+    }
+
+    .reco-lead {
+      color: var(--text-muted);
+      margin-bottom: 14px;
+      font-size: 1rem;
+    }
+
+    .reco-grid {
+      display: grid;
+      gap: 16px;
+    }
+
+    .reco-card {
+      background: var(--card-bg);
+      border: 1.5px solid var(--border-color);
+      border-radius: var(--radius-lg);
+      overflow: hidden;
+      box-shadow: var(--shadow-soft);
+    }
+
+    .reco-photo,
+    .reco-fallback {
+      width: 100%;
+      aspect-ratio: 16 / 10;
+      background: var(--accent-beige-light);
+    }
+
+    .reco-photo {
+      display: block;
+      object-fit: cover;
+    }
+
+    .reco-fallback {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      padding: 20px;
+      color: var(--text-muted);
+      font-size: 1rem;
+      line-height: 1.6;
+    }
+
+    .reco-body {
+      padding: 16px 18px 18px;
+    }
+
+    .reco-kicker {
+      display: flex;
+      justify-content: space-between;
+      gap: 8px;
+      align-items: center;
+      color: var(--primary);
+      font-weight: 800;
+      font-size: 1rem;
+    }
+
+    .reco-badge {
+      background: var(--primary-light);
+      color: var(--primary);
+      border-radius: 999px;
+      padding: 4px 10px;
+      font-size: 0.95rem;
+      white-space: nowrap;
+    }
+
+    .reco-badge.low,
+    .reco-badge.blocked {
+      background: var(--accent-orange-light);
+      color: var(--accent-orange);
+    }
+
+    .reco-food {
+      font-size: 1.4rem;
+      line-height: 1.4;
+      margin: 8px 0;
+    }
+
+    .reco-blurb,
+    .reco-reason,
+    .reco-note,
+    .reco-ask {
+      font-size: 1.02rem;
+      line-height: 1.7;
+    }
+
+    .reco-reason {
+      background: var(--primary-subtle);
+      border-radius: var(--radius-md);
+      padding: 12px 14px;
+      margin: 12px 0;
+    }
+
+    .reco-credit {
+      font-size: 0.95rem;
+      color: var(--text-muted);
+      margin-top: 8px;
+    }
+
+    .reco-credit a {
+      color: var(--primary);
+    }
+
+    .reco-reserve {
+      width: 100%;
+      margin-top: 12px;
+    }
+
+    .reco-vote {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: 8px;
+    }
+
+    .vote-btn,
+    .reason-btn {
+      min-height: 44px;
+      padding: 10px 14px;
+      border-radius: var(--radius-md);
+      border: 1.5px solid var(--border-color);
+      background: #fff;
+      color: var(--text-main);
+      font-size: 1rem;
+      font-weight: 700;
+      cursor: pointer;
+    }
+
+    .vote-btn.active,
+    .reason-btn.active {
+      background: var(--primary);
+      color: #fff;
+      border-color: var(--primary);
+    }
+
+    .reco-status {
+      min-height: 1.4em;
+      color: var(--accent-orange);
+      font-size: 0.98rem;
+      margin-top: 8px;
+    }
+
+    @media (min-width: 860px) {
+      .reco-grid {
+        grid-template-columns: 1fr 1fr;
+      }
+    }
   </style>
   <link rel="stylesheet" href="olimeal-interior.css">
 </head>
@@ -87,6 +239,14 @@
         <span><span class="swatch holiday"></span>オレンジは休み</span>
         <span><span class="swatch liked"></span>黄色い枠は好きそうな定食</span>
       </div>
+
+      <section id="for-you" class="reco-section" aria-live="polite">
+        <h2>あなたへのおすすめ</h2>
+        <p class="reco-lead" id="reco-lead">今日と明日の定食を、アンケートとこれまでの評価から紹介します。</p>
+        <div id="reco-cards">
+          <p>おすすめを読み込んでいます…</p>
+        </div>
+      </section>
 
       <div id="calendar" class="info-card calendar-container">
         <div class="loading">
@@ -209,6 +369,251 @@
     }).catch(function () {
       document.getElementById('calendar').innerHTML = '<p style="color: var(--accent-orange); text-align: center; padding: 20px;">❌ カレンダーを読み込めませんでした。</p>';
     });
+
+    var fitNames = {
+      match: 'あなた向け',
+      explore: '新しい定食',
+      low: 'おすすめは控えめ',
+      blocked: 'アレルギーに注意',
+      holiday: '休業日',
+      empty: 'まだ未定',
+      plain: '定食'
+    };
+    var voteReasons = {
+      up: [
+        ['liked_food', '好きな料理だった'],
+        ['want_to_try', '食べてみたいと思った'],
+        ['fits_me', '自分に合っていると思った']
+      ],
+      down: [
+        ['disliked_ingredient', '苦手な食材が含まれている'],
+        ['not_my_taste', '自分の好みとは違った'],
+        ['had_before', '以前にも食べたことがある'],
+        ['not_interested', 'あまり興味がない'],
+        ['other', 'その他']
+      ]
+    };
+
+    function makeNode(tag, className, text) {
+      var node = document.createElement(tag);
+      if (className) node.className = className;
+      if (text != null) node.textContent = text;
+      return node;
+    }
+
+    function fitText(card) {
+      if (card.fit === 'plain') return card.dayWord + 'の定食';
+      return fitNames[card.fit] || '定食';
+    }
+
+    function fillPhoto(holder, card) {
+      holder.innerHTML = '';
+      var image = card.image || {};
+      if (image.status === 'ready' && image.url) {
+        var img = document.createElement('img');
+        img.className = 'reco-photo';
+        img.alt = card.food || '定食のイメージ画像';
+        img.src = image.url;
+        img.addEventListener('error', function () {
+          holder.innerHTML = '';
+          holder.appendChild(makeNode('div', 'reco-fallback', '料理の写真を表示できませんでした'));
+        });
+        holder.appendChild(img);
+        return;
+      }
+      var waiting = image.status === 'pending' ? '料理の写真を選んでいます…' : '料理の写真はまだありません';
+      holder.appendChild(makeNode('div', 'reco-fallback', waiting));
+    }
+
+    function loadCardImage(card, holder, attempt) {
+      if (!card.food || !card.image || card.image.status !== 'pending') return;
+      var url = 'api/recommend-image.php?food=' + encodeURIComponent(card.food);
+      fetch(url, { cache: 'no-store' }).then(function (res) {
+        return res.json();
+      }).then(function (data) {
+        var image = data && data.image ? data.image : null;
+        if (!image) return;
+        card.image = image;
+        fillPhoto(holder, card);
+        var credit = holder.parentNode ? holder.parentNode.querySelector('.reco-credit') : null;
+        if (credit) fillCredit(credit, card);
+        if (image.status === 'pending' && attempt < 6) {
+          setTimeout(function () { loadCardImage(card, holder, attempt + 1); }, 4000);
+        } else if (image.status === 'pending') {
+          card.image = { status: 'error', url: '' };
+          fillPhoto(holder, card);
+        }
+      }).catch(function () {
+        card.image = { status: 'error', url: '' };
+        fillPhoto(holder, card);
+      });
+    }
+
+    function fillCredit(node, card) {
+      node.innerHTML = '';
+      var image = card.image || {};
+      if (image.kind !== 'pixabay') return;
+      node.appendChild(document.createTextNode('イメージ画像です。食堂で撮影した写真ではありません。'));
+      if (image.pageUrl) {
+        node.appendChild(document.createTextNode(' '));
+        var link = document.createElement('a');
+        link.href = image.pageUrl;
+        link.target = '_blank';
+        link.rel = 'noopener noreferrer';
+        link.textContent = '画像提供：Pixabay';
+        node.appendChild(link);
+      } else {
+        node.appendChild(document.createTextNode(' 画像提供：Pixabay'));
+      }
+      if (image.author) {
+        node.appendChild(document.createTextNode('（' + image.author + '）'));
+      }
+    }
+
+    function paintVote(box, card) {
+      box.innerHTML = '';
+      if (!card.canVote) {
+        if (card.fit === 'plain') {
+          box.appendChild(makeNode('p', 'reco-note', '評価するには、LINEのトークからこのページを開いてください。'));
+        }
+        return;
+      }
+      box.appendChild(makeNode('p', 'reco-ask', 'このおすすめはあなたの好みに合っていますか？'));
+      var row = makeNode('div', 'reco-vote');
+      var current = card.vote && card.vote.vote ? card.vote.vote : '';
+      [['up', '👍 合っている！'], ['down', '👎 あまり合わない']].forEach(function (item) {
+        var button = makeNode('button', 'vote-btn' + (current === item[0] ? ' active' : ''), item[1]);
+        button.type = 'button';
+        button.setAttribute('aria-pressed', current === item[0] ? 'true' : 'false');
+        button.addEventListener('click', function () {
+          var keep = current === item[0] && card.vote ? card.vote.reason : '';
+          sendVote(card, item[0], keep, box);
+        });
+        row.appendChild(button);
+      });
+      box.appendChild(row);
+      if (current && voteReasons[current]) {
+        var reasons = makeNode('div', 'reco-vote');
+        voteReasons[current].forEach(function (item) {
+          var selected = card.vote && card.vote.reason === item[0];
+          var button = makeNode('button', 'reason-btn' + (selected ? ' active' : ''), item[1]);
+          button.type = 'button';
+          button.setAttribute('aria-pressed', selected ? 'true' : 'false');
+          button.addEventListener('click', function () {
+            sendVote(card, current, item[0], box);
+          });
+          reasons.appendChild(button);
+        });
+        box.appendChild(reasons);
+      }
+      box.appendChild(makeNode('p', 'reco-note', '答えなくても大丈夫です。あとから変更できます。'));
+      var status = makeNode('p', 'reco-status', '');
+      box.appendChild(status);
+    }
+
+    function sendVote(card, vote, reason, box) {
+      var status = box.querySelector('.reco-status');
+      if (status) status.textContent = '保存しています…';
+      fetch('api/recommend-feedback.php', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          key: key,
+          date: card.date,
+          food: card.food,
+          vote: vote,
+          reason: reason || ''
+        })
+      }).then(function (res) {
+        return res.json().then(function (data) {
+          return { ok: res.ok, data: data };
+        });
+      }).then(function (result) {
+        if (!result.ok || !result.data || !result.data.ok) {
+          if (status) status.textContent = (result.data && result.data.error) || '保存できませんでした。';
+          return;
+        }
+        card.vote = result.data.vote;
+        paintVote(box, card);
+        var done = box.querySelector('.reco-status');
+        if (done) done.textContent = '保存しました。';
+      }).catch(function () {
+        if (status) status.textContent = '保存できませんでした。';
+      });
+    }
+
+    function renderRecommendations(data) {
+      var lead = document.getElementById('reco-lead');
+      var root = document.getElementById('reco-cards');
+      if (data && data.personalized && data.name && lead) {
+        lead.textContent = data.name + 'さんのアンケートと、これまでの評価から選んでいます。';
+      }
+      root.innerHTML = '';
+      var grid = makeNode('div', 'reco-grid');
+      (data.cards || []).forEach(function (card) {
+        var article = makeNode('article', 'reco-card');
+        var photo = null;
+        if (card.food) {
+          photo = makeNode('div', 'reco-photo-wrap');
+          fillPhoto(photo, card);
+          article.appendChild(photo);
+        }
+        var body = makeNode('div', 'reco-body');
+        var kicker = makeNode('div', 'reco-kicker');
+        kicker.appendChild(makeNode('span', '', (card.label || '') + '・' + (card.dayWord || '')));
+        var badge = makeNode('span', 'reco-badge' + (card.fit === 'low' || card.fit === 'blocked' ? ' ' + card.fit : ''), fitText(card));
+        kicker.appendChild(badge);
+        body.appendChild(kicker);
+        if (card.food) body.appendChild(makeNode('h3', 'reco-food', card.food));
+        if (card.blurb) body.appendChild(makeNode('p', 'reco-blurb', card.blurb));
+        if (card.reason) body.appendChild(makeNode('p', 'reco-reason', card.reason));
+        var credit = makeNode('p', 'reco-credit', '');
+        fillCredit(credit, card);
+        body.appendChild(credit);
+        if (card.food && card.fit !== 'holiday') {
+          var link = document.createElement('a');
+          link.className = 'btn btn-primary reco-reserve';
+          if (card.reserve === 'today') {
+            var params = new URLSearchParams();
+            if (card.reserveName) params.set('name', card.reserveName);
+            params.set('food', card.food);
+            link.href = 'book.html?' + params.toString();
+            link.textContent = 'このメニューを予約する';
+          } else {
+            link.href = 'book.html';
+            link.textContent = '予約ページを見る';
+          }
+          body.appendChild(link);
+          if (card.reserve !== 'today') {
+            body.appendChild(makeNode('p', 'reco-note', '予約できるのは、当日のメニューです。'));
+          }
+        }
+        if (card.fit === 'blocked') {
+          var allergy = document.createElement('a');
+          allergy.href = 'allergy.html';
+          allergy.textContent = 'アレルギー表を見る';
+          body.appendChild(allergy);
+        }
+        var voteBox = makeNode('div', 'reco-feedback');
+        paintVote(voteBox, card);
+        body.appendChild(voteBox);
+        article.appendChild(body);
+        grid.appendChild(article);
+        if (photo) loadCardImage(card, photo, 0);
+      });
+      root.appendChild(grid);
+    }
+
+    fetch('api/recommend.php?key=' + encodeURIComponent(key), { cache: 'no-store' })
+      .then(function (res) {
+        if (!res.ok) throw new Error('failed');
+        return res.json();
+      })
+      .then(renderRecommendations)
+      .catch(function () {
+        var root = document.getElementById('reco-cards');
+        if (root) root.textContent = 'おすすめを読み込めませんでした。下のカレンダーはそのまま使えます。';
+      });
   </script>
 </body>
 

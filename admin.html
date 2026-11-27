@@ -788,6 +788,11 @@
                 <h3 style="margin-top:18px;">登録している人</h3>
                 <div id="line-users"><p>読み込んでいます…</p></div>
               </div>
+              <div class="admin-card">
+                <h3>4. おすすめの評価</h3>
+                <p>名前は出しません。おすすめを開いた人数と、👍👎の合計、料理の種類ごとの傾向です。画像は、管理者が選ばなくてもサーバーが1枚だけ保存します。</p>
+                <div id="recommend-stats"><p>読み込んでいます…</p></div>
+              </div>
             </div>
           </div>
         </section>
@@ -3706,7 +3711,53 @@
       if (el) el.textContent = text;
     }
 
+    function loadRecommendStats() {
+      const box = document.getElementById('recommend-stats');
+      if (!box) return;
+      fetch('api/recommend-admin.php', { cache: 'no-store' })
+        .then(function (res) { return res.json(); })
+        .then(function (data) {
+          if (!data || data.ok === false) {
+            box.textContent = (data && data.error) || '評価を読み込めませんでした。';
+            return;
+          }
+          const rate = data.rate === null || data.rate === undefined ? 'まだ評価はありません。' : ('👍の割合: ' + data.rate + '%');
+          let html = '<p>おすすめを表示した人数: ' + (data.people || 0) + '人</p>';
+          html += '<p>👍 ' + (data.up || 0) + '件 / 👎 ' + (data.down || 0) + '件。' + escapeLine(rate) + '</p>';
+          const genres = data.genres || [];
+          if (genres.length) {
+            html += '<p>料理の種類ごとの評価</p><ul>' + genres.map(function (row) {
+              return '<li>' + escapeLine(row.label) + ' : 👍 ' + row.up + ' / 👎 ' + row.down + '</li>';
+            }).join('') + '</ul>';
+          }
+          const mismatches = data.mismatches || [];
+          if (mismatches.length) {
+            html += '<p>あまり合わない理由</p><ul>' + mismatches.map(function (row) {
+              return '<li>' + escapeLine(row.label) + ' : ' + row.count + '件</li>';
+            }).join('') + '</ul>';
+          } else {
+            html += '<p>あまり合わない理由は、まだ集まっていません。</p>';
+          }
+          const images = data.images || [];
+          if (images.length) {
+            html += '<p>今日・明日の画像</p><ul>' + images.map(function (row) {
+              let how = 'まだ選んでいません';
+              if (row.method === 'openai-vision') how = 'AIが画像を比較して選択';
+              else if (row.method === 'score') how = 'タグと解像度で選択';
+              else if (row.method === 'none') how = '該当する写真なし';
+              const stored = row.stored ? '保存済み' : '未保存';
+              return '<li>' + escapeLine(row.food) + ' / ' + escapeLine(how) + ' / ' + stored + '</li>';
+            }).join('') + '</ul>';
+          }
+          box.innerHTML = html;
+        })
+        .catch(function () {
+          box.textContent = '評価を読み込めませんでした。';
+        });
+    }
+
     function loadLineAdmin() {
+      loadRecommendStats();
       const hook = document.getElementById('line-webhook-url');
       if (hook) {
         const base = location.href.replace(/[^/]*$/, '');
