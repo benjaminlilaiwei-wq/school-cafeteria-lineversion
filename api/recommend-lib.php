@@ -392,44 +392,46 @@ function recommend_menu_pitch($food) {
         return '';
     }
     $hooks = [
-        '豚カツ' => '衣の音が先に楽しめて、熱いうちの一切れが昼休みをごほうびに変えます。',
-        'とんかつ' => '衣の音が先に楽しめて、熱いうちの一切れが昼休みをごほうびに変えます。',
-        'チキンカツ' => '衣の音が楽しく、熱いうちに食べると午後まで気持ちが明るくなります。',
-        'チキンソテー' => 'ナイフを入れるのが楽しみな柔らかさで、あと味がゆっくり残ります。',
-        '唐揚げ' => 'からっとした香りが先に届き、一口かぶりつくと午後まで元気が残りそうです。',
-        'から揚げ' => 'からっとした香りが先に届き、一口かぶりつくと午後まで元気が残りそうです。',
-        '唐揚' => 'からっとした香りが先に届き、一口かぶりつくと午後まで元気が残りそうです。',
-        'から揚' => 'からっとした香りが先に届き、一口かぶりつくと午後まで元気が残りそうです。',
-        '生姜焼' => '香ばしさがご飯を進めて、おかわりしたくなる昼になります。',
-        'ハンバーグ' => '切った瞬間から湯気が食欲を誘い、一口ごとにほっとする昼になります。',
-        '味噌煮' => '味がしみた身が箸を進めて、体の芯から温まる食べごたえがあります。',
-        '磯部' => '磯の香りがふっと立って、食後もすっきりする軽やかな一皿です。',
-        '南蛮' => '酸味が食欲を呼んで、さっぱりしたのに満足が残ります。',
-        '煮付け' => 'じっくり味がしみた身を、温かい定食で味わえます。',
-        'イワシ' => '香ばしさが先に届き、魚の旨みがご飯を引き立てます。',
-        '親子丼' => 'ふたを開けた瞬間の湯気から食欲が動いて、ご飯がどんどん進みます。',
-        '塩焼' => '香ばしい皮とほぐれる身が、今日のご飯を引き立てます。',
-        '鮭' => '焼き色の香りが先に来て、ほぐれる身とご飯で満足が残ります。',
-        '鯖' => 'ほくほくの身がご飯によく合い、食べ終わるまで箸が止まりません。',
-        'サバ' => 'ほくほくの身がご飯によく合い、食べ終わるまで箸が止まりません。',
-        'ホットドッグ' => '焼きたての香りをかいだ瞬間に食べたくなる、気分の上がる一品です。',
-        'ホットドック' => '焼きたての香りをかいだ瞬間に食べたくなる、気分の上がる一品です。',
-        '鍋' => '湯気のあったかさが先に届き、つつきながら昼が楽しくなります。',
-        'カレー' => '香りが先に届き、スプーンを進めるほど昼が楽しくなります。',
-        '納豆' => '混ぜた瞬間からご飯が進み、ねばりと旨みで体が起きるような一皿です。',
-        'カツ' => '衣の音が先に楽しめて、熱いうちの一切れが昼休みをごほうびに変えます。',
+        '豚カツ' => ['衣がさくさくで、ソースの甘じょっぱさがご飯を呼ぶ味です', '熱いうちに切ると、肉の脂がふわっと香ります'],
+        'とんかつ' => ['衣がさくさくで、ソースの甘じょっぱさがご飯を呼ぶ味です', '熱いうちに切ると、肉の脂がふわっと香ります'],
+        'チキンカツ' => ['鶏肉のあっさりした味と、衣の塩気が一緒に来ます', '噛むほど肉の甘みが出て、がっつりなのに重くありません'],
+        'チキンソテー' => ['表面は香ばしく、中はしっとりした鶏肉の味です', 'ソースのコクが舌に残って、午後まで満足が続きます'],
+        '唐揚げ' => ['胡椒がぴりっと効いて、噛むと肉の汁がじわっと出ます', 'からっとした衣の音が、昼休みの合図みたいに楽しいです'],
+        'から揚げ' => ['胡椒がぴりっと効いて、噛むと肉の汁がじわっと出ます', 'からっとした衣の音が、昼休みの合図みたいに楽しいです'],
+        '唐揚' => ['胡椒がぴりっと効いて、噛むと肉の汁がじわっと出ます', 'からっとした衣の音が、昼休みの合図みたいに楽しいです'],
+        'から揚' => ['胡椒がぴりっと効いて、噛むと肉の汁がじわっと出ます', 'からっとした衣の音が、昼休みの合図みたいに楽しいです'],
+        '生姜焼' => ['しょうがの香りが鼻に抜けて、甘じょっぱい味がご飯に合います', '一口ごとに肉の脂が甘くて、おかわりしたくなります'],
+        'ハンバーグ' => ['肉の味が濃くて、切ると肉汁がじわっと広がります', 'ケチャップの甘酸っぱさが、高校生の昼にちょうどいいです'],
+        '味噌煮' => ['味噌のコクが身にしみて、ほろほろとほぐれます', '塩気と甘みが一緒に来て、温かいご飯が進みます'],
+        '磯部' => ['海の香りがふっと立って、味は軽くて後味がきれいです', '油の香ばしさと磯の風味で、気分が切り替わります'],
+        '南蛮' => ['酢の酸味が先に来て、揚げた衣は中でしんなりしています', 'さっぱりなのに食べごたえがあって、眠くなりにくい昼です'],
+        '煮付け' => ['醤油の甘じょっぱさが身の奥まで入っています', '箸でほぐれる柔らかさで、落ち着いて食べられます'],
+        'イワシ' => ['青魚の旨みが強くて、香ばしい焼き目が食欲を起こします', '脂の甘みがあるので、ご飯と一緒だと止まらなくなります'],
+        '親子丼' => ['出汁の香りがふわっと来て、鶏肉は柔らかく卵はとろりです', '甘じょっぱい味がご飯に絡んで、丼の底まで食べたくなります'],
+        '塩焼' => ['塩だけの味だから、魚の脂と焼き目の香りがまっすぐ届きます', 'ほぐれる身をご飯にのせると、シンプルなのに満足します'],
+        '鮭' => ['焼き色の香ばしさと、鮭の脂の甘みが一緒に来ます', 'ほぐれる身はご飯と相性がよく、食べ終わったあとがきれいです'],
+        '鯖' => ['鯖の脂がのっていて、塩味がご飯を引き立てます', 'ほくほくの身は一口が大きいほど、昼ごはんらしくなります'],
+        'サバ' => ['鯖の脂がのっていて、塩味がご飯を引き立てます', 'ほくほくの身は一口が大きいほど、昼ごはんらしくなります'],
+        'ホットドッグ' => ['パンの外は香ばしく、ソーセージの塩気が口いっぱいに広がります', '片手で食べられるのに味がはっきりして、気分が上がります'],
+        'ホットドック' => ['パンの外は香ばしく、ソーセージの塩気が口いっぱいに広がります', '片手で食べられるのに味がはっきりして、気分が上がります'],
+        '鍋' => ['出汁の香りが先に届いて、具材ごとに味の濃さが違います', 'あつあつを分けながら食べると、友達と昼が長くなります'],
+        'カレー' => ['スパイスの香りが立って、ルーの甘みと辛みが残ります', 'スプーンを進めるほどご飯が黄色くなって、最後まで楽しいです'],
+        '納豆' => ['混ぜた瞬間に香りが開いて、ねばりと醤油の塩気がご飯に絡みます', '癖になる味で、午前の眠気が少し飛びます'],
+        'カツ' => ['衣がさくさくで、肉の汁とソースが一緒に来ます', '熱いうちの一切れは、昼休みのごほうびになります'],
     ];
     uksort($hooks, function ($a, $b) {
         return mb_strlen($b) <=> mb_strlen($a);
     });
-    $second = 'あたたかいうちに箸を進めると、午後までちょっと嬉しい気持ちが残ります。';
-    foreach ($hooks as $key => $line) {
+    $lead = 'この名前の味が、ちゃんと真ん中に来る定食です';
+    $tail = '一口ごとに味が立って、午後の授業までお腹が落ち着きます';
+    foreach ($hooks as $key => $pair) {
         if (mb_strpos($food, $key) !== false) {
-            $second = $line;
+            $lead = $pair[0];
+            $tail = $pair[1];
             break;
         }
     }
-    return $food . 'は、見ただけで食べたくなる一皿です。' . $second;
+    return $food . 'は、' . $lead . '。' . $tail . '。';
 }
 
 function recommend_menu_disliked($user, $food) {
@@ -497,16 +499,146 @@ function recommend_suggestion_day($user, $afterDate) {
     });
 }
 
-function recommend_visible_dates($user) {
-    $dates = [];
-    $open = recommend_days();
-    if (!isset($open[0][0])) {
-        return $dates;
+function recommend_week_rows($user) {
+    $start = strtotime(date('Y-m-d') . ' 00:00:00');
+    $rows = [];
+    if ($start === false) {
+        return $rows;
     }
-    $dates[(string) $open[0][0]] = true;
-    $second = recommend_suggestion_day(is_array($user) ? $user : null, (string) $open[0][0]);
-    if (is_array($second) && !empty($second['date'])) {
-        $dates[(string) $second['date']] = true;
+    for ($i = 0; $i < 7; $i++) {
+        $date = date('Y-m-d', strtotime('+' . $i . ' day', $start));
+        if (line_holiday($date) !== null) {
+            continue;
+        }
+        $food = trim((string) line_daily_food($date));
+        $rows[] = [
+            'date' => $date,
+            'food' => $food,
+            'disliked' => is_array($user) && $food !== '' && recommend_menu_disliked($user, $food),
+        ];
+    }
+    return $rows;
+}
+
+function recommend_rank_rows($rows, $scoreOf) {
+    $ranked = [];
+    foreach ((array) $rows as $row) {
+        if (!is_array($row)) {
+            continue;
+        }
+        $date = (string) ($row['date'] ?? '');
+        if ($date === '') {
+            continue;
+        }
+        $food = trim((string) ($row['food'] ?? ''));
+        $ranked[] = [
+            'date' => $date,
+            'food' => $food,
+            'disliked' => !empty($row['disliked']),
+            'score' => $food === '' ? -1000 : (int) $scoreOf($food),
+        ];
+    }
+    usort($ranked, function ($a, $b) {
+        if ($a['disliked'] !== $b['disliked']) {
+            return $a['disliked'] ? 1 : -1;
+        }
+        if ($a['score'] !== $b['score']) {
+            return $a['score'] < $b['score'] ? 1 : -1;
+        }
+        return strcmp($a['date'], $b['date']);
+    });
+    return $ranked;
+}
+
+function recommend_choose_slots($rows, $today, $scoreOf) {
+    $ranked = recommend_rank_rows($rows, $scoreOf);
+    $byDate = [];
+    foreach ($ranked as $row) {
+        $byDate[$row['date']] = $row;
+    }
+    $week = null;
+    foreach ($ranked as $row) {
+        if ($row['food'] !== '' && !$row['disliked']) {
+            $week = $row;
+            break;
+        }
+    }
+    if ($week === null) {
+        foreach ($ranked as $row) {
+            if ($row['food'] !== '') {
+                $week = $row;
+                break;
+            }
+        }
+    }
+    $slots = [];
+    $usedDates = [];
+    $usedFoods = [];
+    if ($week !== null) {
+        $role = ($week['date'] === $today) ? 'week-today' : 'week';
+        $slots[] = ['role' => $role, 'row' => $week];
+        $usedDates[$week['date']] = true;
+        if ($week['food'] !== '') {
+            $usedFoods[$week['food']] = true;
+        }
+    }
+    if (isset($byDate[$today]) && empty($usedDates[$today])) {
+        $slots[] = ['role' => 'today', 'row' => $byDate[$today]];
+        $usedDates[$today] = true;
+        if ($byDate[$today]['food'] !== '') {
+            $usedFoods[$byDate[$today]['food']] = true;
+        }
+    }
+    $need = 3 - count($slots);
+    $take = function ($allowSameFood, $allowDisliked) use (&$ranked, &$usedDates, &$usedFoods, &$slots, &$need) {
+        foreach ($ranked as $row) {
+            if ($need <= 0) {
+                return;
+            }
+            if (isset($usedDates[$row['date']]) || $row['food'] === '') {
+                continue;
+            }
+            if (!$allowDisliked && $row['disliked']) {
+                continue;
+            }
+            if (!$allowSameFood && isset($usedFoods[$row['food']])) {
+                continue;
+            }
+            $slots[] = ['role' => 'other', 'row' => $row];
+            $usedDates[$row['date']] = true;
+            $usedFoods[$row['food']] = true;
+            $need--;
+        }
+    };
+    $take(false, false);
+    $take(true, false);
+    $take(true, true);
+    return $slots;
+}
+
+function recommend_slot_title($role) {
+    if ($role === 'week' || $role === 'week-today') {
+        return '今週いちばんのおすすめ';
+    }
+    if ($role === 'today') {
+        return '今日の定食';
+    }
+    return 'もう一つのおすすめ';
+}
+
+function recommend_visible_dates($user) {
+    $votes = [];
+    $feedback = recommend_load_doc(recommend_feedback_file(), recommend_feedback_default());
+    if (is_array($feedback)) {
+        $feedback = recommend_normalize_feedback($feedback);
+        $votes = $feedback['votes'];
+    }
+    $dates = [];
+    $scoreOf = function ($food) use ($user, $votes) {
+        return is_array($user) ? recommend_personal_score($user, $food, $votes) : 0;
+    };
+    foreach (recommend_choose_slots(recommend_week_rows($user), date('Y-m-d'), $scoreOf) as $slot) {
+        $dates[(string) $slot['row']['date']] = true;
     }
     return $dates;
 }
@@ -1022,21 +1154,18 @@ function recommend_payload($user) {
     }
     $cards = [];
     $slots = [];
-    $open = recommend_days();
-    if (isset($open[0][0])) {
+    $today = date('Y-m-d');
+    $scoreOf = function ($food) use ($user, $votes) {
+        return is_array($user) ? recommend_personal_score($user, $food, $votes) : 0;
+    };
+    foreach (recommend_choose_slots(recommend_week_rows(is_array($user) ? $user : null), $today, $scoreOf) as $picked) {
+        $row = $picked['row'];
         $slots[] = [
-            'date' => $open[0][0],
-            'when' => $open[0][1],
-            'listTitle' => $open[0][1] === 'today' ? '今日の定食' : 'この日の定食',
+            'date' => $row['date'],
+            'when' => $row['date'] === $today ? 'today' : 'later',
+            'listTitle' => recommend_slot_title($picked['role']),
+            'prominent' => $picked['role'] === 'week' || $picked['role'] === 'week-today',
         ];
-        $second = recommend_suggestion_day(is_array($user) ? $user : null, (string) $open[0][0]);
-        if (is_array($second) && !empty($second['date']) && (string) $second['date'] !== (string) $open[0][0]) {
-            $slots[] = [
-                'date' => $second['date'],
-                'when' => 'later',
-                'listTitle' => '次の日のおすすめ',
-            ];
-        }
     }
     foreach ($slots as $slot) {
         try {
@@ -1060,6 +1189,10 @@ function recommend_payload($user) {
             ];
         }
         $card['listTitle'] = $slot['listTitle'];
+        $card['prominent'] = !empty($slot['prominent']);
+        if ($card['date'] !== $today || $card['food'] === '' || $card['fit'] === 'holiday') {
+            $card['reserve'] = 'later';
+        }
         $cards[] = $card;
     }
     if (is_array($user) && !empty($user['userId'])) {
@@ -2012,6 +2145,50 @@ function recommend_self_check_open_days() {
         && $open[1][0] === '2026-12-01';
 }
 
+function recommend_self_check_slots() {
+    $rows = [
+        ['date' => '2026-11-30', 'food' => '納豆定食', 'disliked' => true],
+        ['date' => '2026-12-01', 'food' => '豚カツ定食', 'disliked' => false],
+        ['date' => '2026-12-02', 'food' => '唐揚げ定食', 'disliked' => false],
+        ['date' => '2026-12-03', 'food' => '親子丼', 'disliked' => false],
+        ['date' => '2026-12-04', 'food' => '豚カツ定食', 'disliked' => false],
+    ];
+    $slots = recommend_choose_slots($rows, '2026-11-30', function ($food) {
+        if ($food === '親子丼') {
+            return 9;
+        }
+        if ($food === '唐揚げ定食') {
+            return 5;
+        }
+        return 1;
+    });
+    $foods = [];
+    $dates = [];
+    foreach ($slots as $slot) {
+        $foods[] = $slot['row']['food'];
+        $dates[] = $slot['row']['date'];
+    }
+    $bestToday = recommend_choose_slots($rows, '2026-12-03', function ($food) {
+        return $food === '親子丼' ? 9 : 1;
+    });
+    $bestFoods = [];
+    foreach ($bestToday as $slot) {
+        $bestFoods[] = $slot['row']['food'];
+    }
+    return count($slots) === 3
+        && $slots[0]['role'] === 'week'
+        && $slots[0]['row']['food'] === '親子丼'
+        && $slots[1]['role'] === 'today'
+        && $slots[1]['row']['food'] === '納豆定食'
+        && $slots[2]['row']['food'] === '唐揚げ定食'
+        && count(array_unique($dates)) === 3
+        && count(array_unique($foods)) === 3
+        && $bestToday[0]['role'] === 'week-today'
+        && $bestToday[0]['row']['date'] === '2026-12-03'
+        && !in_array('親子丼', array_slice($bestFoods, 1), true)
+        && count($bestToday) === 3;
+}
+
 function recommend_self_check() {
     $chicken = '鶏の照り焼き定食';
     $a = ['userId' => 'a', 'likes' => ['鶏肉'], 'avoids' => [], 'allergies' => [], 'timesPerWeek' => 'ほぼ毎日'];
@@ -2091,7 +2268,11 @@ function recommend_self_check() {
         'skip_sunday' => recommend_self_check_open_days(),
         'pitch_two_sentences' => substr_count(recommend_menu_pitch('豚カツ定食'), '。') === 2
             && mb_strpos(recommend_menu_pitch('豚カツ定食'), '豚カツ定食') !== false
-            && mb_strpos(recommend_menu_pitch('豚カツ定食'), '納豆') === false,
+            && mb_strpos(recommend_menu_pitch('豚カツ定食'), '納豆') === false
+            && recommend_menu_pitch('豚カツ定食') !== recommend_menu_pitch('納豆定食')
+            && recommend_menu_pitch('親子丼') !== recommend_menu_pitch('唐揚げ定食')
+            && substr_count(recommend_menu_pitch('親子丼'), '。') === 2,
+        'week_best_is_distinct' => recommend_self_check_slots(),
         'next_skips_disliked' => (recommend_choose_next_menu([
             ['date' => '2026-12-01', 'food' => '納豆定食'],
             ['date' => '2026-12-02', 'food' => '豚カツ定食'],
