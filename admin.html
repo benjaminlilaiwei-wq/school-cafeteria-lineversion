@@ -18,20 +18,68 @@
       background-color: transparent;
     }
 
-    /* カレンダー用の簡単なデザイン */
     .calendar {
-      display: grid;
-      grid-template-columns: repeat(7, 1fr);
-      gap: 5px;
-      text-align: center;
       margin-top: 10px;
-      border: 1px solid #ccc;
-      padding: 10px;
-      border-radius: 8px;
+      border: 1px solid #e4d8c6;
+      padding: 12px;
+      border-radius: 12px;
+      background: #fffdf8;
     }
 
-    .calendar div {
-      padding: 5px;
+    .admin-cal-nav {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      align-items: center;
+      margin-bottom: 10px;
+    }
+
+    .admin-cal-nav button {
+      min-height: 44px;
+      padding: 8px 12px;
+      border-radius: 999px;
+      border: 1.5px solid #e4d8c6;
+      background: #fff;
+      font-weight: 800;
+      cursor: pointer;
+    }
+
+    .admin-cal-range {
+      font-weight: 800;
+      color: #2f6b4f;
+    }
+
+    .admin-cal-strip {
+      display: flex;
+      gap: 8px;
+      overflow-x: auto;
+      padding-bottom: 8px;
+    }
+
+    .admin-day {
+      flex: 0 0 124px;
+      min-height: 118px;
+      text-align: left;
+      border: 1.5px solid #e4d8c6;
+      border-radius: 14px;
+      background: #fff;
+      padding: 8px;
+      cursor: pointer;
+    }
+
+    .admin-day.today {
+      border: 3px solid #2f6b4f;
+      background: #e7f3ec;
+    }
+
+    .admin-day.past {
+      opacity: 0.72;
+    }
+
+    .admin-day small {
+      display: block;
+      margin-top: 6px;
+      line-height: 1.35;
     }
 
     .holiday {
@@ -299,7 +347,8 @@
                 </div>
 
                 <div class="admin-card">
-                  <h3>カレンダー</h3>
+                  <h3>前後2週間のカレンダー</h3>
+                  <p style="margin:0 0 8px; color:#555;">緑の枠が今日、赤っぽい日が休みです。日付を押すと、左の休み登録にその日が入ります。前の月にも戻れます。</p>
                   <div id="calendar" class="calendar"></div>
                 </div>
               </div>
@@ -1156,70 +1205,122 @@
       loadHolidays();
     }
 
-    // === カレンダー表示 ===
+    var adminCalendar = { offsetDays: 0, holidays: [], menus: [], events: [] };
+
+    function adminIso(date) {
+      return date.getFullYear() + '-' + String(date.getMonth() + 1).padStart(2, '0') + '-' + String(date.getDate()).padStart(2, '0');
+    }
+
+    function adminAddDays(iso, days) {
+      const parts = String(iso).split('-').map(Number);
+      const date = new Date(parts[0], parts[1] - 1, parts[2]);
+      date.setDate(date.getDate() + days);
+      return adminIso(date);
+    }
+
+    function adminAddMonths(iso, months) {
+      const parts = String(iso).split('-').map(Number);
+      const date = new Date(parts[0], parts[1] - 1, 1);
+      date.setMonth(date.getMonth() + months);
+      const last = new Date(date.getFullYear(), date.getMonth() + 1, 0).getDate();
+      date.setDate(Math.min(parts[2], last));
+      return adminIso(date);
+    }
+
+    function adminDayGap(fromIso, toIso) {
+      const from = String(fromIso).split('-').map(Number);
+      const to = String(toIso).split('-').map(Number);
+      return Math.round((new Date(to[0], to[1] - 1, to[2]) - new Date(from[0], from[1] - 1, from[2])) / 86400000);
+    }
+
+    function paintAdminCalendar() {
+      const calendar = document.getElementById("calendar");
+      if (!calendar) return;
+      const today = adminIso(new Date());
+      const anchor = adminAddDays(today, adminCalendar.offsetDays);
+      const start = adminAddDays(anchor, -14);
+      const names = ['日', '月', '火', '水', '木', '金', '土'];
+      calendar.innerHTML = '';
+      const nav = document.createElement('div');
+      nav.className = 'admin-cal-nav';
+      function addButton(label, move) {
+        const button = document.createElement('button');
+        button.type = 'button';
+        button.textContent = label;
+        button.addEventListener('click', function () {
+          const current = adminAddDays(today, adminCalendar.offsetDays);
+          if (move === 'today') adminCalendar.offsetDays = 0;
+          else if (move === 'week') adminCalendar.offsetDays += 14;
+          else if (move === 'back-week') adminCalendar.offsetDays -= 14;
+          else if (move === 'month') adminCalendar.offsetDays += adminDayGap(current, adminAddMonths(current, 1));
+          else adminCalendar.offsetDays += adminDayGap(current, adminAddMonths(current, -1));
+          paintAdminCalendar();
+        });
+        nav.appendChild(button);
+      }
+      addButton('前の月', 'back-month');
+      addButton('前の2週間', 'back-week');
+      addButton('今日', 'today');
+      addButton('次の2週間', 'week');
+      addButton('次の月', 'month');
+      const range = document.createElement('span');
+      range.className = 'admin-cal-range';
+      const end = adminAddDays(start, 28);
+      range.textContent = Number(start.slice(5, 7)) + '月' + Number(start.slice(8, 10)) + '日 〜 ' + Number(end.slice(5, 7)) + '月' + Number(end.slice(8, 10)) + '日';
+      nav.appendChild(range);
+      calendar.appendChild(nav);
+      const strip = document.createElement('div');
+      strip.className = 'admin-cal-strip';
+      let todayCard = null;
+      for (let i = 0; i < 29; i++) {
+        const dateStr = adminAddDays(start, i);
+        const parts = dateStr.split('-').map(Number);
+        const when = new Date(parts[0], parts[1] - 1, parts[2]);
+        const holiday = (adminCalendar.holidays || []).find(h => h && h.date === dateStr);
+        const dailyMenu = (adminCalendar.menus || []).find(m => m && m.date === dateStr);
+        const event = (adminCalendar.events || []).find(e => e && e.date === dateStr);
+        const div = document.createElement('button');
+        div.type = 'button';
+        div.className = 'admin-day' + (dateStr === today ? ' today' : '') + (dateStr < today ? ' past' : '') + (holiday ? ' holiday' : '');
+        const title = document.createElement('strong');
+        title.textContent = parts[1] + '/' + parts[2] + '（' + names[when.getDay()] + '）';
+        const note = document.createElement('small');
+        const bits = [];
+        if (dateStr === today) bits.push('今日');
+        else if (dateStr < today) bits.push('過ぎた日');
+        if (holiday) bits.push(holiday.reason || '休み');
+        else if (dailyMenu && dailyMenu.food) bits.push(dailyMenu.food);
+        else bits.push('定食は未定');
+        if (event && event.message) bits.push(event.message);
+        note.textContent = bits.join(' / ');
+        div.appendChild(title);
+        div.appendChild(note);
+        div.addEventListener('click', function () {
+          const input = document.getElementById('holiday-date');
+          if (input) input.value = dateStr;
+        });
+        strip.appendChild(div);
+        if (dateStr === today) todayCard = div;
+      }
+      calendar.appendChild(strip);
+      if (todayCard && adminCalendar.offsetDays === 0) {
+        strip.scrollLeft = Math.max(0, todayCard.offsetLeft - strip.offsetLeft - 12);
+      }
+    }
+
     async function renderCalendar() {
       const calendar = document.getElementById("calendar");
-      const holidays = await apiGet('holidays.php');
-      const dailyMenus = await apiGet('daily-menu.php');
-      const events = await apiGet('events.php');
-      const today = new Date();
-      const year = today.getFullYear();
-      const month = today.getMonth(); // 0始まり
-
-      const firstDay = new Date(year, month, 1);
-      const lastDay = new Date(year, month + 1, 0);
-      const startWeekday = firstDay.getDay();
-
-      calendar.innerHTML = "";
-
-      // 曜日
-      ["日", "月", "火", "水", "木", "金", "土"].forEach(d => {
-        const div = document.createElement("div");
-        div.innerHTML = `<strong>${d}</strong>`;
-        calendar.appendChild(div);
-      });
-
-      // 空欄
-      for (let i = 0; i < startWeekday; i++) {
-        const blank = document.createElement("div");
-        calendar.appendChild(blank);
-      }
-
-      // 日付
-      for (let day = 1; day <= lastDay.getDate(); day++) {
-        const dateStr = `${year}-${String(month + 1).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
-        const div = document.createElement("div");
-        const holiday = holidays.find(h => h.date === dateStr);
-        const dailyMenu = dailyMenus.find(m => m.date === dateStr);
-        const event = events.find(e => e.date === dateStr);
-        const isHoliday = !!holiday;
-
-        let content = `${day}`;
-        let classes = [];
-
-        if (isHoliday) {
-          classes.push("holiday");
-          if (holiday && holiday.reason) {
-            content += `<br><small>${holiday.reason}</small>`;
-          }
-        } else if (dailyMenu) {
-          content += `<br><small>${dailyMenu.food}</small>`;
-        }
-
-        // 行事・お知らせがある場合は追加表示
-        if (event) {
-          if (isHoliday || dailyMenu) {
-            content += `<br><small style="color: #007bff;">📢 ${event.message}</small>`;
-          } else {
-            content = `${day}<br><small style="color: #007bff;">📢 ${event.message}</small>`;
-          }
-        }
-
-        div.innerHTML = content;
-        if (classes.length > 0) {
-          div.className = classes.join(' ');
-        }
-        calendar.appendChild(div);
+      try {
+        adminCalendar.holidays = await apiGet('holidays.php');
+        adminCalendar.menus = await apiGet('daily-menu.php');
+        adminCalendar.events = await apiGet('events.php');
+        if (!Array.isArray(adminCalendar.holidays)) adminCalendar.holidays = [];
+        if (!Array.isArray(adminCalendar.menus)) adminCalendar.menus = [];
+        if (!Array.isArray(adminCalendar.events)) adminCalendar.events = [];
+        paintAdminCalendar();
+      } catch (e) {
+        console.error(e);
+        if (calendar) calendar.textContent = '予定を読み込めませんでした。ページを開き直してみてください。';
       }
     }
 

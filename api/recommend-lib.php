@@ -638,22 +638,31 @@ function recommend_choose_slots($rows, $today, $scoreOf) {
         $slots[] = ['role' => $role, 'row' => $featured];
         $usedDates[$featured['date']] = true;
     }
-    $next = null;
-    $after = null;
+    $preferred = [];
+    $fallback = [];
     foreach ($upcoming as $row) {
         $date = (string) ($row['date'] ?? '');
         if ($date === '' || isset($usedDates[$date])) {
             continue;
         }
-        if ($next === null) {
-            $next = $row;
-            continue;
-        }
-        if ($after === null) {
-            $after = $row;
-            break;
+        $food = trim((string) ($row['food'] ?? ''));
+        if ($food !== '' && empty($row['disliked'])) {
+            $preferred[] = $row;
+        } else {
+            $fallback[] = $row;
         }
     }
+    $pickedDays = array_slice($preferred, 0, 2);
+    if (count($pickedDays) < 2) {
+        foreach ($fallback as $row) {
+            if (count($pickedDays) >= 2) {
+                break;
+            }
+            $pickedDays[] = $row;
+        }
+    }
+    $next = $pickedDays[0] ?? null;
+    $after = $pickedDays[1] ?? null;
     if ($next !== null) {
         $slots[] = ['role' => 'next', 'row' => $next];
     }
@@ -2613,9 +2622,11 @@ function recommend_self_check_slots() {
         && $slots[0]['role'] === 'week'
         && $slots[0]['row']['food'] === '親子丼'
         && $slots[1]['role'] === 'next'
-        && $slots[1]['row']['date'] === '2026-11-30'
+        && $slots[1]['row']['food'] === '豚カツ定食'
+        && $slots[1]['row']['date'] === '2026-12-01'
         && $slots[2]['role'] === 'after'
-        && $slots[2]['row']['date'] === '2026-12-01'
+        && $slots[2]['row']['date'] === '2026-12-02'
+        && !in_array('納豆定食', array_column(array_column($slots, 'row'), 'food'), true)
         && count(array_unique($dates)) === 3
         && !in_array('2026-11-29', $dates, true)
         && $bestToday[0]['role'] === 'week-today'
@@ -2754,7 +2765,7 @@ function recommend_self_check() {
         })['date'] ?? '') === '2026-12-01',
         'natto_avoid_hits' => recommend_menu_disliked(
             ['userId' => 'n', 'likes' => [], 'avoids' => ['納豆'], 'allergies' => [], 'timesPerWeek' => ''],
-            '納豆定食'
+            '納豆丼'
         ) === true && recommend_menu_disliked(
             ['userId' => 'n', 'likes' => [], 'avoids' => ['納豆'], 'allergies' => [], 'timesPerWeek' => ''],
             '豚カツ定食'

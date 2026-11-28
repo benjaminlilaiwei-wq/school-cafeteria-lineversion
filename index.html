@@ -7,6 +7,25 @@
   <title>OliMeal 学校食堂</title>
   <link rel="stylesheet" href="styles.css">
   <link rel="stylesheet" href="olimeal-lp.css?v=2">
+  <style>
+    .span-nav { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; margin-bottom: 12px; }
+    .span-nav button {
+      min-height: 44px; padding: 8px 12px; border-radius: 999px; border: 1.5px solid var(--border-color, #e4d8c6);
+      background: #fff; font-weight: 800; cursor: pointer;
+    }
+    .span-range { font-weight: 800; color: var(--primary, #2f6b4f); }
+    .day-strip { display: flex; gap: 10px; overflow-x: auto; scroll-snap-type: x mandatory; padding: 4px 2px 12px; }
+    .day-card {
+      flex: 0 0 132px; scroll-snap-align: start; border-radius: 16px; border: 1.5px solid var(--border-color, #e4d8c6);
+      background: #fff; padding: 10px; min-height: 132px;
+    }
+    .day-card.today { border: 3px solid var(--primary, #2f6b4f); background: #e7f3ec; }
+    .day-card.past { opacity: 0.72; }
+    .day-card.holiday { background: #fff1e8; border-color: #e07a3d; }
+    .day-card .when, .day-card .dow { font-weight: 800; color: var(--primary, #2f6b4f); font-size: 0.82rem; }
+    .day-card .num { font-size: 1.25rem; font-weight: 800; }
+    .day-card .food { margin-top: 6px; font-size: 0.86rem; line-height: 1.4; word-break: break-word; }
+  </style>
 </head>
 
 <body class="olimeal-lp">
@@ -87,8 +106,8 @@
       </section>
 
       <section class="info-section">
-        <h2>今月の予定</h2>
-        <p class="legend"><span><span class="swatch today"></span>緑の枠はきょう</span><span><span class="swatch holiday"></span>オレンジは休み</span><span>日付の下は、その日の定食です</span></p>
+        <h2>前後2週間の予定</h2>
+        <p class="legend"><span><span class="swatch today"></span>緑の枠はきょう</span><span><span class="swatch holiday"></span>オレンジは休み</span><span>薄いカードは過ぎた日です。左右に送ると前後の日が見えます。</span></p>
         <div id="calendar" class="info-card calendar-container"><p>読み込んでいます…</p></div>
       </section>
     </main>
@@ -204,85 +223,126 @@
       }
     }
 
-    // カレンダーを生成
+    var homeCalendar = { offsetDays: 0, holidays: [], menus: [], events: [], ready: false };
+
+    function isoFromDate(date) {
+      return date.getFullYear() + '-' + String(date.getMonth() + 1).padStart(2, '0') + '-' + String(date.getDate()).padStart(2, '0');
+    }
+
+    function addIsoDays(iso, days) {
+      const parts = String(iso).split('-').map(Number);
+      const date = new Date(parts[0], parts[1] - 1, parts[2]);
+      date.setDate(date.getDate() + days);
+      return isoFromDate(date);
+    }
+
+    function addIsoMonths(iso, months) {
+      const parts = String(iso).split('-').map(Number);
+      const date = new Date(parts[0], parts[1] - 1, 1);
+      date.setMonth(date.getMonth() + months);
+      const last = new Date(date.getFullYear(), date.getMonth() + 1, 0).getDate();
+      date.setDate(Math.min(parts[2], last));
+      return isoFromDate(date);
+    }
+
+    function dayGap(fromIso, toIso) {
+      const from = String(fromIso).split('-').map(Number);
+      const to = String(toIso).split('-').map(Number);
+      const start = new Date(from[0], from[1] - 1, from[2]);
+      const end = new Date(to[0], to[1] - 1, to[2]);
+      return Math.round((end - start) / 86400000);
+    }
+
+    function jpDate(iso) {
+      const parts = String(iso).split('-');
+      return Number(parts[1]) + '月' + Number(parts[2]) + '日';
+    }
+
+    function paintHomeCalendar() {
+      const calendarDiv = document.getElementById('calendar');
+      if (!calendarDiv) return;
+      const today = isoFromDate(new Date());
+      const anchor = homeCalendar.offsetDays === 0 ? today : addIsoDays(today, homeCalendar.offsetDays);
+      const start = addIsoDays(anchor, -14);
+      const names = ['日', '月', '火', '水', '木', '金', '土'];
+      calendarDiv.innerHTML = '';
+      const nav = document.createElement('div');
+      nav.className = 'span-nav';
+      function addButton(label, move) {
+        const button = document.createElement('button');
+        button.type = 'button';
+        button.textContent = label;
+        button.addEventListener('click', function () {
+          const current = addIsoDays(today, homeCalendar.offsetDays);
+          if (move === 'today') homeCalendar.offsetDays = 0;
+          else if (move === 'week') homeCalendar.offsetDays += 14;
+          else if (move === 'back-week') homeCalendar.offsetDays -= 14;
+          else if (move === 'month') homeCalendar.offsetDays += dayGap(current, addIsoMonths(current, 1));
+          else homeCalendar.offsetDays += dayGap(current, addIsoMonths(current, -1));
+          paintHomeCalendar();
+        });
+        nav.appendChild(button);
+      }
+      addButton('前の月', 'back-month');
+      addButton('前の2週間', 'back-week');
+      addButton('今日', 'today');
+      addButton('次の2週間', 'week');
+      addButton('次の月', 'month');
+      const range = document.createElement('span');
+      range.className = 'span-range';
+      range.textContent = jpDate(start) + ' 〜 ' + jpDate(addIsoDays(start, 28));
+      nav.appendChild(range);
+      calendarDiv.appendChild(nav);
+      const strip = document.createElement('div');
+      strip.className = 'day-strip';
+      let todayCard = null;
+      for (let i = 0; i < 29; i++) {
+        const date = addIsoDays(start, i);
+        const parts = date.split('-').map(Number);
+        const when = new Date(parts[0], parts[1] - 1, parts[2]);
+        const holiday = (homeCalendar.holidays || []).find(function (item) { return item && item.date === date; });
+        const menu = (homeCalendar.menus || []).find(function (item) { return item && item.date === date; });
+        const event = (homeCalendar.events || []).find(function (item) { return item && item.date === date; });
+        const card = document.createElement('article');
+        card.className = 'day-card' + (date === today ? ' today' : '') + (date < today ? ' past' : '') + (holiday ? ' holiday' : '');
+        const whenEl = document.createElement('div');
+        whenEl.className = 'when';
+        whenEl.textContent = parts[1] + '月' + (date < today ? ' 過ぎた日' : (date === today ? ' 今日' : ''));
+        const num = document.createElement('div');
+        num.className = 'num';
+        num.textContent = parts[2] + '日';
+        const dow = document.createElement('div');
+        dow.className = 'dow';
+        dow.textContent = names[when.getDay()] + '曜日';
+        const food = document.createElement('div');
+        food.className = 'food';
+        if (holiday) food.textContent = holiday.reason || '休み';
+        else if (menu && menu.food) food.textContent = menu.food;
+        else food.textContent = '定食は未定';
+        if (event && event.message) food.textContent += ' / ' + event.message;
+        card.appendChild(whenEl);
+        card.appendChild(num);
+        card.appendChild(dow);
+        card.appendChild(food);
+        strip.appendChild(card);
+        if (date === today) todayCard = card;
+      }
+      calendarDiv.appendChild(strip);
+      if (todayCard && homeCalendar.offsetDays === 0) {
+        strip.scrollLeft = Math.max(0, todayCard.offsetLeft - strip.offsetLeft - 12);
+      }
+    }
+
     async function generateCalendar() {
       const calendarDiv = document.getElementById('calendar');
       try {
-      const holidays = await apiGet('holidays.php');
-      const dailyMenus = await apiGet('daily-menu.php');
-      const events = await apiGet('events.php');
-      const today = new Date();
-      const currentMonth = today.getMonth();
-      const currentYear = today.getFullYear();
-
-      // 月の最初の日と最後の日を取得
-      const firstDay = new Date(currentYear, currentMonth, 1);
-      const lastDay = new Date(currentYear, currentMonth + 1, 0);
-      const daysInMonth = lastDay.getDate();
-      const startingDayOfWeek = firstDay.getDay();
-
-      // カレンダーヘッダー
-      const monthNames = ['1月', '2月', '3月', '4月', '5月', '6月',
-        '7月', '8月', '9月', '10月', '11月', '12月'];
-      const dayNames = ['日', '月', '火', '水', '木', '金', '土'];
-
-      let calendarHTML = `
-        <div class="calendar-header">
-          <h4>${currentYear}年 ${monthNames[currentMonth]}</h4>
-        </div>
-        <div class="calendar-grid">
-          <div class="calendar-weekdays">
-      `;
-
-      // 曜日ヘッダー
-      dayNames.forEach(day => {
-        calendarHTML += `<div class="calendar-weekday">${day}</div>`;
-      });
-      calendarHTML += `</div><div class="calendar-days">`;
-
-      // 空白の日付（月の最初の日より前）
-      for (let i = 0; i < startingDayOfWeek; i++) {
-        calendarHTML += `<div class="calendar-day empty"></div>`;
-      }
-
-      // 実際の日付
-      for (let day = 1; day <= daysInMonth; day++) {
-        const dateString = `${currentYear}-${String(currentMonth + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
-        const dayOfWeek = new Date(currentYear, currentMonth, day).getDay();
-        const holiday = holidays.find(h => h.date === dateString);
-        const dailyMenu = dailyMenus.find(m => m.date === dateString);
-        const event = events.find(e => e.date === dateString);
-        // 休業日かどうか（管理画面で登録された日のみ。解除すれば営業日になる）
-        const isHoliday = !!holiday;
-
-        const todayString = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
-        let dayClass = 'calendar-day';
-        let dayContent = day;
-        if (dateString === todayString) dayClass += ' today';
-
-        if (isHoliday) {
-          dayClass += ' holiday';
-          dayContent = `${day}<br><small>${holiday.reason || '休業日'}</small>`;
-        } else if (dailyMenu) {
-          dayContent = `${day}<br><small>${dailyMenu.food}</small>`;
-        } else {
-          dayClass += ' weekday';
-        }
-
-        // 行事・お知らせがある場合は追加表示
-        if (event) {
-          if (isHoliday || dailyMenu) {
-            dayContent += `<br><small style="color: #007bff;">📢 ${event.message}</small>`;
-          } else {
-            dayContent = `${day}<br><small style="color: #007bff;">📢 ${event.message}</small>`;
-          }
-        }
-
-        calendarHTML += `<div class="${dayClass}">${dayContent}</div>`;
-      }
-
-      calendarHTML += `</div></div>`;
-      calendarDiv.innerHTML = calendarHTML;
+        homeCalendar.holidays = await apiGet('holidays.php');
+        homeCalendar.menus = await apiGet('daily-menu.php');
+        homeCalendar.events = await apiGet('events.php');
+        if (!Array.isArray(homeCalendar.holidays)) homeCalendar.holidays = [];
+        if (!Array.isArray(homeCalendar.menus)) homeCalendar.menus = [];
+        if (!Array.isArray(homeCalendar.events)) homeCalendar.events = [];
+        paintHomeCalendar();
       } catch (e) {
         console.error(e);
         if (calendarDiv) calendarDiv.innerHTML = `<p>予定を読み込めませんでした。ページを開き直してみてください。</p>`;
