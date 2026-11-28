@@ -128,6 +128,13 @@
       color: var(--accent-orange);
     }
 
+    .reco-list-title {
+      margin: 0 0 4px;
+      font-size: 1.08rem;
+      font-weight: 800;
+      color: var(--primary);
+    }
+
     .reco-food {
       font-size: 1.4rem;
       line-height: 1.4;
@@ -162,6 +169,20 @@
     .reco-reserve {
       width: 100%;
       margin-top: 12px;
+    }
+
+    .reco-reserve-panel {
+      margin-top: 16px;
+      padding: 16px 18px 18px;
+      background: var(--card-bg);
+      border: 1.5px solid var(--border-color);
+      border-radius: var(--radius-lg);
+      box-shadow: var(--shadow-soft);
+    }
+
+    .reco-reserve-panel h3 {
+      margin: 0;
+      font-size: 1.15rem;
     }
 
     .reco-vote {
@@ -241,8 +262,8 @@
       </div>
 
       <section id="for-you" class="reco-section" aria-live="polite">
-        <h2>あなたへのおすすめ</h2>
-        <p class="reco-lead" id="reco-lead">次に営業する日の定食を、アンケートとこれまでの評価から紹介します。休みの日は飛ばします。</p>
+        <h2>今日の定食と、次の日のおすすめ</h2>
+        <p class="reco-lead" id="reco-lead">一番目は今日の定食です。次は、苦手な食べものを避けて選んだ、次の日のおすすめです。休みの日は飛ばします。</p>
         <div id="reco-cards">
           <p>おすすめを読み込んでいます…</p>
         </div>
@@ -402,6 +423,9 @@
     }
 
     function fitText(card) {
+      if (card.listTitle === '今日の定食' && card.fit !== 'blocked' && card.fit !== 'holiday' && card.fit !== 'empty') {
+        return '今日の定食';
+      }
       if (card.fit === 'plain') return (card.dayWord || 'この日') + 'の定食';
       return fitNames[card.fit] || '定食';
     }
@@ -542,11 +566,36 @@
       });
     }
 
+    function renderReserve(cards) {
+      var today = null;
+      (cards || []).forEach(function (card) {
+        if (!today && card.reserve === 'today' && card.food && card.fit !== 'holiday') today = card;
+      });
+      var panel = makeNode('section', 'reco-reserve-panel');
+      panel.appendChild(makeNode('h3', '', '予約する'));
+      var link = document.createElement('a');
+      link.className = 'btn btn-primary reco-reserve';
+      if (today) {
+        var params = new URLSearchParams();
+        if (today.reserveName) params.set('name', today.reserveName);
+        params.set('food', today.food);
+        link.href = 'book.html?' + params.toString();
+        link.textContent = 'このメニューを予約する';
+        panel.appendChild(makeNode('p', 'reco-note', today.food + 'を、ここから予約できます。'));
+      } else {
+        link.href = 'book.html';
+        link.textContent = '予約ページを見る';
+        panel.appendChild(makeNode('p', 'reco-note', '予約できるのは、当日のメニューです。'));
+      }
+      panel.appendChild(link);
+      return panel;
+    }
+
     function renderRecommendations(data) {
       var lead = document.getElementById('reco-lead');
       var root = document.getElementById('reco-cards');
       if (data && data.personalized && data.name && lead) {
-        lead.textContent = data.name + 'さんのアンケートと、これまでの評価から選んでいます。';
+        lead.textContent = data.name + 'さんへ。一番目は今日の定食、次は苦手な食べものを避けたおすすめです。';
       }
       root.innerHTML = '';
       var grid = makeNode('div', 'reco-grid');
@@ -559,6 +608,7 @@
           article.appendChild(photo);
         }
         var body = makeNode('div', 'reco-body');
+        if (card.listTitle) body.appendChild(makeNode('p', 'reco-list-title', card.listTitle));
         var kicker = makeNode('div', 'reco-kicker');
         var heading = card.label || '';
         if (card.dayWord) heading += (heading ? '・' : '') + card.dayWord;
@@ -568,28 +618,9 @@
         body.appendChild(kicker);
         if (card.food) body.appendChild(makeNode('h3', 'reco-food', card.food));
         if (card.blurb) body.appendChild(makeNode('p', 'reco-blurb', card.blurb));
-        if (card.reason) body.appendChild(makeNode('p', 'reco-reason', card.reason));
         var credit = makeNode('p', 'reco-credit', '');
         fillCredit(credit, card);
         body.appendChild(credit);
-        if (card.food && card.fit !== 'holiday') {
-          var link = document.createElement('a');
-          link.className = 'btn btn-primary reco-reserve';
-          if (card.reserve === 'today') {
-            var params = new URLSearchParams();
-            if (card.reserveName) params.set('name', card.reserveName);
-            params.set('food', card.food);
-            link.href = 'book.html?' + params.toString();
-            link.textContent = 'このメニューを予約する';
-          } else {
-            link.href = 'book.html';
-            link.textContent = '予約ページを見る';
-          }
-          body.appendChild(link);
-          if (card.reserve !== 'today') {
-            body.appendChild(makeNode('p', 'reco-note', '予約できるのは、当日のメニューです。'));
-          }
-        }
         if (card.fit === 'blocked') {
           var allergy = document.createElement('a');
           allergy.href = 'allergy.html';
@@ -604,6 +635,7 @@
         if (photo) loadCardImage(card, photo, 0);
       });
       root.appendChild(grid);
+      root.appendChild(renderReserve(data.cards || []));
     }
 
     fetch('api/recommend.php?key=' + encodeURIComponent(key), { cache: 'no-store' })
