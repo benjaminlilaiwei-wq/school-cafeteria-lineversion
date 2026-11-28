@@ -438,24 +438,78 @@ function line_score_user($user, $food) {
     return $score;
 }
 
-function line_daily_food($date) {
-    $rows = line_read_json(line_data_dir() . '/daily-menu.json', []);
-    foreach ($rows as $row) {
-        if (is_array($row) && ($row['date'] ?? '') === $date) {
-            return (string) ($row['food'] ?? '');
+function line_iso_date($value) {
+    $value = trim((string) $value);
+    if (preg_match('/^(\d{4})[-\/](\d{1,2})[-\/](\d{1,2})/', $value, $m)) {
+        return sprintf('%04d-%02d-%02d', (int) $m[1], (int) $m[2], (int) $m[3]);
+    }
+    return '';
+}
+
+function line_food_from_rows($rows, $date) {
+    $want = line_iso_date($date);
+    if ($want === '' || !is_array($rows)) {
+        return '';
+    }
+    foreach ($rows as $key => $row) {
+        if (is_array($row)) {
+            $day = line_iso_date($row['date'] ?? '');
+            if ($day === '' && !is_int($key)) {
+                $day = line_iso_date($key);
+            }
+            if ($day !== $want) {
+                continue;
+            }
+            $food = trim((string) ($row['food'] ?? $row['menu'] ?? $row['name'] ?? ''));
+            if ($food !== '') {
+                return $food;
+            }
+            continue;
+        }
+        if ((is_string($row) || is_numeric($row)) && !is_int($key) && line_iso_date($key) === $want) {
+            return trim((string) $row);
         }
     }
     return '';
 }
 
-function line_holiday($date) {
-    $rows = line_read_json(line_data_dir() . '/holidays.json', []);
-    foreach ($rows as $row) {
-        if (is_array($row) && ($row['date'] ?? '') === $date) {
-            return (string) ($row['reason'] ?? '休み');
+function line_holiday_from_rows($rows, $date) {
+    $want = line_iso_date($date);
+    if ($want === '' || !is_array($rows)) {
+        return null;
+    }
+    foreach ($rows as $key => $row) {
+        if (is_array($row)) {
+            $day = line_iso_date($row['date'] ?? '');
+            if ($day === '' && !is_int($key)) {
+                $day = line_iso_date($key);
+            }
+            if ($day !== $want) {
+                continue;
+            }
+            $reason = trim((string) ($row['reason'] ?? '休み'));
+            return $reason === '' ? '休み' : $reason;
+        }
+        if (is_string($row) || is_numeric($row)) {
+            $day = is_int($key) ? line_iso_date($row) : line_iso_date($key);
+            if ($day !== $want) {
+                continue;
+            }
+            $reason = is_int($key) ? '休み' : trim((string) $row);
+            return $reason === '' ? '休み' : $reason;
         }
     }
     return null;
+}
+
+function line_daily_food($date) {
+    $rows = line_read_json(line_data_dir() . '/daily-menu.json', []);
+    return line_food_from_rows($rows, $date);
+}
+
+function line_holiday($date) {
+    $rows = line_read_json(line_data_dir() . '/holidays.json', []);
+    return line_holiday_from_rows($rows, $date);
 }
 
 function line_events() {

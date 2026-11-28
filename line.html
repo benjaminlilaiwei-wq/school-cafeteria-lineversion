@@ -52,6 +52,10 @@
       border: 1.5px solid var(--accent-sun);
     }
 
+    .reco-section {
+      margin-top: 28px;
+    }
+
     .reco-section h2 {
       font-size: 1.45rem;
       margin-bottom: 6px;
@@ -74,6 +78,19 @@
       border-radius: var(--radius-lg);
       overflow: hidden;
       box-shadow: var(--shadow-soft);
+    }
+
+    .reco-card.feature {
+      border: 3px solid var(--primary);
+      box-shadow: 0 12px 28px rgba(47, 93, 58, 0.16);
+    }
+
+    .reco-card.feature .reco-list-title {
+      font-size: 1.35rem;
+    }
+
+    .reco-card.feature .reco-food {
+      font-size: 1.9rem;
     }
 
     .reco-photo,
@@ -223,6 +240,10 @@
       .reco-grid {
         grid-template-columns: 1fr 1fr;
       }
+
+      .reco-card.feature {
+        grid-column: 1 / -1;
+      }
     }
   </style>
   <link rel="stylesheet" href="olimeal-interior.css">
@@ -261,20 +282,20 @@
         <span><span class="swatch liked"></span>黄色い枠は好きそうな定食</span>
       </div>
 
-      <section id="for-you" class="reco-section" aria-live="polite">
-        <h2>今日の定食と、次の日のおすすめ</h2>
-        <p class="reco-lead" id="reco-lead">一番目は今日の定食です。次は、苦手な食べものを避けて選んだ、次の日のおすすめです。休みの日は飛ばします。</p>
-        <div id="reco-cards">
-          <p>おすすめを読み込んでいます…</p>
-        </div>
-      </section>
-
       <div id="calendar" class="info-card calendar-container">
         <div class="loading">
           <div class="spinner"></div>
           <p>読み込んでいます…</p>
         </div>
       </div>
+
+      <section id="for-you" class="reco-section" aria-live="polite">
+        <h2>今週いちばんのおすすめ</h2>
+        <p class="reco-lead" id="reco-lead">いちばん大きいカードが、今日から7日間で一番おすすめの定食です。予約できるのは今日の定食だけです。休みの日は飛ばします。</p>
+        <div id="reco-cards">
+          <p>おすすめを読み込んでいます…</p>
+        </div>
+      </section>
 
       <div class="info-card" style="margin-top: 20px;">
         <p class="help-note" style="margin-bottom: 0;">
@@ -566,41 +587,33 @@
       });
     }
 
-    function renderReserve(cards) {
-      var today = null;
-      (cards || []).forEach(function (card) {
-        if (!today && card.reserve === 'today' && card.food && card.fit !== 'holiday') today = card;
-      });
-      var panel = makeNode('section', 'reco-reserve-panel');
-      panel.appendChild(makeNode('h3', '', '予約する'));
+    function reserveLink(card) {
+      if (card.reserve !== 'today' || !card.food || card.fit === 'holiday') return null;
       var link = document.createElement('a');
       link.className = 'btn btn-primary reco-reserve';
-      if (today) {
-        var params = new URLSearchParams();
-        if (today.reserveName) params.set('name', today.reserveName);
-        params.set('food', today.food);
-        link.href = 'book.html?' + params.toString();
-        link.textContent = 'このメニューを予約する';
-        panel.appendChild(makeNode('p', 'reco-note', today.food + 'を、ここから予約できます。'));
-      } else {
-        link.href = 'book.html';
-        link.textContent = '予約ページを見る';
-        panel.appendChild(makeNode('p', 'reco-note', '予約できるのは、当日のメニューです。'));
-      }
-      panel.appendChild(link);
-      return panel;
+      var params = new URLSearchParams();
+      if (card.reserveName) params.set('name', card.reserveName);
+      params.set('food', card.food);
+      link.href = 'book.html?' + params.toString();
+      link.textContent = 'この定食を予約する';
+      return link;
     }
 
     function renderRecommendations(data) {
       var lead = document.getElementById('reco-lead');
       var root = document.getElementById('reco-cards');
+      if (data && data.menuError) {
+        if (lead) lead.textContent = data.menuError;
+        root.textContent = '';
+        return;
+      }
       if (data && data.personalized && data.name && lead) {
-        lead.textContent = data.name + 'さんへ。一番目は今日の定食、次は苦手な食べものを避けたおすすめです。';
+        lead.textContent = data.name + 'さんへ。大きいカードが、今日から7日間で一番おすすめの定食です。予約できるのは今日の定食だけです。';
       }
       root.innerHTML = '';
       var grid = makeNode('div', 'reco-grid');
       (data.cards || []).forEach(function (card) {
-        var article = makeNode('article', 'reco-card');
+        var article = makeNode('article', 'reco-card' + (card.prominent ? ' feature' : ''));
         var photo = null;
         if (card.food) {
           photo = makeNode('div', 'reco-photo-wrap');
@@ -618,6 +631,11 @@
         body.appendChild(kicker);
         if (card.food) body.appendChild(makeNode('h3', 'reco-food', card.food));
         if (card.blurb) body.appendChild(makeNode('p', 'reco-blurb', card.blurb));
+        var reserve = reserveLink(card);
+        if (reserve) {
+          body.appendChild(makeNode('p', 'reco-note', '予約できるのは、今日の定食だけです。'));
+          body.appendChild(reserve);
+        }
         var credit = makeNode('p', 'reco-credit', '');
         fillCredit(credit, card);
         body.appendChild(credit);
@@ -635,7 +653,6 @@
         if (photo) loadCardImage(card, photo, 0);
       });
       root.appendChild(grid);
-      root.appendChild(renderReserve(data.cards || []));
     }
 
     fetch('api/recommend.php?key=' + encodeURIComponent(key), { cache: 'no-store' })
@@ -646,7 +663,7 @@
       .then(renderRecommendations)
       .catch(function () {
         var root = document.getElementById('reco-cards');
-        if (root) root.textContent = 'おすすめを読み込めませんでした。下のカレンダーはそのまま使えます。';
+        if (root) root.textContent = 'おすすめを読み込めませんでした。上のカレンダーはそのまま使えます。';
       });
   </script>
 </body>
