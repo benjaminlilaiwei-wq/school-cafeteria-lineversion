@@ -1143,7 +1143,28 @@ function recommend_cached_image($food) {
     return recommend_image_payload($image);
 }
 
+function recommend_menu_source_error() {
+    $menu = cafeteria_load(line_data_dir() . '/daily-menu.json');
+    if ($menu['state'] === 'error') {
+        return cafeteria_last_error() !== '' ? cafeteria_last_error() : '定食を読めませんでした。';
+    }
+    $holiday = cafeteria_load(line_data_dir() . '/holidays.json');
+    if ($holiday['state'] === 'error') {
+        return cafeteria_last_error() !== '' ? cafeteria_last_error() : '休みの日を読めませんでした。';
+    }
+    return '';
+}
+
 function recommend_payload($user) {
+    if (recommend_menu_source_error() !== '') {
+        return [
+            'ok' => true,
+            'personalized' => is_array($user) && !empty($user['userId']),
+            'name' => is_array($user) ? (string) ($user['name'] ?? '') : '',
+            'cards' => [],
+            'menuError' => '保存している定食を読み込めませんでした。時間をおいて、もう一度開いてください。',
+        ];
+    }
     $votes = [];
     $impressions = [];
     $feedback = recommend_load_doc(recommend_feedback_file(), recommend_feedback_default());
@@ -2273,6 +2294,20 @@ function recommend_self_check() {
             && recommend_menu_pitch('親子丼') !== recommend_menu_pitch('唐揚げ定食')
             && substr_count(recommend_menu_pitch('親子丼'), '。') === 2,
         'week_best_is_distinct' => recommend_self_check_slots(),
+        'supabase_menu_shapes' => line_food_from_rows([
+                ['date' => '2026/12/02', 'food' => '親子丼'],
+                '2026-12-03' => '鯖の塩焼き定食',
+            ], '2026-12-02') === '親子丼'
+            && line_food_from_rows([
+                ['date' => '2026/12/02', 'food' => '親子丼'],
+                '2026-12-03' => ['menu' => '鯖の塩焼き定食'],
+            ], '2026-12-03') === '鯖の塩焼き定食'
+            && line_holiday_from_rows([
+                ['date' => '2026/11/29', 'reason' => '日曜'],
+            ], '2026-11-29') === '日曜'
+            && line_holiday_from_rows([
+                '2026-12-06' => '休校',
+            ], '2026-12-06') === '休校',
         'next_skips_disliked' => (recommend_choose_next_menu([
             ['date' => '2026-12-01', 'food' => '納豆定食'],
             ['date' => '2026-12-02', 'food' => '豚カツ定食'],

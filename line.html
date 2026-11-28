@@ -52,6 +52,10 @@
       border: 1.5px solid var(--accent-sun);
     }
 
+    .reco-section {
+      margin-top: 28px;
+    }
+
     .reco-section h2 {
       font-size: 1.45rem;
       margin-bottom: 6px;
@@ -278,6 +282,13 @@
         <span><span class="swatch liked"></span>黄色い枠は好きそうな定食</span>
       </div>
 
+      <div id="calendar" class="info-card calendar-container">
+        <div class="loading">
+          <div class="spinner"></div>
+          <p>読み込んでいます…</p>
+        </div>
+      </div>
+
       <section id="for-you" class="reco-section" aria-live="polite">
         <h2>今週いちばんのおすすめ</h2>
         <p class="reco-lead" id="reco-lead">いちばん大きいカードが、今日から7日間で一番おすすめの定食です。予約できるのは今日の定食だけです。休みの日は飛ばします。</p>
@@ -285,13 +296,6 @@
           <p>おすすめを読み込んでいます…</p>
         </div>
       </section>
-
-      <div id="calendar" class="info-card calendar-container">
-        <div class="loading">
-          <div class="spinner"></div>
-          <p>読み込んでいます…</p>
-        </div>
-      </div>
 
       <div class="info-card" style="margin-top: 20px;">
         <p class="help-note" style="margin-bottom: 0;">
@@ -598,6 +602,11 @@
     function renderRecommendations(data) {
       var lead = document.getElementById('reco-lead');
       var root = document.getElementById('reco-cards');
+      if (data && data.menuError) {
+        if (lead) lead.textContent = data.menuError;
+        root.textContent = '';
+        return;
+      }
       if (data && data.personalized && data.name && lead) {
         lead.textContent = data.name + 'さんへ。大きいカードが、今日から7日間で一番おすすめの定食です。予約できるのは今日の定食だけです。';
       }
@@ -654,7 +663,7 @@
       .then(renderRecommendations)
       .catch(function () {
         var root = document.getElementById('reco-cards');
-        if (root) root.textContent = 'おすすめを読み込めませんでした。下のカレンダーはそのまま使えます。';
+        if (root) root.textContent = 'おすすめを読み込めませんでした。上のカレンダーはそのまま使えます。';
       });
   </script>
 </body>
