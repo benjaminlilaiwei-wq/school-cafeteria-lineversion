@@ -79,6 +79,9 @@ function recommend_normalize_assets($data) {
     if (!isset($data['menus']) || !is_array($data['menus'])) {
         $data['menus'] = [];
     }
+    if (!isset($data['standard']) || !is_array($data['standard'])) {
+        $data['standard'] = [];
+    }
     return $data;
 }
 
@@ -282,6 +285,71 @@ function recommend_core_name($food) {
         $name = mb_substr($name, 0, 100);
     }
     return $name;
+}
+
+function recommend_standard_catalog() {
+    return [
+        ['id' => 'curry', 'name' => 'カレーライス', 'file' => 'standard/curry.webp'],
+        ['id' => 'hayashi', 'name' => 'ハヤシライス', 'file' => 'standard/hayashi.webp'],
+        ['id' => 'katsucurry', 'name' => 'カツカレー', 'file' => 'standard/katsucurry.webp'],
+        ['id' => 'yakimeshi', 'name' => 'やきめし', 'file' => 'standard/yakimeshi.webp'],
+        ['id' => 'shoyu-ramen', 'name' => '醤油ラーメン', 'file' => 'standard/shoyu-ramen.webp'],
+        ['id' => 'tonkotsu-ramen', 'name' => '豚骨ラーメン', 'file' => 'standard/tonkotsu-ramen.webp'],
+        ['id' => 'kake-udon', 'name' => 'かけうどん', 'file' => 'standard/kake-udon.webp'],
+        ['id' => 'tempura-udon', 'name' => '天ぷらうどん', 'file' => 'standard/tempura-udon.webp'],
+        ['id' => 'curry-udon', 'name' => 'カレーうどん', 'file' => 'standard/curry-udon.webp'],
+        ['id' => 'niku-udon', 'name' => '肉うどん', 'file' => 'standard/niku-udon.webp'],
+        ['id' => 'kake-soba', 'name' => 'かけそば', 'file' => 'standard/kake-soba.webp'],
+        ['id' => 'tempura-soba', 'name' => '天ぷらそば', 'file' => 'standard/tempura-soba.webp'],
+        ['id' => 'niku-soba', 'name' => '肉そば', 'file' => 'standard/niku-soba.webp'],
+    ];
+}
+
+function recommend_standard_by_id($id) {
+    $id = trim((string) $id);
+    if (!preg_match('/^[a-z0-9-]{1,40}$/', $id)) {
+        return null;
+    }
+    foreach (recommend_standard_catalog() as $item) {
+        if ($item['id'] === $id) {
+            return $item;
+        }
+    }
+    return null;
+}
+
+function recommend_standard_by_name($food) {
+    $core = recommend_core_name($food);
+    if ($core === '') {
+        return null;
+    }
+    foreach (recommend_standard_catalog() as $item) {
+        if ($item['name'] === $core) {
+            return $item;
+        }
+    }
+    return null;
+}
+
+function recommend_image_path_from_public_url($url, $base) {
+    $base = rtrim((string) $base, '/');
+    $url = (string) $url;
+    if ($base === '' || $url === '') {
+        return '';
+    }
+    $prefix = $base . '/storage/v1/object/public/menu-images/';
+    if (strpos($url, $prefix) !== 0) {
+        return '';
+    }
+    $path = rawurldecode(explode('?', substr($url, strlen($prefix)), 2)[0]);
+    if (!preg_match('#^(standard/[a-z0-9-]+\.webp|menus/[a-f0-9]{40}\.(webp|jpg|png))$#', $path)) {
+        return '';
+    }
+    return $path;
+}
+
+function recommend_owned_image_url($url) {
+    return recommend_image_path_from_public_url($url, recommend_project_url()) !== '';
 }
 
 function recommend_query_pairs() {
@@ -1195,15 +1263,23 @@ function recommend_image_payload($image) {
         return $empty;
     }
     $status = (string) ($image['status'] ?? 'pending');
-    if ($status === 'ready' && !empty($image['publicUrl'])) {
+    if ($status === 'ready' && recommend_owned_image_url($image['publicUrl'] ?? '')) {
+        $url = (string) $image['publicUrl'];
+        $version = (string) ($image['updatedAt'] ?? '');
+        if ($version !== '' && strpos($url, '?') === false) {
+            $url .= '?v=' . rawurlencode($version);
+        }
+        $method = (string) ($image['method'] ?? '');
+        $fixed = $method === 'admin';
         return [
             'status' => 'ready',
-            'url' => (string) $image['publicUrl'],
-            'kind' => 'pixabay',
-            'method' => (string) ($image['method'] ?? ''),
-            'pageUrl' => recommend_safe_page($image['pageURL'] ?? ''),
-            'author' => (string) ($image['user'] ?? ''),
-            'credit' => 'Pixabay',
+            'url' => $url,
+            'kind' => $fixed ? 'fixed' : 'pixabay',
+            'method' => $method,
+            'menuId' => (string) ($image['menuId'] ?? ''),
+            'pageUrl' => $fixed ? '' : recommend_safe_page($image['pageURL'] ?? ''),
+            'author' => $fixed ? '' : (string) ($image['user'] ?? ''),
+            'credit' => $fixed ? '' : 'Pixabay',
         ];
     }
     if ($status === 'skipped' || $status === 'error') {
@@ -1246,7 +1322,7 @@ function recommend_image_fresh($image) {
         return false;
     }
     $status = (string) ($image['status'] ?? '');
-    if ($status === 'ready' && !empty($image['publicUrl'])) {
+    if ($status === 'ready' && recommend_owned_image_url($image['publicUrl'] ?? '')) {
         return true;
     }
     $until = (int) ($image['until'] ?? 0);
@@ -1422,12 +1498,94 @@ function recommend_card($date, $when, $user, $votes, $impressions) {
     return $base;
 }
 
-function recommend_cached_image($food) {
-    $assets = recommend_load_doc(recommend_assets_file(), ['menus' => []]);
+function recommend_saved_food_image($assets, $food) {
+    $core = recommend_core_name($food);
+    $keys = [$food, $core];
+    foreach (line_menus() as $menu) {
+        if (!is_array($menu)) {
+            continue;
+        }
+        $name = trim((string) ($menu['name'] ?? ''));
+        if ($name !== '' && recommend_core_name($name) === $core) {
+            $keys[] = $name;
+        }
+    }
+    foreach (array_values(array_unique($keys)) as $key) {
+        if ($key === '' || !isset($assets['menus'][$key]) || !is_array($assets['menus'][$key])) {
+            continue;
+        }
+        $image = $assets['menus'][$key]['image'] ?? null;
+        if (!is_array($image)) {
+            continue;
+        }
+        if (($image['status'] ?? '') === 'ready' && recommend_owned_image_url($image['publicUrl'] ?? '')) {
+            return $image;
+        }
+    }
+    return null;
+}
+
+function recommend_pin_standard($item, $image) {
+    if (!is_array($item) || !is_array($image) || !recommend_owned_image_url($image['publicUrl'] ?? '')) {
+        return;
+    }
+    $path = recommend_image_path_from_public_url($image['publicUrl'], recommend_project_url());
+    if ($path === '') {
+        return;
+    }
+    recommend_lock(function () use ($item, $image, $path) {
+        $assets = recommend_load_doc(recommend_assets_file(), ['menus' => [], 'standard' => []]);
+        if ($assets === null) {
+            return;
+        }
+        $assets = recommend_normalize_assets($assets);
+        $current = $assets['standard'][$item['id']] ?? null;
+        if (is_array($current) && ($current['status'] ?? '') === 'ready' && recommend_owned_image_url($current['publicUrl'] ?? '')) {
+            return;
+        }
+        $public = explode('?', (string) $image['publicUrl'], 2)[0];
+        $assets['standard'][$item['id']] = [
+            'status' => 'ready',
+            'method' => (string) ($image['method'] ?? 'stored'),
+            'storagePath' => (string) (($image['storagePath'] ?? '') !== '' ? $image['storagePath'] : $path),
+            'publicUrl' => $public,
+            'menuId' => $item['id'],
+            'source' => 'stored',
+            'pageURL' => recommend_safe_page($image['pageURL'] ?? ''),
+            'user' => (string) ($image['user'] ?? ''),
+            'selectedAt' => (string) ($image['selectedAt'] ?? date('c')),
+            'updatedAt' => (string) ($image['updatedAt'] ?? $image['selectedAt'] ?? date('c')),
+        ];
+        recommend_save_doc(recommend_assets_file(), $assets);
+    });
+}
+
+function recommend_cached_image($food, $menuId = '') {
+    $assets = recommend_load_doc(recommend_assets_file(), ['menus' => [], 'standard' => []]);
     if ($assets === null) {
         return null;
     }
     $assets = recommend_normalize_assets($assets);
+    $standard = recommend_standard_by_id($menuId);
+    if ($standard === null) {
+        $standard = recommend_standard_by_name($food);
+    }
+    if ($standard !== null) {
+        $fixed = $assets['standard'][$standard['id']] ?? null;
+        if (is_array($fixed) && ($fixed['status'] ?? '') === 'ready' && recommend_owned_image_url($fixed['publicUrl'] ?? '')) {
+            if (($fixed['menuId'] ?? '') === '') {
+                $fixed['menuId'] = $standard['id'];
+            }
+            return recommend_image_payload($fixed);
+        }
+    }
+    $stored = recommend_saved_food_image($assets, $food);
+    if (is_array($stored)) {
+        if ($standard !== null) {
+            recommend_pin_standard($standard, $stored);
+        }
+        return recommend_image_payload($stored);
+    }
     $row = $assets['menus'][$food] ?? [];
     if (!is_array($row)) {
         return null;
@@ -2258,14 +2416,14 @@ function recommend_storage_delete($path) {
     recommend_request($url, 'DELETE', recommend_storage_headers(''), null, 10);
 }
 
-function recommend_storage_upload($path, $binary, $mime) {
+function recommend_storage_upload($path, $binary, $mime, $cache = 'public, max-age=86400') {
     if (!recommend_bucket_ready()) {
         return '';
     }
     $url = recommend_project_url() . '/storage/v1/object/menu-images/' . $path;
     $headers = recommend_storage_headers($mime);
     $headers[] = 'x-upsert: true';
-    $headers[] = 'cache-control: public, max-age=86400';
+    $headers[] = 'cache-control: ' . $cache;
     [$ok] = recommend_request($url, 'POST', $headers, $binary, 20);
     if (!$ok) {
         return '';
@@ -2524,10 +2682,114 @@ function recommend_food_allowed($food) {
     return false;
 }
 
-function recommend_ensure_image($food) {
+function recommend_stamp_standard_ids() {
+    $file = line_data_dir() . '/menu.json';
+    $loaded = cafeteria_load($file);
+    if ($loaded['state'] !== 'ok' || !is_array($loaded['data'])) {
+        return;
+    }
+    $menus = $loaded['data'];
+    $changed = false;
+    foreach ($menus as $index => $menu) {
+        if (!is_array($menu)) {
+            continue;
+        }
+        $item = recommend_standard_by_name($menu['name'] ?? '');
+        if ($item === null) {
+            continue;
+        }
+        if (($menu['standardId'] ?? '') !== $item['id']) {
+            $menus[$index]['standardId'] = $item['id'];
+            $changed = true;
+        }
+    }
+    if ($changed) {
+        cafeteria_write($file, $menus);
+    }
+}
+
+function recommend_save_standard_file($id, $binary) {
+    $item = recommend_standard_by_id($id);
+    if ($item === null) {
+        return ['ok' => false, 'error' => 'この定番メニューには写真を登録できません。'];
+    }
+    if (!is_string($binary) || $binary === '' || strlen($binary) > 4 * 1024 * 1024) {
+        return ['ok' => false, 'error' => '写真は4MBまでのJPEG、PNG、WebPにしてください。'];
+    }
+    $info = @getimagesizefromstring($binary);
+    $mime = is_array($info) ? (string) ($info['mime'] ?? '') : '';
+    if (!in_array($mime, ['image/jpeg', 'image/png', 'image/webp'], true)) {
+        return ['ok' => false, 'error' => '写真はJPEG、PNG、WebPだけ登録できます。'];
+    }
+    $optimized = recommend_optimize_image($binary);
+    if ($optimized === null) {
+        return ['ok' => false, 'error' => '写真を保存用に整えられませんでした。'];
+    }
+    [$blob, $outMime] = $optimized;
+    $public = recommend_storage_upload($item['file'], $blob, $outMime, 'public, max-age=2592000');
+    if ($public === '' || !recommend_owned_image_url($public)) {
+        return ['ok' => false, 'error' => '写真を保存できませんでした。'];
+    }
+    $saved = recommend_lock(function () use ($item, $public) {
+        $assets = recommend_load_doc(recommend_assets_file(), ['menus' => [], 'standard' => []]);
+        if ($assets === null) {
+            return false;
+        }
+        $assets = recommend_normalize_assets($assets);
+        $assets['standard'][$item['id']] = [
+            'status' => 'ready',
+            'method' => 'admin',
+            'storagePath' => $item['file'],
+            'publicUrl' => $public,
+            'menuId' => $item['id'],
+            'source' => 'admin',
+            'pageURL' => '',
+            'user' => '',
+            'selectedAt' => date('c'),
+            'updatedAt' => date('c'),
+        ];
+        return recommend_save_doc(recommend_assets_file(), $assets);
+    });
+    if (!$saved) {
+        return ['ok' => false, 'error' => '写真の情報を保存できませんでした。'];
+    }
+    $file = line_data_dir() . '/menu.json';
+    $loaded = cafeteria_load($file);
+    if ($loaded['state'] === 'ok' && is_array($loaded['data'])) {
+        $menus = $loaded['data'];
+        $changed = false;
+        foreach ($menus as $index => $menu) {
+            if (!is_array($menu) || recommend_core_name($menu['name'] ?? '') !== $item['name']) {
+                continue;
+            }
+            $menus[$index]['standardId'] = $item['id'];
+            $menus[$index]['imagePath'] = $item['file'];
+            $changed = true;
+        }
+        if ($changed) {
+            cafeteria_write($file, $menus);
+        }
+    }
+    $record = [
+        'status' => 'ready',
+        'method' => 'admin',
+        'storagePath' => $item['file'],
+        'publicUrl' => $public,
+        'menuId' => $item['id'],
+        'updatedAt' => date('c'),
+    ];
+    return ['ok' => true, 'item' => $item, 'image' => recommend_image_payload($record)];
+}
+
+function recommend_ensure_image($food, $menuId = '') {
     $food = trim((string) $food);
+    $menuId = trim((string) $menuId);
     if ($food === '' || mb_strlen($food) > 80 || !recommend_food_allowed($food)) {
         return ['ok' => false, 'status' => 400, 'error' => 'この定食の画像は用意していません。', 'image' => recommend_image_payload(['status' => 'skipped'])];
+    }
+    $cached = recommend_cached_image($food, $menuId);
+    if (is_array($cached) && ($cached['status'] ?? '') === 'ready' && ($cached['url'] ?? '') !== '') {
+        return ['ok' => true, 'image' => $cached];
     }
     $claim = recommend_claim_image($food);
     if (!empty($claim['done'])) {
@@ -2544,7 +2806,7 @@ function recommend_ensure_image($food) {
     }
     $saved = recommend_merge_menu($food, function ($latest) use ($generated) {
         $latestImage = is_array($latest['image'] ?? null) ? $latest['image'] : [];
-        if (($latestImage['status'] ?? '') === 'ready' && !empty($latestImage['publicUrl']) && (int) ($latestImage['workingUntil'] ?? 0) === 0) {
+        if (($latestImage['status'] ?? '') === 'ready' && recommend_owned_image_url($latestImage['publicUrl'] ?? '') && (int) ($latestImage['workingUntil'] ?? 0) === 0) {
             return $latest;
         }
         $latest['image'] = $generated['image'];
@@ -2558,6 +2820,13 @@ function recommend_ensure_image($food) {
         return $latest;
     });
     $image = is_array($saved['image'] ?? null) ? $saved['image'] : ($generated['image'] ?? []);
+    $standard = recommend_standard_by_id($menuId);
+    if ($standard === null) {
+        $standard = recommend_standard_by_name($food);
+    }
+    if ($standard !== null && is_array($image) && ($image['status'] ?? '') === 'ready') {
+        recommend_pin_standard($standard, $image);
+    }
     return ['ok' => true, 'image' => recommend_image_payload($image)];
 }
 
@@ -2763,6 +3032,32 @@ function recommend_self_check() {
         ], function () {
             return false;
         })['date'] ?? '') === '2026-12-01',
+        'standard_menu_ids' => (recommend_standard_by_name('カレーライス（450円）')['id'] ?? '') === 'curry'
+            && (recommend_standard_by_name('カツカレー')['id'] ?? '') === 'katsucurry'
+            && (recommend_standard_by_name('カレーうどん（400円）')['id'] ?? '') === 'curry-udon'
+            && (recommend_standard_by_name('醤油ラーメン')['id'] ?? '') === 'shoyu-ramen'
+            && (recommend_standard_by_name('肉そば')['file'] ?? '') === 'standard/niku-soba.webp'
+            && recommend_standard_by_name('日替わり定食（550円）') === null
+            && recommend_standard_by_name('豚マヨ定食') === null
+            && recommend_standard_by_name('とんかつ定食') === null
+            && count(recommend_standard_catalog()) === 13,
+        'owned_storage_path' => recommend_image_path_from_public_url(
+                'https://project.example/storage/v1/object/public/menu-images/standard/curry.webp?v=1',
+                'https://project.example'
+            ) === 'standard/curry.webp'
+            && recommend_image_path_from_public_url(
+                'https://cdn.example/curry.jpg',
+                'https://project.example'
+            ) === ''
+            && recommend_image_path_from_public_url(
+                'https://project.example/storage/v1/object/public/menu-images/standard/../secret.webp',
+                'https://project.example'
+            ) === '',
+        'hotlink_not_shown' => (recommend_image_payload([
+                'status' => 'ready',
+                'publicUrl' => 'https://images.example/hotlink.jpg',
+                'method' => 'admin',
+            ])['status'] ?? '') !== 'ready',
         'natto_avoid_hits' => recommend_menu_disliked(
             ['userId' => 'n', 'likes' => [], 'avoids' => ['納豆'], 'allergies' => [], 'timesPerWeek' => ''],
             '納豆丼'

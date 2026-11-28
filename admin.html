@@ -306,6 +306,7 @@
 
                 <div class="admin-card">
                   <h3>現在のメニュー一覧</h3>
+                  <p style="margin:0 0 8px; color:#555;">カレーやラーメンなど定番メニューは、一度写真を登録するとその写真を使い続けます。自分で撮った写真か、使ってよい写真を選んでください。画像のアドレスを貼る欄はありません。</p>
                   <div id="menu-list"></div>
                 </div>
               </div>
@@ -987,19 +988,90 @@
         return;
       }
 
+      let standards = [];
+      try {
+        const photoData = await apiGet('standard-image.php');
+        standards = photoData && Array.isArray(photoData.items) ? photoData.items : [];
+      } catch (e) {
+        standards = [];
+      }
+      const standardByName = {};
+      standards.forEach(function (item) {
+        if (item && item.name) standardByName[item.name] = item;
+      });
+
       menus.forEach((m, i) => {
         const div = document.createElement("div");
         div.className = "menu-item";
         const stockDisplay = m.stock === -1 ? "無制限" : `${m.stock}食`;
         div.innerHTML = `
-          <p>🍱 ${m.name}　残り: ${stockDisplay}</p>
+          <p>🍱 ${escapeHtml(m.name)}　残り: ${escapeHtml(stockDisplay)}</p>
           <div style="display: flex; gap: 5px;">
             <button onclick="editMenuStock(${i})" class="btn btn-secondary">残数変更</button>
             <button onclick="deleteMenu(${i})" class="btn btn-danger">削除</button>
           </div>
         `;
+        const standard = standardByName[getMenuNameWithoutPrice(m.name)];
+        if (standard) {
+          const box = document.createElement('div');
+          box.style.marginTop = '8px';
+          const note = document.createElement('p');
+          note.style.margin = '0 0 6px';
+          note.textContent = standard.ready
+            ? '登録済みの写真を表示します。変えたいときだけ、新しい写真を選んでください。'
+            : '写真は未登録です。自分で撮った写真か、使ってよい写真を1枚選んでください。';
+          box.appendChild(note);
+          if (standard.ready && standard.url) {
+            const preview = document.createElement('img');
+            preview.src = standard.url;
+            preview.alt = standard.name;
+            preview.style.cssText = 'width:120px;height:80px;object-fit:cover;border-radius:8px;display:block;margin-bottom:6px;';
+            box.appendChild(preview);
+          }
+          const input = document.createElement('input');
+          input.type = 'file';
+          input.accept = 'image/jpeg,image/png,image/webp';
+          input.id = 'standard-file-' + standard.id;
+          const button = document.createElement('button');
+          button.type = 'button';
+          button.className = 'btn btn-secondary';
+          button.textContent = 'この写真を保存';
+          button.addEventListener('click', function () { saveStandardPhoto(standard.id); });
+          const status = document.createElement('span');
+          status.id = 'standard-status-' + standard.id;
+          status.style.marginLeft = '8px';
+          box.appendChild(input);
+          box.appendChild(button);
+          box.appendChild(status);
+          div.appendChild(box);
+        }
         list.appendChild(div);
       });
+    }
+
+    async function saveStandardPhoto(id) {
+      const input = document.getElementById('standard-file-' + id);
+      const status = document.getElementById('standard-status-' + id);
+      const file = input && input.files ? input.files[0] : null;
+      if (!file) {
+        alert('写真ファイルを選んでください。');
+        return;
+      }
+      if (status) status.textContent = '保存しています…';
+      const body = new FormData();
+      body.append('id', id);
+      body.append('file', file);
+      try {
+        const response = await fetch(API_BASE + 'standard-image.php', { method: 'POST', body: body });
+        const data = await response.json();
+        if (!response.ok || !data || !data.ok) {
+          throw new Error((data && data.error) || '保存できませんでした');
+        }
+        if (status) status.textContent = '保存しました';
+        loadMenus();
+      } catch (e) {
+        if (status) status.textContent = e.message || '保存できませんでした';
+      }
     }
 
     async function addMenu() {
@@ -1303,9 +1375,21 @@
         if (dateStr === today) todayCard = div;
       }
       calendar.appendChild(strip);
-      if (todayCard && adminCalendar.offsetDays === 0) {
-        strip.scrollLeft = Math.max(0, todayCard.offsetLeft - strip.offsetLeft - 12);
+      if (todayCard && adminCalendar.offsetDays === 0) centerStripCard(strip, todayCard);
+    }
+
+    function centerStripCard(strip, card) {
+      function apply() {
+        if (!strip || !card || !strip.clientWidth) return;
+        const delta = card.offsetParent === strip ? card.offsetLeft : card.offsetLeft - strip.offsetLeft;
+        const next = delta - (strip.clientWidth - card.clientWidth) / 2;
+        strip.scrollLeft = next > 0 ? next : 0;
       }
+      apply();
+      requestAnimationFrame(function () {
+        apply();
+        requestAnimationFrame(apply);
+      });
     }
 
     async function renderCalendar() {

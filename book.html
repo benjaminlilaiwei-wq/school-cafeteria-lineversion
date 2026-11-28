@@ -446,6 +446,12 @@
           </div>
 
           <div class="form-group">
+            <label for="reserve-date">予約する日 <span class="required">*</span></label>
+            <select id="reserve-date" required></select>
+            <p id="reserve-date-note" class="help-note">予約できるのは、営業しているその日だけです。土日と休みの日は予約できません。</p>
+          </div>
+
+          <div class="form-group">
             <label>写真から選ぶ</label>
             <div id="menu-cards" class="menu-cards" aria-live="polite">
               <p>メニューを読み込み中...</p>
@@ -554,6 +560,10 @@
     }
 
     let reservationTimesSettings = null;
+    let reserveDate = '';
+    let reserveDates = [];
+    let loadedMenus = [];
+    let dailyRows = [];
 
     async function loadReservationTimesSettings() {
       try {
@@ -645,8 +655,37 @@
     }
 
     function imageFoodName(menuName, dailyFood) {
-      if (String(menuName).indexOf('日替わり') !== -1 && dailyFood) return dailyFood;
+      if (String(menuName).indexOf('日替わり') !== -1) return dailyFood || '';
       return menuTitle(menuName);
+    }
+
+    function isoFromDate(date) {
+      return date.getFullYear() + '-' + String(date.getMonth() + 1).padStart(2, '0') + '-' + String(date.getDate()).padStart(2, '0');
+    }
+
+    function captionDate(iso) {
+      const parts = String(iso).split('-').map(Number);
+      const date = new Date(parts[0], parts[1] - 1, parts[2]);
+      const names = ['日', '月', '火', '水', '木', '金', '土'];
+      return parts[1] + '月' + parts[2] + '日（' + names[date.getDay()] + '）';
+    }
+
+    function isClosedIso(iso, holidays) {
+      const parts = String(iso).split('-').map(Number);
+      const date = new Date(parts[0], parts[1] - 1, parts[2]);
+      const day = date.getDay();
+      if (day === 0 || day === 6) return true;
+      return (holidays || []).some(function (item) { return item && item.date === iso; });
+    }
+
+    function openReserveDates(holidays) {
+      const today = getTodayIso();
+      return isClosedIso(today, holidays) ? [] : [today];
+    }
+
+    function dailyFoodFor(rows, iso) {
+      const row = (rows || []).find(function (item) { return item && item.date === iso; });
+      return row && row.food ? row.food : '';
     }
 
     function syncFoodSelection(name) {
@@ -679,10 +718,11 @@
       holder.appendChild(fallback);
     }
 
-    function loadFoodImage(name, holder) {
+    function loadFoodImage(name, holder, menuId) {
       const apiName = name;
+      const idQuery = menuId ? '&menuId=' + encodeURIComponent(menuId) : '';
       return resolveApiBase().then(function (apiBase) {
-        return fetch(apiBase + 'recommend-image.php?cache=1&food=' + encodeURIComponent(apiName), { cache: 'no-store' });
+        return fetch(apiBase + 'recommend-image.php?cache=1&food=' + encodeURIComponent(apiName) + idQuery, { cache: 'no-store' });
       })
         .then(function (res) { return res.json(); })
         .then(function (data) {
@@ -701,7 +741,7 @@
             return;
           }
           return resolveApiBase().then(function (apiBase) {
-            return fetch(apiBase + 'recommend-image.php?food=' + encodeURIComponent(apiName), { cache: 'no-store' });
+            return fetch(apiBase + 'recommend-image.php?food=' + encodeURIComponent(apiName) + idQuery, { cache: 'no-store' });
           })
             .then(function (res) { return res.json(); })
             .then(function (generated) {
@@ -748,7 +788,10 @@
         if (menu.stock === -1) bits.push('在庫制限なし');
         else if (soldout) bits.push('売り切れ');
         else bits.push('残り' + menu.stock + '食');
-        if (String(menu.name).indexOf('日替わり') !== -1 && dailyFood) bits.push('きょう: ' + dailyFood);
+        if (String(menu.name).indexOf('日替わり') !== -1) {
+          const when = captionDate(reserveDate || getTodayIso());
+          bits.push(when + 'の日替わり定食：' + (dailyFood || '未定'));
+        }
         meta.textContent = bits.join(' / ');
         body.appendChild(title);
         body.appendChild(meta);
@@ -758,14 +801,15 @@
           button.addEventListener('click', function () { syncFoodSelection(menu.name); });
         }
         host.appendChild(button);
-        paintFoodFallback(photo, imageFoodName(menu.name, dailyFood));
-        queue.push({ name: imageFoodName(menu.name, dailyFood), photo: photo });
+        const imageName = imageFoodName(menu.name, dailyFood);
+        paintFoodFallback(photo, imageName || menu.name);
+        if (imageName) queue.push({ name: imageName, menuId: menu.standardId || '', photo: photo });
       });
       let index = 0;
       function nextImage() {
         if (index >= queue.length) return;
         const item = queue[index++];
-        Promise.resolve(loadFoodImage(item.name, item.photo)).finally(nextImage);
+        Promise.resolve(loadFoodImage(item.name, item.photo, item.menuId)).finally(nextImage);
       }
       nextImage();
     }
@@ -797,23 +841,32 @@
       try {
         applyBookingPreset(null);
         const apiBase = await resolveApiBase();
-        const closedResult = await isTodayClosed();
-        const closed = closedResult && (closedResult.closed === true || closedResult === true);
-        const reason = (closedResult && closedResult.reason) ? closedResult.reason : '';
-
-        if (closed && todayClosedEl) {
+        const holidayRes = await fetch(apiBase + 'holidays.php', { cache: 'no-store' });
+        const holidays = holidayRes.ok ? await holidayRes.json().catch(function () { return []; }) : [];
+        reserveDates = openReserveDates(Array.isArray(holidays) ? holidays : []);
+        const dateSelect = document.getElementById('reserve-date');
+        if (dateSelect) {
+          const previous = reserveDate && reserveDates.indexOf(reserveDate) !== -1 ? reserveDate : (reserveDates[0] || '');
+          dateSelect.innerHTML = reserveDates.map(function (iso) {
+            return '<option value="' + iso + '">' + captionDate(iso) + '</option>';
+          }).join('');
+          dateSelect.value = previous;
+          reserveDate = dateSelect.value;
+          dateSelect.onchange = function () {
+            reserveDate = dateSelect.value;
+            const select = document.getElementById('food');
+            if (select) select.value = '';
+            renderFoodCards(loadedMenus, dailyFoodFor(dailyRows, reserveDate));
+            syncFoodSelection('');
+          };
+        }
+        if (!reserveDates.length && todayClosedEl) {
           todayClosedEl.style.display = 'block';
-          todayClosedEl.innerHTML = '🚫 本日は休業日のため、予約はできません。' + (reason ? '<br><span style="font-size:0.88em;">理由: ' + escapeHtml(reason) + '</span>' : '');
-          if (reservationHoursDisplay) reservationHoursDisplay.style.display = 'none';
-          if (bookingForm) {
-            bookingForm.querySelectorAll('input, select, button[type="submit"]').forEach(el => { el.disabled = true; });
-          }
+          todayClosedEl.textContent = 'きょうは休みです。予約はできません。次の営業日の定食はホームで見られます。';
+          if (bookingForm) bookingForm.querySelectorAll('input, select, button[type="submit"]').forEach(function (el) { el.disabled = true; });
           if (submitBtn) submitBtn.disabled = true;
-        } else {
-          if (todayClosedEl) todayClosedEl.style.display = 'none';
-          if (reservationHoursDisplay) reservationHoursDisplay.style.display = '';
-          if (bookingForm) bookingForm.querySelectorAll('input, select, button[type="submit"]').forEach(el => { el.disabled = false; });
-          if (submitBtn) submitBtn.disabled = false;
+        } else if (todayClosedEl) {
+          todayClosedEl.style.display = 'none';
         }
 
         await loadReservationTimesSettings();
@@ -822,13 +875,12 @@
           fetch(apiBase + 'sales-data.php?reservations=true', { cache: 'no-store' }),
           fetch(apiBase + 'daily-menu.php', { cache: 'no-store' }).catch(function () { return null; })
         ]);
-        let dailyFood = '';
+        dailyRows = [];
         if (dailyRes && dailyRes.ok) {
           const rows = await dailyRes.json().catch(function () { return []; });
-          const today = getTodayIso();
-          const row = (rows || []).find(function (item) { return item && item.date === today; });
-          dailyFood = row && row.food ? row.food : '';
+          dailyRows = Array.isArray(rows) ? rows : [];
         }
+        const dailyFood = dailyFoodFor(dailyRows, reserveDate || getTodayIso());
 
         if (reservationHoursDisplay && !closed) {
           const text = getReservationHoursDisplayText();
@@ -845,6 +897,7 @@
         if (menuRes.ok) {
           const menus = await menuRes.json().catch(() => []);
           if (Array.isArray(menus) && menus.length > 0) {
+            loadedMenus = menus;
             if (foodSelect) {
               foodSelect.innerHTML = '<option value="">-- 選択してください --</option>' +
                 menus.map(m => {
@@ -870,7 +923,7 @@
         if (resRes.ok) {
           const raw = await resRes.json();
           const list = Array.isArray(raw) ? raw : (raw?.reservations || []);
-          const today = getTodayIso();
+          const today = reserveDate || getTodayIso();
           const byFood = {};
 
           list
@@ -926,11 +979,15 @@
     }
 
     async function submitReservation(formData) {
-      const closedResult = await isTodayClosed();
-      if (closedResult && (closedResult.closed === true || closedResult === true)) {
-        const r = (closedResult.reason || '休業日です');
-        throw new Error('本日は休業日のため、予約できません。（' + r + '）');
+      const dateSelect = document.getElementById('reserve-date');
+      const chosenDate = dateSelect ? dateSelect.value : '';
+      const holidayRes = await fetch((await resolveApiBase()) + 'holidays.php', { cache: 'no-store' });
+      const holidays = holidayRes.ok ? await holidayRes.json().catch(function () { return []; }) : [];
+      const allowedDates = openReserveDates(Array.isArray(holidays) ? holidays : []);
+      if (allowedDates.indexOf(chosenDate) === -1) {
+        throw new Error('この日付は予約できません。予約する日を選び直してください。');
       }
+      reserveDate = chosenDate;
 
       if (reservationTimesSettings === null) {
         await loadReservationTimesSettings();
@@ -976,7 +1033,7 @@
 
       const reservation = {
         id: Date.now(),
-        date: getTodayIso(),
+        date: reserveDate,
         time: new Date().toTimeString().split(' ')[0].substring(0, 5),
         name: formData.name.trim(),
         studentClass: '',

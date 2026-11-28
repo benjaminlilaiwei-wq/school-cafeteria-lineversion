@@ -374,6 +374,13 @@ if (!defined('SALES_DATA_INTERNAL')) {
                 echo json_encode(['error' => 'Invalid request. reservations array is required.'], JSON_UNESCAPED_UNICODE);
                 break;
             }
+            require_once __DIR__ . '/line-lib.php';
+            $dateError = line_reservation_batch_error(getAllReservations(), $data['reservations']);
+            if ($dateError !== '') {
+                http_response_code(400);
+                echo json_encode(['error' => $dateError], JSON_UNESCAPED_UNICODE);
+                break;
+            }
             
             if (saveAllReservations($data['reservations'])) {
                 $allReservations = getAllReservations();

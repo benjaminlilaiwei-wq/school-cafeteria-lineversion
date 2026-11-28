@@ -109,6 +109,7 @@
       styles: [],
       allergies: [],
       allergyCustoms: [],
+      times: '',
       source: null
     };
 
@@ -175,6 +176,11 @@
       state.avoids = avoidSplit.picked;
       state.avoidCustoms = avoidSplit.extra;
       state.styles = (data.styles || []).slice();
+      const timeChoices = data.timeChoices || [];
+      state.times = timeChoices.indexOf(data.timesPerWeek) !== -1 ? data.timesPerWeek : '';
+      const timeChips = timeChoices.map(function (label) {
+        return chip(label, state.times === label, 'time', label);
+      }).join('');
       const allergySplit = splitKnown(data.allergies || [], data.allergyChoices || []);
       state.allergies = allergySplit.picked;
       state.allergyCustoms = allergySplit.extra;
@@ -192,8 +198,8 @@
         return chip(label, state.allergies.indexOf(label) !== -1, 'allergy', label);
       }).join('') + state.allergyCustoms.map(function (label) { return chip(label, true, 'allergyCustom', label); }).join('');
       card.innerHTML = ''
-        + '<h1>3つだけ答えてね</h1>'
-        + '<p class="lead">好きな料理、苦手、料理のタイプだけ。あとから直せるよ。アレルギーは好き嫌いとは別だよ。</p>'
+        + '<h1>答えてね</h1>'
+        + '<p class="lead">好きな料理、苦手、料理のタイプと、食堂に来る回数。あとから直せるよ。アレルギーは好き嫌いとは別だよ。</p>'
         + '<form id="survey-form">'
         + '<label for="full-name">名前 <span class="req">必須</span></label>'
         + '<input id="full-name" type="text" maxlength="20" autocomplete="name" placeholder="例: 瀬尾 太郎" value="' + esc(data.name || '') + '" required>'
@@ -204,6 +210,7 @@
         + '<section class="group"><h2>2. 苦手な料理・食材は？</h2><p class="hint">空でも大丈夫。任意だよ。</p><div class="chips" id="avoid-chips">' + avoidChips + '</div>'
         + '<div class="add-row"><input id="avoid-input" type="text" maxlength="20" placeholder="例: ピーマン"><button type="button" id="avoid-add">追加</button></div></section>'
         + '<section class="group"><h2>3. どんな料理が好き？</h2><p class="hint">いくつでも、または空でも大丈夫。</p><div class="chips">' + styleChips + '</div></section>'
+        + '<section class="group"><h2>4. 食堂にどれくらい来ますか？ <span class="req">必須</span></h2><p class="hint">1つ選んでね。好きな料理とは別に保存するよ。</p><div class="chips" id="time-chips">' + timeChips + '</div></section>'
         + '<details class="allergy-box"><summary>アレルギーがある人だけ（任意）</summary>'
         + '<p class="hint">好き嫌いとは別に保存するよ。原材料が分からない料理は、安全だとは判断しないよ。</p>'
         + '<div class="chips" id="allergy-chips">' + allergyChips + '</div>'
@@ -227,6 +234,13 @@
       const group = button.getAttribute('data-group');
       const value = button.getAttribute('data-value');
       const map = { favorite: 'favorites', custom: 'customs', avoid: 'avoids', avoidCustom: 'avoidCustoms', style: 'styles', allergy: 'allergies', allergyCustom: 'allergyCustoms' };
+      if (group === 'time') {
+        state.times = value;
+        document.querySelectorAll('#time-chips .chip').forEach(function (chipButton) {
+          chipButton.setAttribute('aria-pressed', chipButton === button ? 'true' : 'false');
+        });
+        return;
+      }
       const bucket = map[group];
       if (!bucket) return;
       const on = state[bucket].indexOf(value) === -1;
@@ -273,7 +287,8 @@
         + '<div class="summary"><strong>' + esc(data.name || '名前は未設定') + '</strong><br>好き: ' + esc((data.likes || []).join('、') || '未設定')
         + '<br>タイプ: ' + esc(styles)
         + '<br>苦手: ' + esc(avoids)
-        + '<br>アレルギー: ' + esc(allergies) + '</div>'
+        + '<br>アレルギー: ' + esc(allergies)
+        + '<br>食堂に来る回数: ' + esc(data.timesPerWeek || '未設定') + '</div>'
         + '<button class="ghost wide" type="button" id="edit-again">答えを直す</button>'
         + back + '</div>';
       document.getElementById('edit-again').addEventListener('click', function () { renderForm(data); });
@@ -308,6 +323,10 @@
         formError.textContent = '好きな料理を、1つ以上選ぶか、自分で書いてね。';
         return;
       }
+      if (!state.times) {
+        formError.textContent = '食堂にどれくらい来るか、選んでね。';
+        return;
+      }
       const button = event.target.querySelector('.send');
       button.disabled = true;
       try {
@@ -318,7 +337,8 @@
           customLikes: state.customs,
           styles: state.styles,
           avoids: state.avoids.concat(state.avoidCustoms),
-          allergies: state.allergies.concat(state.allergyCustoms)
+          allergies: state.allergies.concat(state.allergyCustoms),
+          timesPerWeek: state.times
         });
         if (!result.res.ok || !result.data.ok) {
           const message = result.data.error || '保存できなかったよ。もう一度押してね。';

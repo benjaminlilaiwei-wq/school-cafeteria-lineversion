@@ -124,6 +124,34 @@
       if (!res.ok) throw new Error('GET failed: ' + path);
       return await res.json();
     }
+    function homeIso(date) {
+      return date.getFullYear() + '-' + String(date.getMonth() + 1).padStart(2, '0') + '-' + String(date.getDate()).padStart(2, '0');
+    }
+
+    function isHomeClosed(iso, holidays) {
+      const parts = String(iso).split('-').map(Number);
+      const day = new Date(parts[0], (parts[1] || 1) - 1, parts[2] || 1).getDay();
+      if (day === 0 || day === 6) return true;
+      return (holidays || []).some(function (item) { return item && item.date === iso; });
+    }
+
+    function nextOpenMenuHtml(today, holidays, dailyMenus) {
+      const parts = String(today).split('-').map(Number);
+      const start = new Date(parts[0], parts[1] - 1, parts[2]);
+      const names = ['日', '月', '火', '水', '木', '金', '土'];
+      for (let i = 1; i <= 14; i++) {
+        const date = new Date(start.getFullYear(), start.getMonth(), start.getDate() + i);
+        const iso = homeIso(date);
+        if (isHomeClosed(iso, holidays)) continue;
+        const menu = (dailyMenus || []).find(function (item) { return item && item.date === iso; });
+        const rawFood = menu && menu.food ? menu.food : 'まだ決まっていません';
+        const food = String(rawFood).replace(/[&<>]/g, function (ch) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;' }[ch]; });
+        const label = (date.getMonth() + 1) + '月' + date.getDate() + '日（' + names[date.getDay()] + '）の定食';
+        return '<p class="menu-label">' + label + '</p><p class="menu-name">' + food + '</p><p>予約は、その日になってからできます。</p>';
+      }
+      return '<p>次の営業日の定食は、まだわかりません。</p>';
+    }
+
     async function loadStatus() {
       try {
       const holidays = await apiGet('holidays.php');
@@ -145,10 +173,11 @@
         if (m) todayMenu = m;
       }
 
-      if (todayHoliday) {
-        const reason = todayHoliday.reason || '休み';
+      const closedToday = isHomeClosed(today, holidays);
+      if (closedToday) {
+        const reason = todayHoliday ? (todayHoliday.reason || '休み') : '休み';
         statusDiv.innerHTML = `<p class="big-status closed">きょうは休みです</p><p>理由: ${reason}</p><p>この日は予約できません。</p>`;
-        todayMenuDiv.innerHTML = "";
+        todayMenuDiv.innerHTML = nextOpenMenuHtml(today, holidays, dailyMenus);
         congestionDiv.innerHTML = "";
       } else {
         statusDiv.innerHTML = `<p class="big-status open">きょうは営業しています</p><p>下の「ごはんを予約する」から申し込めます。</p>`;
@@ -328,9 +357,21 @@
         if (date === today) todayCard = card;
       }
       calendarDiv.appendChild(strip);
-      if (todayCard && homeCalendar.offsetDays === 0) {
-        strip.scrollLeft = Math.max(0, todayCard.offsetLeft - strip.offsetLeft - 12);
+      if (todayCard && homeCalendar.offsetDays === 0) centerStripCard(strip, todayCard);
+    }
+
+    function centerStripCard(strip, card) {
+      function apply() {
+        if (!strip || !card || !strip.clientWidth) return;
+        const delta = card.offsetParent === strip ? card.offsetLeft : card.offsetLeft - strip.offsetLeft;
+        const next = delta - (strip.clientWidth - card.clientWidth) / 2;
+        strip.scrollLeft = next > 0 ? next : 0;
       }
+      apply();
+      requestAnimationFrame(function () {
+        apply();
+        requestAnimationFrame(apply);
+      });
     }
 
     async function generateCalendar() {

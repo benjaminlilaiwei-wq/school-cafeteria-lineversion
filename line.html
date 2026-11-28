@@ -504,10 +504,21 @@
         if (day.today) todayCard = card;
       });
       root.appendChild(strip);
-      if (todayCard && calendarOffset === 0 && !didCenterToday) {
-        didCenterToday = true;
-        todayCard.scrollIntoView({ inline: 'center', block: 'nearest' });
+      if (todayCard && calendarOffset === 0) centerStripCard(strip, todayCard);
+    }
+
+    function centerStripCard(strip, card) {
+      function apply() {
+        if (!strip || !card || !strip.clientWidth) return;
+        var delta = card.offsetParent === strip ? card.offsetLeft : card.offsetLeft - strip.offsetLeft;
+        var next = delta - (strip.clientWidth - card.clientWidth) / 2;
+        strip.scrollLeft = next > 0 ? next : 0;
       }
+      apply();
+      requestAnimationFrame(function () {
+        apply();
+        requestAnimationFrame(apply);
+      });
     }
 
     function escapeHtml(value) {

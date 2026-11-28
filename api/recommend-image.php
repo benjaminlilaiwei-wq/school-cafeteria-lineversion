@@ -13,6 +13,7 @@ if (($_SERVER['REQUEST_METHOD'] ?? 'GET') !== 'GET') {
 
 @set_time_limit(70);
 $food = isset($_GET['food']) ? trim((string) $_GET['food']) : '';
+$menuId = isset($_GET['menuId']) ? trim((string) $_GET['menuId']) : '';
 if (isset($_GET['cache']) && (string) $_GET['cache'] === '1') {
     if ($food === '' || mb_strlen($food) > 80 || !recommend_food_allowed($food)) {
         echo json_encode([
@@ -21,14 +22,14 @@ if (isset($_GET['cache']) && (string) $_GET['cache'] === '1') {
         ], JSON_UNESCAPED_UNICODE);
         exit;
     }
-    $cached = recommend_cached_image($food);
+    $cached = recommend_cached_image($food, $menuId);
     echo json_encode([
         'ok' => true,
         'image' => $cached !== null ? $cached : recommend_image_payload(null),
     ], JSON_UNESCAPED_UNICODE);
     exit;
 }
-$result = recommend_ensure_image($food);
+$result = recommend_ensure_image($food, $menuId);
 if (empty($result['ok'])) {
     http_response_code((int) ($result['status'] ?? 400));
 }

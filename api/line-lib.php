@@ -430,7 +430,7 @@ function line_score_user($user, $food) {
         }
     }
     $times = $user['timesPerWeek'] ?? '';
-    if ($times === '週2〜3回') {
+    if ($times === '週2〜3回' || $times === '週に3〜4回') {
         $score += 1;
     } elseif ($times === 'ほぼ毎日') {
         $score += 2;
@@ -510,6 +510,118 @@ function line_daily_food($date) {
 function line_holiday($date) {
     $rows = line_read_json(line_data_dir() . '/holidays.json', []);
     return line_holiday_from_rows($rows, $date);
+}
+
+function line_is_closed_day($date) {
+    $stamp = strtotime($date . ' 00:00:00');
+    if ($stamp === false) {
+        return true;
+    }
+    $week = (int) date('w', $stamp);
+    if ($week === 0 || $week === 6) {
+        return true;
+    }
+    return line_holiday($date) !== null;
+}
+
+function line_bookable_dates($today = null) {
+    $today = is_string($today) && preg_match('/^\d{4}-\d{2}-\d{2}$/', $today) ? $today : date('Y-m-d');
+    if (line_is_closed_day($today)) {
+        return [];
+    }
+    return [$today];
+}
+
+function line_next_open_date($today = null) {
+    $today = is_string($today) && preg_match('/^\d{4}-\d{2}-\d{2}$/', $today) ? $today : date('Y-m-d');
+    $stamp = strtotime($today . ' 00:00:00');
+    if ($stamp === false) {
+        return '';
+    }
+    for ($i = 1; $i <= 14; $i++) {
+        $date = date('Y-m-d', strtotime('+' . $i . ' day', $stamp));
+        if (!line_is_closed_day($date)) {
+            return $date;
+        }
+    }
+    return '';
+}
+
+function line_date_caption($date) {
+    $stamp = strtotime($date . ' 00:00:00');
+    if ($stamp === false) {
+        return (string) $date;
+    }
+    $names = ['日', '月', '火', '水', '木', '金', '土'];
+    return date('n月j日', $stamp) . '（' . $names[(int) date('w', $stamp)] . '）';
+}
+
+function line_new_flow($user) {
+    $user['flowId'] = bin2hex(random_bytes(4));
+    $user['flowUntil'] = time() + 30 * 60;
+    return $user;
+}
+
+function line_flow_valid($user, $flowId) {
+    $flowId = (string) $flowId;
+    $current = (string) ($user['flowId'] ?? '');
+    if ($flowId === '' || strlen($flowId) !== strlen($current) || !hash_equals($current, $flowId)) {
+        return false;
+    }
+    return (int) ($user['flowUntil'] ?? 0) >= time();
+}
+
+function line_expired_messages() {
+    return [line_text('この操作は有効期限が切れています。最新のメニューから操作してください。')];
+}
+
+function line_reservation_batch_error($existing, $incoming) {
+    if (!is_array($incoming)) {
+        return '予約の形式が正しくありません。';
+    }
+    $known = [];
+    foreach ((array) $existing as $row) {
+        if (is_array($row) && isset($row['id'])) {
+            $known[(string) $row['id']] = true;
+        }
+    }
+    $bookable = array_flip(line_bookable_dates());
+    foreach ($incoming as $row) {
+        if (!is_array($row)) {
+            return '予約の形式が正しくありません。';
+        }
+        $id = (string) ($row['id'] ?? '');
+        if ($id !== '' && isset($known[$id])) {
+            continue;
+        }
+        $date = (string) ($row['date'] ?? '');
+        $name = trim((string) ($row['name'] ?? ''));
+        $food = trim((string) ($row['food'] ?? ''));
+        if (!isset($bookable[$date])) {
+            return 'この日付は予約できません。最新の画面から選び直してください。';
+        }
+        if ($name === '' || $food === '') {
+            return '名前とメニューを確認してください。';
+        }
+        foreach ($incoming as $other) {
+            if (!is_array($other) || (string) ($other['id'] ?? '') === $id) {
+                continue;
+            }
+            if (trim((string) ($other['name'] ?? '')) === $name && (string) ($other['date'] ?? '') === $date) {
+                return '同じ日に同じ名前の予約が重なっています。';
+            }
+        }
+    }
+    return '';
+}
+
+function line_clear_flow($user) {
+    $user['flowId'] = '';
+    $user['flowUntil'] = 0;
+    $user['pendingFood'] = '';
+    $user['reserveDate'] = '';
+    $user['step'] = 'done';
+    return $user;
 }
 
 function line_events() {
@@ -638,7 +750,7 @@ function line_quick($items) {
 function line_home_quick() {
     return line_quick([
         ['きょうの定食', 'home:today', 'きょうの定食'],
-        ['予約する', 'home:reserve', '予約する'],
+        ['予約する', 'menu:reserve', '予約する'],
         ['今週の定食', 'home:week', '今週の定食'],
         ['予約を確認', 'home:check', '予約を確認'],
         ['質問する', 'home:ask', '質問する'],
@@ -773,7 +885,7 @@ function line_survey_card($stepLabel, $title, $note, $buttons, $columns, $leadin
 
 function line_home_menu($title, $note) {
     return line_survey_card('メニュー', $title, $note, [
-        line_postback_button('予約する', 'home:reserve', true),
+        line_postback_button('予約する', 'menu:reserve', true),
         line_postback_button('予約を確認', 'home:check', false),
         line_postback_button('きょうの定食', 'home:today', false),
         line_postback_button('今週の定食', 'home:week', false),
@@ -832,7 +944,7 @@ function line_rich_menu_log($stage, $detail = '') {
 }
 
 function line_menu_version() {
-    return 'v6';
+    return 'v7';
 }
 
 function line_rich_menu_ready() {
@@ -943,14 +1055,14 @@ function line_ensure_rich_menu() {
     if ($list[0]) {
         $decoded = json_decode($list[1], true);
         foreach (($decoded['richmenus'] ?? []) as $menu) {
-            if (is_array($menu) && ($menu['name'] ?? '') === 'cafeteria-v6' && !empty($menu['richMenuId'])) {
+            if (is_array($menu) && ($menu['name'] ?? '') === 'cafeteria-v7' && !empty($menu['richMenuId'])) {
                 $existing = (string) $menu['richMenuId'];
                 break;
             }
         }
     }
     if ($existing !== '') {
-        line_rich_menu_log('existing_found', 'cafeteria-v6');
+        line_rich_menu_log('existing_found', 'cafeteria-v7');
         line_remember_menu($existing);
         return;
     }
@@ -966,7 +1078,7 @@ function line_ensure_rich_menu() {
     $cellW = 812;
     $cellH = 400;
     $actions = [
-        ['home:reserve', '予約する'],
+        ['menu:reserve', '予約する'],
         ['home:check', '予約を確認'],
         ['home:today', 'きょうの定食'],
         ['home:calendar', 'カレンダー'],
@@ -994,7 +1106,7 @@ function line_ensure_rich_menu() {
     $created = line_api('https://api.line.me/v2/bot/richmenu', [
         'size' => ['width' => 2500, 'height' => 843],
         'selected' => false,
-        'name' => 'cafeteria-v6',
+        'name' => 'cafeteria-v7',
         'chatBarText' => 'メニュー',
         'areas' => $areas,
     ]);
@@ -1210,14 +1322,13 @@ function line_with_lock($callback) {
     }
 }
 
-function line_create_reservation($name, $food) {
+function line_create_reservation($name, $food, $date = null) {
     try {
-        return line_with_lock(function () use ($name, $food) {
+        return line_with_lock(function () use ($name, $food, $date) {
         line_ensure_sales();
-        $today = date('Y-m-d');
-        $holiday = line_holiday($today);
-        if ($holiday !== null) {
-            return ['ok' => false, 'message' => 'きょうは休みだよ。理由: ' . $holiday];
+        $today = is_string($date) && preg_match('/^\d{4}-\d{2}-\d{2}$/', $date) ? $date : date('Y-m-d');
+        if (!in_array($today, line_bookable_dates(), true)) {
+            return ['ok' => false, 'message' => 'この日付は予約できないよ。最新のメニューから選び直してね。'];
         }
         $menus = line_menus();
         $index = null;
@@ -1241,7 +1352,7 @@ function line_create_reservation($name, $food) {
             }
             if (($row['date'] ?? '') === $today && trim((string) ($row['name'] ?? '')) === $name) {
                 $num = sprintf('%03d', (int) ($row['reservationNumber'] ?? 0));
-                return ['ok' => false, 'message' => 'きょうはもう予約してあるよ。番号は ' . $num . ' だよ。'];
+                return ['ok' => false, 'message' => line_date_caption($today) . 'はもう予約してあるよ。番号は ' . $num . ' だよ。'];
             }
         }
         $used = [];
@@ -1424,8 +1535,15 @@ function line_calendar_message($user) {
 function line_today_text($user) {
     $today = date('Y-m-d');
     $holiday = line_holiday($today);
-    if ($holiday !== null) {
-        return 'きょうは休みだよ。理由: ' . $holiday;
+    if (line_is_closed_day($today)) {
+        $reason = $holiday !== null ? $holiday : '休み';
+        $next = line_next_open_date($today);
+        $nextFood = $next !== '' ? line_daily_food($next) : '';
+        $text = 'きょうは休みだよ。理由: ' . $reason . '。予約はできないよ。';
+        if ($next !== '') {
+            $text .= "\n" . line_date_caption($next) . 'の定食は' . ($nextFood !== '' ? '「' . $nextFood . '」だよ。' : 'まだ決まっていないよ。') . '予約はその日になってからね。';
+        }
+        return $text;
     }
     $food = line_daily_food($today);
     $text = $food !== '' ? 'きょうの定食は「' . $food . '」だよ。' : 'きょうの定食は、まだ決まっていないよ。';
@@ -1512,14 +1630,31 @@ function line_check_text($user) {
     return $name . "さんの予約だよ。\nメニュー: " . ($row['food'] ?? '') . "\n番号: " . $num;
 }
 
+function line_food_image_url($food) {
+    $food = trim((string) $food);
+    $base = line_site_base();
+    if ($food === '' || $base === '' || strpos($base, 'https://') !== 0) {
+        return '';
+    }
+    if (!function_exists('recommend_cached_image')) {
+        require_once __DIR__ . '/recommend-lib.php';
+    }
+    $cached = recommend_cached_image($food);
+    if (!is_array($cached) || ($cached['status'] ?? '') !== 'ready' || ($cached['url'] ?? '') === '') {
+        return '';
+    }
+    return $base . '/api/menu-image.php?food=' . rawurlencode($food);
+}
+
 function line_reserve_prompt($user) {
     $check = line_can_reserve($user['userId'] ?? '');
     if (!$check['ok']) {
         return [line_text($check['message'])];
     }
-    $holiday = line_holiday(date('Y-m-d'));
-    if ($holiday !== null) {
-        return [line_text('きょうは休みだから、予約はできないよ。理由: ' . $holiday)];
+    $dates = line_bookable_dates();
+    $date = $dates[0] ?? '';
+    if ($date === '') {
+        return [line_text(line_today_text($user))];
     }
     $choices = [];
     foreach (line_menus() as $menu) {
@@ -1532,13 +1667,16 @@ function line_reserve_prompt($user) {
     if (!count($choices)) {
         return [line_text('いま予約できるメニューがないよ。')];
     }
-    $users = line_users();
-    $id = $user['userId'];
-    $users[$id]['choices'] = array_slice($choices, 0, 10);
-    $users[$id]['step'] = 'pick';
-    line_save_users($users);
+    $user = line_new_flow($user);
+    $user['reserveDate'] = $date;
+    $user['choices'] = array_slice($choices, 0, 10);
+    $user['step'] = 'pick';
+    line_store_user($user);
+    $dailyFood = line_daily_food($date);
+    $caption = line_date_caption($date);
+    $flowId = (string) $user['flowId'];
     $bubbles = [];
-    foreach (array_slice($choices, 0, 10) as $name) {
+    foreach ($user['choices'] as $name) {
         $stockText = '残りの数は、選んだあとに確認できるよ。';
         foreach (line_menus() as $menu) {
             if (($menu['name'] ?? '') === $name) {
@@ -1546,7 +1684,12 @@ function line_reserve_prompt($user) {
                 $stockText = ((int) $stock === -1) ? '数の制限なし' : ('残り ' . (int) $stock);
             }
         }
-        $bubbles[] = [
+        $daily = mb_strpos($name, '日替わり') !== false;
+        $pictureFood = $daily ? $dailyFood : $name;
+        $detail = $daily
+            ? ($caption . 'の日替わり定食：' . ($dailyFood !== '' ? $dailyFood : 'まだ決まっていません'))
+            : $stockText;
+        $bubble = [
             'type' => 'bubble',
             'size' => 'mega',
             'body' => [
@@ -1554,15 +1697,26 @@ function line_reserve_prompt($user) {
                 'layout' => 'vertical',
                 'spacing' => 'md',
                 'contents' => [
-                    ['type' => 'text', 'text' => 'メニュー', 'size' => 'xs', 'color' => '#3A7D44'],
+                    ['type' => 'text', 'text' => $caption, 'size' => 'xs', 'color' => '#3A7D44'],
                     ['type' => 'text', 'text' => $name, 'weight' => 'bold', 'size' => 'xl', 'wrap' => true, 'color' => '#17301C'],
-                    ['type' => 'text', 'text' => $stockText, 'size' => 'sm', 'color' => '#666666', 'wrap' => true],
-                    line_postback_button('これを予約', 'pick:' . rawurlencode($name), true),
+                    ['type' => 'text', 'text' => $detail, 'size' => 'sm', 'color' => '#666666', 'wrap' => true],
+                    line_postback_button('これを予約', 'pick:' . $flowId . ':' . rawurlencode($name), true),
                 ],
             ],
         ];
+        $imageUrl = ($daily && $dailyFood === '') ? '' : line_food_image_url($pictureFood);
+        if ($imageUrl !== '') {
+            $bubble['hero'] = [
+                'type' => 'image',
+                'url' => $imageUrl,
+                'size' => 'full',
+                'aspectRatio' => '20:13',
+                'aspectMode' => 'cover',
+            ];
+        }
+        $bubbles[] = $bubble;
     }
-    $lead = ($user['name'] ?? '') . 'さんの名前で取るよ。横に送って選んでね。';
+    $lead = $caption . 'の分を、' . ($user['name'] ?? '') . 'さんの名前で取るよ。横に送って選んでね。';
     if ($check['mode'] === 'early') {
         $lead = "きょうは早めに予約できるよ。\n" . $lead;
     }
@@ -1575,35 +1729,45 @@ function line_reserve_prompt($user) {
 function line_confirm_prompt($user) {
     $food = (string) ($user['pendingFood'] ?? '');
     $name = (string) ($user['name'] ?? '');
-    return [line_survey_card('確認', 'この内容で予約する？', $name . "さん\n" . $food, [
-        line_postback_button('予約を確定', 'ok:' . rawurlencode($food), true),
-        line_postback_button('やめる', 'book:no', false),
+    $date = (string) ($user['reserveDate'] ?? '');
+    $flowId = (string) ($user['flowId'] ?? '');
+    $daily = mb_strpos($food, '日替わり') !== false ? line_daily_food($date) : '';
+    $body = $name . "さん\n" . ($date !== '' ? line_date_caption($date) . "\n" : '') . $food;
+    if ($daily !== '') {
+        $body .= "\n中身: " . $daily;
+    }
+    return [line_survey_card('確認', 'この内容で予約する？', $body, [
+        line_postback_button('予約を確定', 'ok:' . $flowId . ':' . rawurlencode($food), true),
+        line_postback_button('やめる', 'book:no:' . $flowId, false),
     ], 1)];
 }
 
 function line_book_food($user, $food) {
     $food = trim($food);
     $name = trim((string) ($user['name'] ?? ''));
+    $date = (string) ($user['reserveDate'] ?? '');
     $check = line_can_reserve($user['userId'] ?? '');
     if (!$check['ok']) {
-        $user['step'] = 'done';
+        $user = line_clear_flow($user);
         line_store_user($user);
         return [line_text($check['message'])];
     }
-    if ($name === '' || $food === '') {
-        $user['step'] = 'done';
+    if ($name === '' || $food === '' || $food !== (string) ($user['pendingFood'] ?? '') || !in_array($food, (array) ($user['choices'] ?? []), true)) {
+        $user = line_clear_flow($user);
         line_store_user($user);
         return [line_text('もう一度、下のメニューの「予約する」から選んでね。')];
     }
-    $made = line_create_reservation($name, $food);
-    $user['step'] = 'done';
-    $user['pendingFood'] = $made['ok'] ? '' : $food;
+    $made = line_create_reservation($name, $food, $date);
+    $user = line_clear_flow($user);
+    if (!$made['ok']) {
+        $user['pendingFood'] = $food;
+    }
     line_store_user($user);
     if (!$made['ok']) {
         return [line_text($made['message'])];
     }
     $num = sprintf('%03d', (int) $made['number']);
-    return [line_survey_card('予約できた', '番号 ' . $num, $name . "さん\n" . $food . "\n\n受け取るとき、名前とこの番号を言ってね。", [], 1)];
+    return [line_survey_card('予約できた', '番号 ' . $num, $name . "さん\n" . line_date_caption($date) . "\n" . $food . "\n\n受け取るとき、名前とこの番号を言ってね。", [], 1)];
 }
 
 function line_pick_users($food, $limit) {
@@ -1743,7 +1907,7 @@ function line_send_early($ignoreHour) {
                 $text .= "\n\n星つきのカレンダー\n" . $base . '/line.html?key=' . rawurlencode($key);
             }
             $messages = [line_survey_card('ラッキー予約', $food, $text, [
-                line_postback_button('予約する', 'home:reserve', true),
+                line_postback_button('予約する', 'menu:reserve', true),
             ], 1)];
             $attempted = true;
             $pushed = line_push_notice($row['id'], $messages, $text);
@@ -1874,7 +2038,11 @@ function line_full_name_error($name) {
 }
 
 function line_times_labels() {
-    return ['ほとんど来ない', '週1回', '週2〜3回', 'ほぼ毎日'];
+    return ['ほぼ毎日', '週に3〜4回', '週に1〜2回', '月に数回', 'ほとんど利用しない'];
+}
+
+function line_times_allowed() {
+    return array_merge(line_times_labels(), ['ほとんど来ない', '週1回', '週2〜3回', 'ほぼ毎日']);
 }
 
 function line_like_groups() {
@@ -2146,9 +2314,9 @@ function line_apply_survey($user, $input) {
     if (!count($likes)) {
         return [false, '好きな料理を、1つ以上選ぶか、自分で書いてね。', $user];
     }
-    $times = (string) ($input['timesPerWeek'] ?? '');
-    if ($times !== '' && !in_array($times, line_times_labels(), true)) {
-        return [false, '週に何回来るか、もう一度選んでね。', $user];
+    $times = trim((string) ($input['timesPerWeek'] ?? ''));
+    if ($times === '' || !in_array($times, line_times_allowed(), true)) {
+        return [false, '食堂にどれくらい来るか、選んでね。', $user];
     }
     $avoids = array_key_exists('avoids', $input)
         ? line_collect_choices($input['avoids'] ?? [], 8)
@@ -2161,9 +2329,7 @@ function line_apply_survey($user, $input) {
     }
     $user['name'] = $name;
     $user['likes'] = $likes;
-    if ($times !== '') {
-        $user['timesPerWeek'] = $times;
-    }
+    $user['timesPerWeek'] = $times;
     $user['avoids'] = $avoids;
     if (array_key_exists('allergies', $input)) {
         $user['allergies'] = line_collect_choices($input['allergies'] ?? [], 8);
@@ -2486,37 +2652,40 @@ function line_handle_postback($user, $data) {
     if ($data === 'home:ask') {
         return [line_text("聞きたいことを、このまま送ってね。\n定食、予約、休み、アレルギー、時間が分かるよ。")];
     }
-    if ($data === 'home:reserve') {
+    if ($data === 'menu:reserve' || ($data === 'home:reserve' && !line_rich_menu_ready())) {
         return line_reserve_prompt($user);
     }
-    if (strpos($data, 'ok:') === 0) {
-        return line_book_food($user, rawurldecode(substr($data, 3)));
+    if ($data === 'home:reserve' || $data === 'book:yes' || $data === 'book:no') {
+        return line_expired_messages();
     }
-    if (strpos($data, 'pick:') === 0) {
-        $raw = substr($data, 5);
-        $food = '';
-        if ($raw !== '' && ctype_digit($raw)) {
-            $choices = $user['choices'] ?? [];
-            $food = (string) ($choices[(int) $raw] ?? '');
-        } else {
-            $food = rawurldecode($raw);
+    if (strpos($data, 'ok:') === 0 || strpos($data, 'pick:') === 0 || strpos($data, 'book:no:') === 0) {
+        $kind = strpos($data, 'ok:') === 0 ? 'ok' : (strpos($data, 'pick:') === 0 ? 'pick' : 'cancel');
+        $rest = substr($data, $kind === 'ok' ? 3 : ($kind === 'pick' ? 5 : 8));
+        $flowId = '';
+        $payload = $rest;
+        if (preg_match('/^([a-f0-9]{8}):(.*)$/', $rest, $match)) {
+            $flowId = $match[1];
+            $payload = $match[2];
         }
-        if ($food === '') {
-            return line_reserve_prompt($user);
+        if (!line_flow_valid($user, $flowId)) {
+            return line_expired_messages();
         }
-        $user['pendingFood'] = $food;
-        $user['step'] = 'confirm';
-        line_store_user($user);
-        return line_confirm_prompt($user);
-    }
-    if ($data === 'book:no') {
-        $user['step'] = 'done';
-        $user['pendingFood'] = '';
-        line_store_user($user);
-        return [line_text('予約はやめたよ。また下のメニューからどうぞ。')];
-    }
-    if ($data === 'book:yes') {
-        return line_book_food($user, (string) ($user['pendingFood'] ?? ''));
+        if ($kind === 'cancel') {
+            $user = line_clear_flow($user);
+            line_store_user($user);
+            return [line_text('予約はやめたよ。また下のメニューからどうぞ。')];
+        }
+        $food = rawurldecode($payload);
+        if ($food === '' || !in_array($food, (array) ($user['choices'] ?? []), true)) {
+            return line_expired_messages();
+        }
+        if ($kind === 'pick') {
+            $user['pendingFood'] = $food;
+            $user['step'] = 'confirm';
+            line_store_user($user);
+            return line_confirm_prompt($user);
+        }
+        return line_book_food($user, $food);
     }
     return line_resume_prompt($user);
 }
