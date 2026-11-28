@@ -9,7 +9,6 @@
       --ink: #3a2a16;
       --muted: #8a6240;
       --paper: #fffdf9;
-      --page: #fff1e4;
       --chip: #fff;
       --line: #f0dcc8;
       --on: #f6c453;
@@ -25,34 +24,16 @@
       color: var(--ink);
       background: linear-gradient(180deg, #fff7ef 0%, #ffe6d2 100%);
     }
-    .wrap {
-      max-width: 720px;
-      margin: 0 auto;
-      padding: 18px 14px 40px;
-    }
-    .top {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      margin-bottom: 14px;
-    }
+    .wrap { max-width: 720px; margin: 0 auto; padding: 18px 14px 40px; }
+    .top { display: flex; align-items: center; gap: 10px; margin-bottom: 14px; }
     .mark {
-      width: 42px;
-      height: 42px;
-      border-radius: 14px;
-      background: #fff;
-      color: var(--accent);
-      display: grid;
-      place-items: center;
-      font-weight: 800;
-      box-shadow: 0 6px 16px rgba(180, 110, 50, 0.12);
+      width: 42px; height: 42px; border-radius: 14px; background: #fff; color: var(--accent);
+      display: grid; place-items: center; font-weight: 800; box-shadow: 0 6px 16px rgba(180, 110, 50, 0.12);
     }
     .brand { font-weight: 800; line-height: 1.2; }
     .brand small { display: block; font-weight: 600; color: var(--muted); }
     .card {
-      background: var(--paper);
-      border-radius: 28px;
-      padding: 22px 18px 18px;
+      background: var(--paper); border-radius: 28px; padding: 22px 18px 18px;
       box-shadow: 0 16px 40px rgba(160, 100, 50, 0.12);
     }
     h1 { font-size: 1.55rem; margin: 0 0 6px; }
@@ -60,98 +41,57 @@
     label { display: block; font-weight: 800; margin-bottom: 8px; }
     .req { color: var(--accent); font-weight: 800; }
     input[type="text"] {
-      width: 100%;
-      border: 2px solid var(--line);
-      background: #fff;
-      border-radius: 999px;
-      padding: 14px 18px;
-      font-size: 1.05rem;
-      color: var(--ink);
+      width: 100%; border: 2px solid var(--line); background: #fff; border-radius: 999px;
+      padding: 14px 18px; font-size: 1.05rem; color: var(--ink);
     }
     input[type="text"]:focus { outline: 3px solid #f6d48a; border-color: #e7b34d; }
     .hint, .error { margin: 8px 4px 0; line-height: 1.5; }
     .hint { color: var(--muted); font-size: 0.92rem; }
     .error { color: #9b2c2c; font-weight: 700; min-height: 1.4em; }
     .group { margin-top: 22px; }
-    .group h2 { margin: 0 0 10px; font-size: 1rem; color: var(--accent); }
+    .group h2 { margin: 0 0 6px; font-size: 1.05rem; }
     .chips { display: flex; flex-wrap: wrap; gap: 8px; }
     .chip {
-      border: 1.5px solid #eadfce;
-      background: var(--chip);
-      color: var(--ink);
-      border-radius: 999px;
-      padding: 10px 16px;
-      font-size: 1rem;
-      font-weight: 700;
-      cursor: pointer;
-      min-height: 48px;
+      border: 1.5px solid #eadfce; background: var(--chip); color: var(--ink); border-radius: 999px;
+      padding: 10px 16px; font-size: 1rem; font-weight: 700; cursor: pointer; min-height: 48px;
     }
-    .chip[aria-pressed="true"] {
-      background: var(--on);
-      border-color: #e2ae3a;
-      color: var(--on-ink);
-    }
+    .chip[aria-pressed="true"] { background: var(--on); border-color: #e2ae3a; color: var(--on-ink); }
     .add-row { display: flex; gap: 8px; margin-top: 10px; }
     .add-row input { flex: 1; }
-    .add-row button {
-      border: 1.5px solid #eadfce;
-      background: #fff;
-      color: var(--ink);
-      border-radius: 999px;
-      font-weight: 800;
-      padding: 0 16px;
-      min-height: 48px;
-      cursor: pointer;
+    .add-row button, .ghost {
+      border: 1.5px solid #eadfce; background: #fff; color: var(--ink); border-radius: 999px;
+      font-weight: 800; padding: 0 16px; min-height: 48px; cursor: pointer;
     }
-    .tray {
-      margin-top: 22px;
-      background: #fff6ee;
-      border-radius: 18px;
-      padding: 14px 16px;
+    .allergy-box {
+      margin-top: 22px; background: #fff6ee; border-radius: 18px; padding: 14px 16px;
     }
-    .tray strong { display: block; margin-bottom: 6px; }
-    .tray p { margin: 0; color: var(--muted); }
-    .send {
-      margin-top: 18px;
-      width: 100%;
-      border: 0;
-      background: var(--send);
-      color: #3a2a16;
-      font-weight: 800;
-      font-size: 1.05rem;
-      border-radius: 999px;
-      min-height: 56px;
-      cursor: pointer;
+    .allergy-box summary { font-weight: 800; cursor: pointer; }
+    .send, .ghost.wide {
+      margin-top: 12px; width: 100%; border: 0; font-weight: 800; font-size: 1.05rem;
+      border-radius: 999px; min-height: 56px; cursor: pointer;
     }
+    .send { background: var(--send); color: #3a2a16; }
     .send:disabled { opacity: 0.55; cursor: wait; }
+    .ghost.wide { background: #fff; border: 1.5px solid #eadfce; color: var(--ink); }
     .done { text-align: center; }
     .done h1 { font-size: 1.7rem; }
     .summary {
-      text-align: left;
-      background: #fff6ee;
-      border-radius: 18px;
-      padding: 14px 16px;
-      line-height: 1.7;
-      margin: 14px 0;
+      text-align: left; background: #fff6ee; border-radius: 18px; padding: 14px 16px;
+      line-height: 1.7; margin: 14px 0;
     }
     .back {
-      display: inline-block;
-      margin-top: 8px;
-      background: #06c755;
-      color: #fff;
-      text-decoration: none;
-      font-weight: 800;
-      border-radius: 999px;
-      padding: 14px 22px;
+      display: inline-block; margin-top: 8px; background: #06c755; color: #fff; text-decoration: none;
+      font-weight: 800; border-radius: 999px; padding: 14px 22px;
     }
     .missing { padding: 28px 8px; text-align: center; }
+    a.inline { color: var(--accent); font-weight: 800; }
   </style>
 </head>
 <body>
   <div class="wrap">
     <div class="top">
       <div class="mark">食</div>
-      <div class="brand">OliMeal<small>食堂アンケート</small></div>
+      <div class="brand">OliMeal<small>かんたんアンケート</small></div>
     </div>
     <main class="card" id="card">
       <p>読み込んでいます…</p>
@@ -161,7 +101,16 @@
     const params = new URLSearchParams(location.search);
     const key = params.get('key') || '';
     const card = document.getElementById('card');
-    const state = { likes: [], avoids: [], allergies: [], times: '', none: false };
+    const state = {
+      favorites: [],
+      customs: [],
+      avoids: [],
+      avoidCustoms: [],
+      styles: [],
+      allergies: [],
+      allergyCustoms: [],
+      source: null
+    };
 
     function esc(value) {
       return String(value || '').replace(/[&<>"']/g, function (ch) {
@@ -187,206 +136,161 @@
       return '';
     }
 
-    function selectedText() {
-      const bits = state.likes.slice();
-      if (state.times) bits.push(state.times);
-      if (state.none) bits.push('苦手はとくにない');
-      else if (state.avoids.length) bits.push('苦手: ' + state.avoids.join('、'));
-      if (state.allergies.length) bits.push('アレルギー: ' + state.allergies.join('、'));
-      return bits.length ? bits.join('  /  ') : 'まだ選ばれていないよ';
+    function chip(label, pressed, group, value) {
+      return '<button type="button" class="chip" data-group="' + esc(group) + '" data-value="' + esc(value || label) + '" aria-pressed="' + (pressed ? 'true' : 'false') + '">' + esc(label) + '</button>';
     }
 
-    function paintTray() {
-      const tray = document.getElementById('tray-text');
-      if (tray) tray.textContent = selectedText();
-    }
-
-    function chip(label, pressed, group) {
-      return '<button type="button" class="chip" data-group="' + esc(group) + '" data-label="' + esc(label) + '" aria-pressed="' + (pressed ? 'true' : 'false') + '">' + esc(label) + '</button>';
-    }
-
-    function knownLabels(groups) {
-      const known = {};
-      (groups || []).forEach(function (group) {
-        (group.items || []).forEach(function (label) { known[label] = true; });
+    function managedNames(aliases) {
+      const names = {};
+      Object.keys(aliases || {}).forEach(function (id) {
+        (aliases[id] || []).forEach(function (name) { names[name] = true; });
+        names[id] = true;
       });
-      return known;
+      return names;
     }
 
-    function extraChips(labels, known, group) {
-      return labels.filter(function (label) { return !known[label]; }).map(function (label) {
-        return chip(label, true, group);
-      }).join('');
+    function favoriteOn(id, likes, aliases) {
+      const names = (aliases && aliases[id]) || [id];
+      return likes.some(function (like) { return names.indexOf(like) !== -1; });
     }
 
-    function addRow(kind, placeholder) {
-      return '<div class="add-row"><input id="' + kind + '-custom" type="text" maxlength="20" placeholder="' + esc(placeholder) + '"><button type="button" id="' + kind + '-add">追加</button></div>';
+    function splitKnown(values, choices) {
+      const known = {};
+      choices.forEach(function (label) { known[label] = true; });
+      return {
+        picked: values.filter(function (label) { return known[label]; }),
+        extra: values.filter(function (label) { return !known[label]; })
+      };
     }
 
     function renderForm(data) {
-      state.likes = (data.likes || []).slice();
-      state.avoids = (data.avoids || []).slice();
-      state.allergies = (data.allergies || []).slice();
-      state.times = data.timesPerWeek || '';
-      state.none = state.avoids.length === 0 && !!data.done;
-      const likeKnown = knownLabels(data.groups || []);
-      const groups = (data.groups || []).map(function (group) {
-        const buttons = (group.items || []).map(function (label) {
-          return chip(label, state.likes.indexOf(label) !== -1, 'like');
-        }).join('');
-        return '<section class="group"><h2>' + esc(group.title) + '</h2><div class="chips">' + buttons + '</div></section>';
+      state.source = data;
+      const likes = data.likes || [];
+      const aliases = data.favoriteAliases || {};
+      const favorites = data.favoriteChoices || [];
+      const managed = managedNames(aliases);
+      state.favorites = favorites.filter(function (item) { return favoriteOn(item.id, likes, aliases); }).map(function (item) { return item.id; });
+      state.customs = likes.filter(function (like) { return !managed[like]; });
+      const avoidSplit = splitKnown(data.avoids || [], data.avoidChoices || []);
+      state.avoids = avoidSplit.picked;
+      state.avoidCustoms = avoidSplit.extra;
+      state.styles = (data.styles || []).slice();
+      const allergySplit = splitKnown(data.allergies || [], data.allergyChoices || []);
+      state.allergies = allergySplit.picked;
+      state.allergyCustoms = allergySplit.extra;
+      const favoriteChips = favorites.map(function (item) {
+        return chip(item.label, state.favorites.indexOf(item.id) !== -1, 'favorite', item.id);
       }).join('');
-      const times = (data.timeChoices || []).map(function (label) {
-        return chip(label, state.times === label, 'time');
+      const customChips = state.customs.map(function (label) { return chip(label, true, 'custom', label); }).join('');
+      const styleChips = (data.styleChoices || []).map(function (label) {
+        return chip(label, state.styles.indexOf(label) !== -1, 'style', label);
       }).join('');
-      const avoidKnown = {};
-      (data.avoidChoices || []).forEach(function (label) { avoidKnown[label] = true; });
-      const avoids = chip('とくにない', state.none, 'avoid') + (data.avoidChoices || []).map(function (label) {
-        return chip(label, state.avoids.indexOf(label) !== -1, 'avoid');
-      }).join('');
-      const allergyKnown = {};
-      (data.allergyChoices || []).forEach(function (label) { allergyKnown[label] = true; });
-      const allergies = (data.allergyChoices || []).map(function (label) {
-        return chip(label, state.allergies.indexOf(label) !== -1, 'allergy');
-      }).join('');
+      const avoidChips = (data.avoidChoices || []).map(function (label) {
+        return chip(label, state.avoids.indexOf(label) !== -1, 'avoid', label);
+      }).join('') + state.avoidCustoms.map(function (label) { return chip(label, true, 'avoidCustom', label); }).join('');
+      const allergyChips = (data.allergyChoices || []).map(function (label) {
+        return chip(label, state.allergies.indexOf(label) !== -1, 'allergy', label);
+      }).join('') + state.allergyCustoms.map(function (label) { return chip(label, true, 'allergyCustom', label); }).join('');
       card.innerHTML = ''
-        + '<h1>食堂のアンケート</h1>'
-        + '<p class="lead">ボタンで選んでね。ないものは下の欄に自分で書いて「追加」を押してね。名前は姓と名の両方。空白では送れないよ。</p>'
+        + '<h1>3つだけ答えてね</h1>'
+        + '<p class="lead">好きな料理、苦手、料理のタイプだけ。あとから直せるよ。アレルギーは好き嫌いとは別だよ。</p>'
         + '<form id="survey-form">'
         + '<label for="full-name">名前 <span class="req">必須</span></label>'
-        + '<input id="full-name" name="name" type="text" maxlength="20" autocomplete="name" placeholder="例: 瀬尾 太郎" value="' + esc(data.name || '') + '" required>'
-        + '<p class="hint">姓と名。例: 瀬尾 太郎</p>'
+        + '<input id="full-name" type="text" maxlength="20" autocomplete="name" placeholder="例: 瀬尾 太郎" value="' + esc(data.name || '') + '" required>'
         + '<p class="error" id="name-error" role="alert"></p>'
-        + groups
-        + '<section class="group"><h2>好きなものを自分で追加</h2><div class="chips" id="extra-like">' + extraChips(state.likes, likeKnown, 'like') + '</div>' + addRow('like', '例: オムライス') + '</section>'
-        + '<section class="group"><h2>週に何回来る？</h2><div class="chips">' + times + '</div></section>'
-        + '<section class="group"><h2>苦手なもの</h2><div class="chips">' + avoids + '</div><div class="chips" id="extra-avoid">' + extraChips(state.avoids, avoidKnown, 'avoid') + '</div>' + addRow('avoid', '例: ピーマン') + '</section>'
-        + '<section class="group"><h2>アレルギー</h2><p class="hint">当てはまるものを押すか、自分で書いてね。なければ空で大丈夫だよ。</p><div class="chips">' + allergies + '</div><div class="chips" id="extra-allergy">' + extraChips(state.allergies, allergyKnown, 'allergy') + '</div>' + addRow('allergy', '例: ごま') + '</section>'
-        + '<div class="tray"><strong>選択中</strong><p id="tray-text"></p></div>'
+        + '<section class="group"><h2>1. 好きな料理・食材は？</h2><p class="hint">いくつでも押せるよ。</p><div class="chips">' + favoriteChips + '</div>'
+        + '<div class="chips" id="extra-custom">' + customChips + '</div>'
+        + '<div class="add-row"><input id="custom-input" type="text" maxlength="20" placeholder="その他 例: オムライス"><button type="button" id="custom-add">追加</button></div></section>'
+        + '<section class="group"><h2>2. 苦手な料理・食材は？</h2><p class="hint">空でも大丈夫。任意だよ。</p><div class="chips" id="avoid-chips">' + avoidChips + '</div>'
+        + '<div class="add-row"><input id="avoid-input" type="text" maxlength="20" placeholder="例: ピーマン"><button type="button" id="avoid-add">追加</button></div></section>'
+        + '<section class="group"><h2>3. どんな料理が好き？</h2><p class="hint">いくつでも、または空でも大丈夫。</p><div class="chips">' + styleChips + '</div></section>'
+        + '<details class="allergy-box"><summary>アレルギーがある人だけ（任意）</summary>'
+        + '<p class="hint">好き嫌いとは別に保存するよ。原材料が分からない料理は、安全だとは判断しないよ。</p>'
+        + '<div class="chips" id="allergy-chips">' + allergyChips + '</div>'
+        + '<div class="add-row"><input id="allergy-input" type="text" maxlength="20" placeholder="例: ごま"><button type="button" id="allergy-add">追加</button></div>'
+        + '<p class="hint"><a class="inline" href="allergy.html">メニューのアレルギー表を見る</a></p></details>'
         + '<p class="error" id="form-error" role="alert"></p>'
         + '<button class="send" type="submit">この内容で答える</button>'
+        + '<button class="ghost wide" type="button" id="skip-survey">いまはスキップ</button>'
         + '</form>';
-      paintTray();
       card.querySelectorAll('.chip').forEach(function (button) {
         button.addEventListener('click', function () { toggle(button); });
       });
-      ['like', 'avoid', 'allergy'].forEach(function (kind) {
-        document.getElementById(kind + '-add').addEventListener('click', function () { addCustom(kind); });
-      });
+      document.getElementById('custom-add').addEventListener('click', function () { addExtra('custom'); });
+      document.getElementById('avoid-add').addEventListener('click', function () { addExtra('avoid'); });
+      document.getElementById('allergy-add').addEventListener('click', function () { addExtra('allergy'); });
       document.getElementById('survey-form').addEventListener('submit', submitForm);
-      const nameInput = document.getElementById('full-name');
-      nameInput.addEventListener('input', function () {
-        document.getElementById('name-error').textContent = '';
-      });
+      document.getElementById('skip-survey').addEventListener('click', skipForm);
     }
 
     function toggle(button) {
       const group = button.getAttribute('data-group');
-      const label = button.getAttribute('data-label');
-      if (group === 'like') {
-        const on = state.likes.indexOf(label) === -1;
-        if (on) {
-          if (state.likes.length >= 12) return;
-          state.likes.push(label);
-          state.avoids = state.avoids.filter(function (item) { return item !== label; });
-          const other = card.querySelector('[data-group="avoid"][data-label="' + label + '"]');
-          if (other) other.setAttribute('aria-pressed', 'false');
-        } else {
-          state.likes = state.likes.filter(function (item) { return item !== label; });
-        }
-        button.setAttribute('aria-pressed', on ? 'true' : 'false');
-      } else if (group === 'time') {
-        state.times = label;
-        card.querySelectorAll('[data-group="time"]').forEach(function (el) {
-          el.setAttribute('aria-pressed', el === button ? 'true' : 'false');
-        });
-      } else if (group === 'allergy') {
-        const on = state.allergies.indexOf(label) === -1;
-        if (on) {
-          if (state.allergies.length >= 8) return;
-          state.allergies.push(label);
-        } else {
-          state.allergies = state.allergies.filter(function (item) { return item !== label; });
-        }
-        button.setAttribute('aria-pressed', on ? 'true' : 'false');
-      } else if (label === 'とくにない') {
-        state.none = true;
-        state.avoids = [];
-        card.querySelectorAll('[data-group="avoid"]').forEach(function (el) {
-          el.setAttribute('aria-pressed', el.getAttribute('data-label') === 'とくにない' ? 'true' : 'false');
-        });
-      } else {
-        state.none = false;
-        const on = state.avoids.indexOf(label) === -1;
-        if (on) {
-          if (state.avoids.length >= 8) return;
-          state.avoids.push(label);
-          state.likes = state.likes.filter(function (item) { return item !== label; });
-          const other = card.querySelector('[data-group="like"][data-label="' + label + '"]');
-          if (other) other.setAttribute('aria-pressed', 'false');
-        } else {
-          state.avoids = state.avoids.filter(function (item) { return item !== label; });
-        }
-        card.querySelector('[data-label="とくにない"]').setAttribute('aria-pressed', 'false');
-        button.setAttribute('aria-pressed', on ? 'true' : 'false');
-      }
-      paintTray();
+      const value = button.getAttribute('data-value');
+      const map = { favorite: 'favorites', custom: 'customs', avoid: 'avoids', avoidCustom: 'avoidCustoms', style: 'styles', allergy: 'allergies', allergyCustom: 'allergyCustoms' };
+      const bucket = map[group];
+      if (!bucket) return;
+      const on = state[bucket].indexOf(value) === -1;
+      const max = bucket === 'favorites' || bucket === 'styles' ? 8 : 8;
+      if (on && state[bucket].length >= max) return;
+      if (on) state[bucket].push(value);
+      else state[bucket] = state[bucket].filter(function (item) { return item !== value; });
+      button.setAttribute('aria-pressed', on ? 'true' : 'false');
     }
 
-    function addCustom(kind) {
-      const input = document.getElementById(kind + '-custom');
+    function addExtra(kind) {
+      const input = document.getElementById(kind + '-input');
       const formError = document.getElementById('form-error');
       if (!input) return;
       let label = normalizeName(input.value);
       if ([...label].length > 20) label = [...label].slice(0, 20).join('');
-      if (!label) return;
-      const bucket = kind === 'like' ? 'likes' : (kind === 'avoid' ? 'avoids' : 'allergies');
-      const max = kind === 'like' ? 12 : 8;
+      if (!label || label === 'とくにない') return;
+      const bucket = kind === 'custom' ? 'customs' : (kind === 'avoid' ? 'avoidCustoms' : 'allergyCustoms');
+      const group = kind === 'custom' ? 'custom' : (kind === 'avoid' ? 'avoidCustom' : 'allergyCustom');
       if (state[bucket].indexOf(label) !== -1) return;
-      if (state[bucket].length >= max) {
-        if (formError) formError.textContent = max + '個までだよ。';
+      if (state[bucket].length >= 8) {
+        if (formError) formError.textContent = '8個までだよ。';
         return;
       }
       state[bucket].push(label);
-      if (kind === 'avoid') {
-        state.none = false;
-        const none = card.querySelector('[data-label="とくにない"]');
-        if (none) none.setAttribute('aria-pressed', 'false');
-      }
       input.value = '';
       if (formError) formError.textContent = '';
-      const box = document.getElementById('extra-' + kind);
-      if (box) {
-        box.insertAdjacentHTML('beforeend', chip(label, true, kind));
-        const button = box.lastElementChild;
-        if (button) button.addEventListener('click', function () { toggle(button); });
-      }
-      paintTray();
+      const boxId = kind === 'custom' ? 'extra-custom' : (kind === 'avoid' ? 'avoid-chips' : 'allergy-chips');
+      const box = document.getElementById(boxId);
+      if (!box) return;
+      box.insertAdjacentHTML('beforeend', chip(label, true, group, label));
+      const button = box.lastElementChild;
+      if (button) button.addEventListener('click', function () { toggle(button); });
     }
 
     function renderDone(data) {
       const avoids = (data.avoids || []).length ? data.avoids.join('、') : 'とくにない';
+      const styles = (data.styles || []).length ? data.styles.join('、') : '未設定';
       const allergies = (data.allergies || []).length ? data.allergies.join('、') : 'なし';
-      const back = data.addUrl
-        ? '<a class="back" href="' + esc(data.addUrl) + '">LINEのトークに戻る</a>'
-        : '';
-      const lead = data.lineNotified
-        ? '保存したよ。LINEにも確認を送った。「答えた」と送らなくていいよ。'
-        : '保存したよ。LINEに戻れば予約できる。「答えた」と送らなくていいよ。';
+      const back = data.addUrl ? '<a class="back" href="' + esc(data.addUrl) + '">LINEのトークに戻る</a>' : '';
       card.innerHTML = ''
         + '<div class="done"><h1>保存したよ</h1>'
-        + '<p class="lead">' + esc(lead) + '</p>'
-        + '<div class="summary"><strong>' + esc(data.name) + 'さん</strong><br>好き: ' + esc((data.likes || []).join('、'))
-        + '<br>来る回数: ' + esc(data.timesPerWeek || '')
+        + '<p class="lead">この答えは残るよ。あとからこのページで直せる。</p>'
+        + '<div class="summary"><strong>' + esc(data.name || '名前は未設定') + '</strong><br>好き: ' + esc((data.likes || []).join('、') || '未設定')
+        + '<br>タイプ: ' + esc(styles)
         + '<br>苦手: ' + esc(avoids)
-        + '<br>アレルギー: ' + esc(allergies)
-        + '<br>この答えは、日付が変わっても残るよ。</div>'
-        + back
-        + '<p class="hint">トークに戻ると、下のメニューから予約できるよ。</p></div>';
+        + '<br>アレルギー: ' + esc(allergies) + '</div>'
+        + '<button class="ghost wide" type="button" id="edit-again">答えを直す</button>'
+        + back + '</div>';
+      document.getElementById('edit-again').addEventListener('click', function () { renderForm(data); });
     }
 
     function renderMissing(message) {
       card.innerHTML = '<div class="missing"><h1>アンケート</h1><p>' + esc(message) + '</p></div>';
+    }
+
+    async function postSurvey(body) {
+      const res = await fetch('api/line-survey.php', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body)
+      });
+      const data = await res.json();
+      return { res: res, data: data };
     }
 
     async function submitForm(event) {
@@ -400,32 +304,24 @@
         document.getElementById('full-name').focus();
         return;
       }
-      if (!state.likes.length) {
-        formError.textContent = '好きな食べ方を、1つ以上選ぶか、自分で書いてね。';
-        return;
-      }
-      if (!state.times) {
-        formError.textContent = '週に何回来るか、1つ押してね。';
+      if (!state.favorites.length && !state.customs.length) {
+        formError.textContent = '好きな料理を、1つ以上選ぶか、自分で書いてね。';
         return;
       }
       const button = event.target.querySelector('.send');
       button.disabled = true;
       try {
-        const res = await fetch('api/line-survey.php', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            key: key,
-            name: normalizeName(name),
-            likes: state.likes,
-            timesPerWeek: state.times,
-            avoids: state.none ? [] : state.avoids,
-            allergies: state.allergies
-          })
+        const result = await postSurvey({
+          key: key,
+          name: normalizeName(name),
+          favorites: state.favorites,
+          customLikes: state.customs,
+          styles: state.styles,
+          avoids: state.avoids.concat(state.avoidCustoms),
+          allergies: state.allergies.concat(state.allergyCustoms)
         });
-        const data = await res.json();
-        if (!res.ok || !data.ok) {
-          const message = data.error || '保存できなかったよ。もう一度押してね。';
+        if (!result.res.ok || !result.data.ok) {
+          const message = result.data.error || '保存できなかったよ。もう一度押してね。';
           if (message.indexOf('名前') !== -1 || message.indexOf('フルネーム') !== -1) {
             document.getElementById('name-error').textContent = message;
           } else {
@@ -434,10 +330,26 @@
           button.disabled = false;
           return;
         }
-        renderDone(data);
+        renderDone(result.data);
       } catch (err) {
         formError.textContent = '保存できなかったよ。もう一度押してね。';
         button.disabled = false;
+      }
+    }
+
+    async function skipForm() {
+      const formError = document.getElementById('form-error');
+      try {
+        const result = await postSurvey({ key: key, mode: 'skip' });
+        if (!result.res.ok || !result.data.ok) {
+          if (formError) formError.textContent = result.data.error || 'スキップできなかったよ。';
+          return;
+        }
+        card.innerHTML = '<div class="done"><h1>またあとで大丈夫</h1><p class="lead">今の答えは消していないよ。おすすめは、分かる範囲で出すね。</p>'
+          + '<button class="ghost wide" type="button" id="edit-again">やっぱり答える</button></div>';
+        document.getElementById('edit-again').addEventListener('click', function () { renderForm(result.data); });
+      } catch (err) {
+        if (formError) formError.textContent = 'スキップできなかったよ。';
       }
     }
 

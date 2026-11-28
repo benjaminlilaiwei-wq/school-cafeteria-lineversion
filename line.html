@@ -236,6 +236,110 @@
       margin-top: 8px;
     }
 
+    .reco-score {
+      font-weight: 800;
+      color: var(--primary);
+      margin: 8px 0;
+    }
+
+    .span-nav {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      align-items: center;
+      margin-bottom: 12px;
+    }
+
+    .span-nav button,
+    .followup-choice {
+      min-height: 44px;
+      padding: 10px 14px;
+      border-radius: var(--radius-md);
+      border: 1.5px solid var(--border-color);
+      background: #fff;
+      color: var(--text-main);
+      font-size: 1rem;
+      font-weight: 700;
+      cursor: pointer;
+    }
+
+    .span-range {
+      font-weight: 800;
+      color: var(--primary);
+    }
+
+    .day-strip {
+      display: flex;
+      gap: 10px;
+      overflow-x: auto;
+      scroll-snap-type: x mandatory;
+      padding: 4px 2px 12px;
+      -webkit-overflow-scrolling: touch;
+    }
+
+    .day-card {
+      flex: 0 0 138px;
+      scroll-snap-align: start;
+      border-radius: 16px;
+      border: 1.5px solid var(--border-color);
+      background: #fff;
+      padding: 10px 10px 12px;
+      min-height: 156px;
+    }
+
+    .day-card.today {
+      border: 3px solid var(--primary);
+      background: var(--primary-light);
+    }
+
+    .day-card.past {
+      opacity: 0.72;
+    }
+
+    .day-card.holiday {
+      background: var(--accent-orange-light);
+      border-color: var(--accent-orange);
+    }
+
+    .day-card.liked {
+      box-shadow: inset 0 0 0 2px var(--accent-sun);
+    }
+
+    .day-card .dow,
+    .day-card .when {
+      font-weight: 800;
+      color: var(--primary);
+      font-size: 0.86rem;
+    }
+
+    .day-card .num {
+      font-size: 1.35rem;
+      font-weight: 800;
+      line-height: 1.2;
+    }
+
+    .day-card .food {
+      margin-top: 6px;
+      font-size: 0.86rem;
+      line-height: 1.4;
+      word-break: break-word;
+    }
+
+    .followup-card {
+      background: var(--card-bg);
+      border: 1.5px solid var(--border-color);
+      border-radius: var(--radius-lg);
+      padding: 16px;
+      margin-top: 16px;
+    }
+
+    .followup-choices {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: 10px;
+    }
+
     @media (min-width: 860px) {
       .reco-grid {
         grid-template-columns: 1fr 1fr;
@@ -270,7 +374,7 @@
     <header class="page-intro">
       <span class="eyebrow">LINE連携</span>
       <h1 id="cal-title">定食カレンダー</h1>
-      <p class="lead" id="cal-lead">アンケートで答えた好きな食べ方から、合いそうな日に星をつけます。</p>
+      <p class="lead" id="cal-lead">今日を中心に、前後7日ずつ、直近15日の定食を表示します。</p>
     </header>
 
     <main>
@@ -279,7 +383,7 @@
       <div class="legend">
         <span><span class="swatch today"></span>緑の枠はきょう</span>
         <span><span class="swatch holiday"></span>オレンジは休み</span>
-        <span><span class="swatch liked"></span>黄色い枠は好きそうな定食</span>
+        <span><span class="swatch liked"></span>黄色い枠は好きそうな日、★はおすすめ</span>
       </div>
 
       <div id="calendar" class="info-card calendar-container">
@@ -290,12 +394,14 @@
       </div>
 
       <section id="for-you" class="reco-section" aria-live="polite">
-        <h2>今週いちばんのおすすめ</h2>
-        <p class="reco-lead" id="reco-lead">いちばん大きいカードが、今日から7日間で一番おすすめの定食です。予約できるのは今日の定食だけです。休みの日は飛ばします。</p>
+        <h2>あなたへのおすすめ</h2>
+        <p class="reco-lead" id="reco-lead">大きいカードが今週のイチオシです。そのあと、次の営業日とその次の営業日を出します。休みの日は飛ばします。予約できるのは今日の定食だけです。</p>
         <div id="reco-cards">
           <p>おすすめを読み込んでいます…</p>
         </div>
       </section>
+
+      <section id="followup" class="followup-card" hidden></section>
 
       <div class="info-card" style="margin-top: 20px;">
         <p class="help-note" style="margin-bottom: 0;">
@@ -317,38 +423,91 @@
     const params = new URLSearchParams(location.search);
     const key = params.get('key') || '';
 
+    var calendarOffset = 0;
+    var lastCalendar = null;
+    var recommendedDates = {};
+    var didCenterToday = false;
+
+    function formatJp(iso) {
+      var parts = String(iso || '').split('-');
+      if (parts.length !== 3) return iso;
+      return Number(parts[1]) + '月' + Number(parts[2]) + '日';
+    }
+
     function render(data) {
+      lastCalendar = data;
       const title = document.getElementById('cal-title');
       const note = document.getElementById('star-note');
       if (data.name) {
         title.textContent = data.name + 'さんの定食カレンダー';
         note.hidden = false;
-        note.textContent = '⭐ 黄色い枠の日は、アンケートの答えから好きそうな定食です。';
+        note.textContent = '⭐ 黄色い枠は好きそうな日、★は今回のおすすめです。薄いカードは過ぎた日です。';
       } else {
         note.hidden = false;
-        note.textContent = '💡 星をつけるには、LINEのトークからこのカレンダーを開いてください。';
+        note.textContent = '💡 あなた向けの星をつけるには、LINEのトークからこのカレンダーを開いてください。';
       }
-      const year = data.year;
-      const month = data.month;
-      const first = new Date(year, month - 1, 1).getDay();
-      const names = ['日', '月', '火', '水', '木', '金', '土'];
-      let html = '<div class="calendar-header"><h4>' + year + '年 ' + month + '月</h4></div><div class="calendar-grid"><div class="calendar-weekdays">';
-      names.forEach(function (name) { html += '<div class="calendar-weekday">' + name + '</div>'; });
-      html += '</div><div class="calendar-days">';
-      for (let i = 0; i < first; i++) html += '<div class="calendar-day empty"></div>';
+      var root = document.getElementById('calendar');
+      root.innerHTML = '';
+      var nav = document.createElement('div');
+      nav.className = 'span-nav';
+      var prev = document.createElement('button');
+      prev.type = 'button';
+      prev.textContent = '前の7日';
+      prev.addEventListener('click', function () { calendarOffset -= 7; loadCalendar(); });
+      var todayBtn = document.createElement('button');
+      todayBtn.type = 'button';
+      todayBtn.textContent = '今日に戻る';
+      todayBtn.addEventListener('click', function () { calendarOffset = 0; loadCalendar(); });
+      var next = document.createElement('button');
+      next.type = 'button';
+      next.textContent = '次の7日';
+      next.addEventListener('click', function () { calendarOffset += 7; loadCalendar(); });
+      var range = document.createElement('span');
+      range.className = 'span-range';
+      range.textContent = formatJp(data.start) + ' 〜 ' + formatJp(data.end);
+      nav.appendChild(prev);
+      nav.appendChild(todayBtn);
+      nav.appendChild(next);
+      nav.appendChild(range);
+      root.appendChild(nav);
+      var strip = document.createElement('div');
+      strip.className = 'day-strip';
+      var todayCard = null;
       (data.days || []).forEach(function (day) {
-        let cls = 'calendar-day';
+        var card = document.createElement('article');
+        var cls = 'day-card';
         if (day.today) cls += ' today';
+        if (day.past) cls += ' past';
         if (day.holiday) cls += ' holiday';
-        if (day.liked) cls += ' liked';
-        let body = String(day.day);
-        if (day.holiday) body += '<br><small>' + escapeHtml(day.holiday) + '</small>';
-        else if (day.food) body += '<br><small>' + (day.liked ? '★ ' : '') + escapeHtml(day.food) + '</small>';
-        if (day.event) body += '<br><small>' + escapeHtml(day.event) + '</small>';
-        html += '<div class="' + cls + '">' + body + '</div>';
+        if (day.liked || recommendedDates[day.date]) cls += ' liked';
+        card.className = cls;
+        var when = document.createElement('div');
+        when.className = 'when';
+        when.textContent = (day.month ? day.month + '月' : '') + (day.past ? ' 過ぎた日' : (day.today ? ' 今日' : ' これから'));
+        var num = document.createElement('div');
+        num.className = 'num';
+        num.textContent = String(day.day) + '日';
+        var dow = document.createElement('div');
+        dow.className = 'dow';
+        dow.textContent = (day.weekday || '') + '曜日';
+        var food = document.createElement('div');
+        food.className = 'food';
+        if (day.holiday) food.textContent = day.holiday;
+        else if (day.food) food.textContent = ((day.liked || recommendedDates[day.date]) ? '★ ' : '') + day.food;
+        else food.textContent = '定食は未定';
+        if (day.event) food.textContent += ' / ' + day.event;
+        card.appendChild(when);
+        card.appendChild(num);
+        card.appendChild(dow);
+        card.appendChild(food);
+        strip.appendChild(card);
+        if (day.today) todayCard = card;
       });
-      html += '</div></div>';
-      document.getElementById('calendar').innerHTML = html;
+      root.appendChild(strip);
+      if (todayCard && calendarOffset === 0 && !didCenterToday) {
+        didCenterToday = true;
+        todayCard.scrollIntoView({ inline: 'center', block: 'nearest' });
+      }
     }
 
     function escapeHtml(value) {
@@ -364,12 +523,19 @@
       });
     }
 
-    function monthFromSources(menus, holidays) {
+    function isoShift(iso, delta) {
+      var parts = String(iso).split('-');
+      var date = new Date(Number(parts[0]), Number(parts[1]) - 1, Number(parts[2]));
+      date.setDate(date.getDate() + delta);
+      return date.getFullYear() + '-' + String(date.getMonth() + 1).padStart(2, '0') + '-' + String(date.getDate()).padStart(2, '0');
+    }
+
+    function spanFromSources(menus, holidays, offset) {
       const now = new Date();
-      const year = now.getFullYear();
-      const month = now.getMonth() + 1;
-      const today = year + '-' + String(month).padStart(2, '0') + '-' + String(now.getDate()).padStart(2, '0');
-      const last = new Date(year, month, 0).getDate();
+      const today = now.getFullYear() + '-' + String(now.getMonth() + 1).padStart(2, '0') + '-' + String(now.getDate()).padStart(2, '0');
+      const anchor = isoShift(today, offset);
+      const start = isoShift(anchor, -7);
+      const names = ['日', '月', '火', '水', '木', '金', '土'];
       const holidayMap = {};
       (holidays || []).forEach(function (row) {
         if (row && row.date) holidayMap[row.date] = row.reason || '休み';
@@ -379,38 +545,52 @@
         if (row && row.date) foodMap[row.date] = row.food || '';
       });
       const days = [];
-      for (let day = 1; day <= last; day++) {
-        const date = year + '-' + String(month).padStart(2, '0') + '-' + String(day).padStart(2, '0');
+      for (let i = 0; i < 15; i++) {
+        const date = isoShift(start, i);
+        const parts = date.split('-');
+        const when = new Date(Number(parts[0]), Number(parts[1]) - 1, Number(parts[2]));
         days.push({
           date: date,
-          day: day,
+          day: when.getDate(),
+          month: when.getMonth() + 1,
+          year: when.getFullYear(),
+          weekday: names[when.getDay()],
           food: foodMap[date] || '',
           holiday: holidayMap[date] || null,
           event: '',
           liked: false,
-          today: date === today
+          today: date === today,
+          past: date < today
         });
       }
-      return { year: year, month: month, name: '', days: days };
+      return { mode: 'span', offset: offset, start: days[0].date, end: days[14].date, name: '', days: days };
     }
 
-    Promise.all([
-      loadJson('api/daily-menu.php').catch(function () { return []; }),
-      loadJson('api/holidays.php').catch(function () { return []; }),
-      loadJson('api/line-calendar.php?key=' + encodeURIComponent(key)).catch(function () { return null; })
-    ]).then(function (results) {
-      const base = monthFromSources(results[0], results[1]);
-      const personal = results[2];
-      if (personal && personal.days) {
-        const liked = {};
-        personal.days.forEach(function (day) { liked[day.date] = !!day.liked; });
-        base.days.forEach(function (day) { day.liked = !!liked[day.date]; });
-        if (personal.name) base.name = personal.name;
-      }
-      render(base);
-    }).catch(function () {
-      document.getElementById('calendar').innerHTML = '<p style="color: var(--accent-orange); text-align: center; padding: 20px;">❌ カレンダーを読み込めませんでした。</p>';
-    });
+    function loadCalendar() {
+      Promise.all([
+        loadJson('api/daily-menu.php').catch(function () { return []; }),
+        loadJson('api/holidays.php').catch(function () { return []; }),
+        loadJson('api/line-calendar.php?key=' + encodeURIComponent(key) + '&offset=' + calendarOffset).catch(function () { return null; })
+      ]).then(function (results) {
+        const personal = results[2];
+        if (personal && personal.mode === 'span' && personal.days) {
+          render(personal);
+          return;
+        }
+        const base = spanFromSources(results[0], results[1], calendarOffset);
+        if (personal && personal.days) {
+          const liked = {};
+          personal.days.forEach(function (day) { liked[day.date] = !!day.liked; });
+          base.days.forEach(function (day) { day.liked = !!liked[day.date]; });
+          if (personal.name) base.name = personal.name;
+        }
+        render(base);
+      }).catch(function () {
+        document.getElementById('calendar').innerHTML = '<p style="color: var(--accent-orange); text-align: center; padding: 20px;">❌ カレンダーを読み込めませんでした。</p>';
+      });
+    }
+
+    loadCalendar();
 
     var fitNames = {
       match: 'あなた向け',
@@ -422,18 +602,19 @@
       plain: '定食'
     };
     var voteReasons = {
-      up: [
-        ['liked_food', '好きな料理だった'],
-        ['want_to_try', '食べてみたいと思った'],
-        ['fits_me', '自分に合っていると思った']
-      ],
       down: [
-        ['disliked_ingredient', '苦手な食材が含まれている'],
-        ['not_my_taste', '自分の好みとは違った'],
-        ['had_before', '以前にも食べたことがある'],
-        ['not_interested', 'あまり興味がない'],
+        ['dislike_dish', '料理が苦手'],
+        ['dislike_ingredient', '食材が苦手'],
+        ['dislike_seasoning', '味付けが好みではない'],
+        ['want_other', '今日は別の料理が食べたい'],
         ['other', 'その他']
       ]
+    };
+    var reasonAlias = {
+      disliked_ingredient: 'dislike_ingredient',
+      not_my_taste: 'dislike_seasoning',
+      had_before: 'want_other',
+      not_interested: 'other'
     };
 
     function makeNode(tag, className, text) {
@@ -523,24 +704,28 @@
         }
         return;
       }
-      box.appendChild(makeNode('p', 'reco-ask', 'このおすすめはあなたの好みに合っていますか？'));
+      box.appendChild(makeNode('p', 'reco-ask', 'この定食はどう？ワンタップで答えられます。'));
       var row = makeNode('div', 'reco-vote');
       var current = card.vote && card.vote.vote ? card.vote.vote : '';
-      [['up', '👍 合っている！'], ['down', '👎 あまり合わない']].forEach(function (item) {
+      var savedReason = card.vote && card.vote.reason ? (reasonAlias[card.vote.reason] || card.vote.reason) : '';
+      [['up', '👍 好き！食べてみたい'], ['down', '👎 今回は好みじゃない']].forEach(function (item) {
         var button = makeNode('button', 'vote-btn' + (current === item[0] ? ' active' : ''), item[1]);
         button.type = 'button';
         button.setAttribute('aria-pressed', current === item[0] ? 'true' : 'false');
         button.addEventListener('click', function () {
-          var keep = current === item[0] && card.vote ? card.vote.reason : '';
+          var keep = '';
+          if (item[0] === 'down' && current === 'down' && card.vote) {
+            keep = reasonAlias[card.vote.reason] || card.vote.reason || '';
+          }
           sendVote(card, item[0], keep, box);
         });
         row.appendChild(button);
       });
       box.appendChild(row);
-      if (current && voteReasons[current]) {
+      if (current === 'down' && voteReasons.down) {
         var reasons = makeNode('div', 'reco-vote');
-        voteReasons[current].forEach(function (item) {
-          var selected = card.vote && card.vote.reason === item[0];
+        voteReasons.down.forEach(function (item) {
+          var selected = savedReason === item[0];
           var button = makeNode('button', 'reason-btn' + (selected ? ' active' : ''), item[1]);
           button.type = 'button';
           button.setAttribute('aria-pressed', selected ? 'true' : 'false');
@@ -587,8 +772,16 @@
       });
     }
 
+    function reserveStatus(card) {
+      if (card.fit === 'holiday') return '予約できません（休業日）';
+      if (card.fit === 'empty') return 'メニューが未定なので、まだ予約できません';
+      if (card.fit === 'blocked') return 'アレルギーの可能性があるため、おすすめからの予約はしません';
+      if (card.reserve === 'today') return '今日の定食なので、予約できます';
+      return 'この日はまだ予約できません。予約できるのは当日だけです';
+    }
+
     function reserveLink(card) {
-      if (card.reserve !== 'today' || !card.food || card.fit === 'holiday') return null;
+      if (card.reserve !== 'today' || !card.food || card.fit === 'holiday' || card.fit === 'blocked') return null;
       var link = document.createElement('a');
       link.className = 'btn btn-primary reco-reserve';
       var params = new URLSearchParams();
@@ -608,8 +801,14 @@
         return;
       }
       if (data && data.personalized && data.name && lead) {
-        lead.textContent = data.name + 'さんへ。大きいカードが、今日から7日間で一番おすすめの定食です。予約できるのは今日の定食だけです。';
+        lead.textContent = data.name + 'さんへ。大きいカードが今週のイチオシです。次の営業日と、その次の営業日も別々に出します。';
       }
+      recommendedDates = {};
+      (data.cards || []).forEach(function (card) {
+        if (card && card.date) recommendedDates[card.date] = true;
+      });
+      if (lastCalendar) render(lastCalendar);
+      renderFollowup(data && data.followup);
       root.innerHTML = '';
       var grid = makeNode('div', 'reco-grid');
       (data.cards || []).forEach(function (card) {
@@ -630,12 +829,12 @@
         kicker.appendChild(badge);
         body.appendChild(kicker);
         if (card.food) body.appendChild(makeNode('h3', 'reco-food', card.food));
+        if (card.scoreLabel) body.appendChild(makeNode('p', 'reco-score', 'おすすめ度: ' + card.scoreLabel));
         if (card.blurb) body.appendChild(makeNode('p', 'reco-blurb', card.blurb));
+        if (card.reason) body.appendChild(makeNode('p', 'reco-reason', card.reason));
+        body.appendChild(makeNode('p', 'reco-note', reserveStatus(card)));
         var reserve = reserveLink(card);
-        if (reserve) {
-          body.appendChild(makeNode('p', 'reco-note', '予約できるのは、今日の定食だけです。'));
-          body.appendChild(reserve);
-        }
+        if (reserve) body.appendChild(reserve);
         var credit = makeNode('p', 'reco-credit', '');
         fillCredit(credit, card);
         body.appendChild(credit);
@@ -653,6 +852,45 @@
         if (photo) loadCardImage(card, photo, 0);
       });
       root.appendChild(grid);
+    }
+
+    function renderFollowup(question) {
+      var box = document.getElementById('followup');
+      if (!box) return;
+      if (!question || !question.id || !key) {
+        box.hidden = true;
+        box.innerHTML = '';
+        return;
+      }
+      box.hidden = false;
+      box.innerHTML = '';
+      box.appendChild(makeNode('p', 'reco-ask', question.prompt || ''));
+      var row = makeNode('div', 'followup-choices');
+      (question.choices || []).forEach(function (choice) {
+        var button = makeNode('button', 'followup-choice', choice.label);
+        button.type = 'button';
+        button.addEventListener('click', function () { sendFollowup(question.id, choice.id, box); });
+        row.appendChild(button);
+      });
+      box.appendChild(row);
+      box.appendChild(makeNode('p', 'reco-note', '答えなくても大丈夫です。次の質問は、しばらくしてからにします。'));
+    }
+
+    function sendFollowup(question, answer, box) {
+      box.appendChild(makeNode('p', 'reco-status', '保存しています…'));
+      fetch('api/line-survey.php', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ key: key, mode: 'followup', question: question, answer: answer })
+      }).then(function (res) {
+        return res.json().then(function (data) { return { ok: res.ok, data: data }; });
+      }).then(function (result) {
+        box.innerHTML = '';
+        box.hidden = false;
+        box.appendChild(makeNode('p', 'reco-note', (result.ok && result.data && result.data.ok) ? '答えを保存しました。次のおすすめで参考にします。' : ((result.data && result.data.error) || '保存できませんでした。')));
+      }).catch(function () {
+        box.appendChild(makeNode('p', 'reco-status', '保存できませんでした。'));
+      });
     }
 
     fetch('api/recommend.php?key=' + encodeURIComponent(key), { cache: 'no-store' })

@@ -33,16 +33,24 @@ $user = line_user_by_key((string) ($data['key'] ?? ''));
 if (!$user) {
     line_survey_fail(404, 'このリンクでは開けないよ。LINEのトークから開いてね。');
 }
-[$ok, $error, $saved] = line_apply_survey($user, $data);
+$mode = (string) ($data['mode'] ?? '');
+if ($mode === 'followup') {
+    [$ok, $error, $saved] = line_apply_followup($user, $data);
+} else {
+    [$ok, $error, $saved] = line_apply_survey($user, $data);
+}
 if (!$ok) {
     line_survey_fail(400, $error);
 }
 $notified = false;
+$quiet = $mode === 'followup' || $mode === 'skip';
 try {
-    line_ensure_rich_menu();
-    line_sync_user_menu($saved);
+    if ($mode !== 'followup') {
+        line_ensure_rich_menu();
+        line_sync_user_menu($saved);
+    }
     $userId = (string) ($saved['userId'] ?? '');
-    if ($userId !== '') {
+    if (!$quiet && $userId !== '') {
         $plain = trim((string) ($saved['name'] ?? '')) . "さん、アンケートを保存したよ。\nこのトークに「答えた」と送らなくていいよ。下のメニューから予約できるよ。";
         $pushed = line_push_notice($userId, line_survey_ack_messages($saved), $plain);
         $notified = !empty($pushed[0]);

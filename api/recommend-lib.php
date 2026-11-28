@@ -284,47 +284,91 @@ function recommend_core_name($food) {
     return $name;
 }
 
-function recommend_english_query($food) {
-    $pairs = [
-        '鶏の照り焼き' => 'Japanese chicken teriyaki set meal',
-        '照り焼き' => 'Japanese chicken teriyaki',
-        '唐揚げ' => 'Japanese karaage fried chicken',
-        'から揚げ' => 'Japanese karaage fried chicken',
-        'からあげ' => 'Japanese karaage fried chicken',
-        '生姜焼き' => 'Japanese ginger pork set meal',
-        'しょうが焼' => 'Japanese ginger pork',
-        'チキンソテー' => 'chicken saute set meal',
-        'サバの味噌煮' => 'Japanese mackerel miso',
-        '味噌煮' => 'Japanese simmered fish miso',
-        'ハンバーグ' => 'Japanese hambagu steak',
-        'ちくわの磯部' => 'Japanese chikuwa isobe fry',
-        '磯部' => 'Japanese isobe fry',
-        '南蛮漬け' => 'Japanese nanban fried fish',
-        '南蛮' => 'Japanese nanban fried fish',
-        'イワシ' => 'Japanese grilled sardine',
-        '魚の煮付け' => 'Japanese simmered fish',
-        '煮付け' => 'Japanese simmered fish',
-        '焼き魚' => 'Japanese grilled fish',
-        '刺身' => 'Japanese sashimi',
-        'カツカレー' => 'Japanese katsu curry',
-        'カレー' => 'Japanese curry rice',
-        'カツ' => 'Japanese pork cutlet',
-        'ラーメン' => 'Japanese ramen',
-        'うどん' => 'Japanese udon',
-        'そば' => 'Japanese soba noodles',
-        'チャーハン' => 'Japanese fried rice',
-        '炒飯' => 'Japanese fried rice',
-        'やきめし' => 'Japanese fried rice',
-        'オムライス' => 'Japanese omurice',
-        '丼' => 'Japanese rice bowl',
-        'サラダ' => 'vegetable salad',
+function recommend_query_pairs() {
+    return [
+        '鶏の照り焼き' => ['Japanese chicken teriyaki set meal', 'chicken teriyaki'],
+        '照り焼き' => ['Japanese chicken teriyaki', 'teriyaki chicken'],
+        '豚マヨネーズ' => ['pork mayonnaise rice', 'grilled pork mayonnaise'],
+        '豚マヨ' => ['pork mayonnaise rice', 'grilled pork mayonnaise'],
+        'カツオのたたき' => ['seared bonito tataki', 'bonito tataki'],
+        'カツオたたき' => ['seared bonito tataki', 'bonito tataki'],
+        'カツオ' => ['seared bonito fish', 'bonito tataki'],
+        'かつお' => ['seared bonito fish', 'bonito tataki'],
+        'とんかつ' => ['tonkatsu pork cutlet', 'Japanese pork cutlet'],
+        '豚カツ' => ['tonkatsu pork cutlet', 'Japanese pork cutlet'],
+        'ヒレカツ' => ['pork fillet cutlet', 'tonkatsu'],
+        'チキンカツ' => ['chicken cutlet', 'chicken katsu'],
+        '唐揚げ' => ['Japanese karaage fried chicken', 'karaage chicken'],
+        'から揚げ' => ['Japanese karaage fried chicken', 'karaage chicken'],
+        'からあげ' => ['Japanese karaage fried chicken', 'karaage chicken'],
+        '生姜焼き' => ['Japanese ginger pork set meal', 'ginger pork'],
+        'しょうが焼' => ['Japanese ginger pork', 'ginger pork'],
+        'チキンソテー' => ['chicken saute set meal', 'chicken saute'],
+        'サバの味噌煮' => ['Japanese mackerel miso', 'mackerel simmered miso'],
+        '味噌煮' => ['Japanese simmered fish miso', 'mackerel miso'],
+        'ハンバーグ' => ['Japanese hambagu steak', 'hamburg steak'],
+        'ハヤシライス' => ['hayashi rice', 'hashed beef rice'],
+        'ハヤシ' => ['hayashi rice', 'hashed beef rice'],
+        'ちくわの磯部' => ['Japanese chikuwa isobe fry', 'isobe fry'],
+        '磯部' => ['Japanese isobe fry', 'seaweed fried fish cake'],
+        '南蛮漬け' => ['Japanese nanban fried fish', 'nanban chicken'],
+        '南蛮' => ['Japanese nanban fried fish', 'nanban'],
+        'イワシ' => ['Japanese grilled sardine', 'grilled sardine'],
+        '魚の煮付け' => ['Japanese simmered fish', 'simmered fish soy'],
+        '煮付け' => ['Japanese simmered fish', 'simmered fish'],
+        '焼き魚' => ['Japanese grilled fish', 'grilled fish'],
+        '鮭の塩焼き' => ['grilled salted salmon', 'salmon salt grill'],
+        '鯖の塩焼き' => ['grilled salted mackerel', 'mackerel salt grill'],
+        '刺身' => ['Japanese sashimi', 'sashimi'],
+        'カツカレー' => ['Japanese katsu curry', 'pork cutlet curry'],
+        'カレーうどん' => ['curry udon', 'Japanese curry noodles'],
+        'カレーライス' => ['Japanese curry rice', 'curry rice'],
+        '天ぷらうどん' => ['tempura udon', 'udon tempura'],
+        '天ぷらそば' => ['tempura soba', 'soba tempura'],
+        'かけうどん' => ['udon noodle soup', 'kake udon'],
+        '肉うどん' => ['meat udon', 'beef udon'],
+        'かけそば' => ['soba noodle soup', 'kake soba'],
+        '肉そば' => ['meat soba noodles', 'soba pork'],
+        '醤油ラーメン' => ['shoyu ramen', 'soy sauce ramen'],
+        '豚骨ラーメン' => ['tonkotsu ramen', 'pork bone ramen'],
+        '親子丼' => ['oyakodon chicken rice', 'chicken egg rice bowl'],
+        'カレー' => ['Japanese curry rice', 'curry rice'],
+        'カツ' => ['Japanese pork cutlet', 'tonkatsu'],
+        'ラーメン' => ['Japanese ramen', 'ramen noodles'],
+        'うどん' => ['Japanese udon', 'udon noodles'],
+        'そば' => ['Japanese soba noodles', 'soba noodles'],
+        'チャーハン' => ['Japanese fried rice', 'chahan fried rice'],
+        '炒飯' => ['Japanese fried rice', 'chahan'],
+        'やきめし' => ['Japanese fried rice', 'yakimeshi'],
+        'オムライス' => ['Japanese omurice', 'omurice'],
+        'ホットドッグ' => ['hot dog', 'sausage bread'],
+        'ホットドック' => ['hot dog', 'sausage bread'],
+        '納豆' => ['natto rice', 'fermented soybeans rice'],
+        '丼' => ['Japanese rice bowl', 'donburi'],
+        'サラダ' => ['vegetable salad', 'green salad'],
+        'たたき' => ['seared fish tataki', 'bonito tataki'],
     ];
-    foreach ($pairs as $ja => $en) {
+}
+
+function recommend_matched_query($food) {
+    $pairs = recommend_query_pairs();
+    uksort($pairs, function ($a, $b) {
+        return mb_strlen($b) <=> mb_strlen($a);
+    });
+    foreach ($pairs as $ja => $phrases) {
         if (mb_strpos($food, $ja) !== false) {
-            return mb_substr($en, 0, 100);
+            return $phrases;
         }
     }
-    return '';
+    return [];
+}
+
+function recommend_english_query($food) {
+    $phrases = recommend_matched_query($food);
+    if (!count($phrases)) {
+        return '';
+    }
+    return mb_substr((string) $phrases[0], 0, 100);
 }
 
 function recommend_search_plan($food) {
@@ -333,9 +377,15 @@ function recommend_search_plan($food) {
     if ($core !== '') {
         $plan[] = ['lang' => 'ja', 'q' => $core];
     }
-    $english = recommend_english_query($food);
-    if ($english !== '') {
-        $plan[] = ['lang' => 'en', 'q' => $english];
+    foreach (recommend_matched_query($food) as $phrase) {
+        $phrase = trim((string) $phrase);
+        if ($phrase === '') {
+            continue;
+        }
+        $plan[] = ['lang' => 'en', 'q' => mb_substr($phrase, 0, 100)];
+        if (count($plan) >= 3) {
+            break;
+        }
     }
     return $plan;
 }
@@ -505,7 +555,7 @@ function recommend_week_rows($user) {
     if ($start === false) {
         return $rows;
     }
-    for ($i = 0; $i < 7; $i++) {
+    for ($i = 0; $i < 21 && count($rows) < 10; $i++) {
         $date = date('Y-m-d', strtotime('+' . $i . ' day', $start));
         if (line_holiday($date) !== null) {
             continue;
@@ -551,91 +601,106 @@ function recommend_rank_rows($rows, $scoreOf) {
 }
 
 function recommend_choose_slots($rows, $today, $scoreOf) {
-    $ranked = recommend_rank_rows($rows, $scoreOf);
-    $byDate = [];
-    foreach ($ranked as $row) {
-        $byDate[$row['date']] = $row;
+    $upcoming = [];
+    foreach ((array) $rows as $row) {
+        if (!is_array($row)) {
+            continue;
+        }
+        $date = (string) ($row['date'] ?? '');
+        if ($date === '' || $date < (string) $today) {
+            continue;
+        }
+        $upcoming[] = $row;
     }
-    $week = null;
+    usort($upcoming, function ($a, $b) {
+        return strcmp((string) ($a['date'] ?? ''), (string) ($b['date'] ?? ''));
+    });
+    $ranked = recommend_rank_rows($upcoming, $scoreOf);
+    $featured = null;
     foreach ($ranked as $row) {
         if ($row['food'] !== '' && !$row['disliked']) {
-            $week = $row;
+            $featured = $row;
             break;
         }
     }
-    if ($week === null) {
+    if ($featured === null) {
         foreach ($ranked as $row) {
             if ($row['food'] !== '') {
-                $week = $row;
+                $featured = $row;
                 break;
             }
         }
     }
     $slots = [];
     $usedDates = [];
-    $usedFoods = [];
-    if ($week !== null) {
-        $role = ($week['date'] === $today) ? 'week-today' : 'week';
-        $slots[] = ['role' => $role, 'row' => $week];
-        $usedDates[$week['date']] = true;
-        if ($week['food'] !== '') {
-            $usedFoods[$week['food']] = true;
+    if ($featured !== null) {
+        $role = ($featured['date'] === $today) ? 'week-today' : 'week';
+        $slots[] = ['role' => $role, 'row' => $featured];
+        $usedDates[$featured['date']] = true;
+    }
+    $next = null;
+    $after = null;
+    foreach ($upcoming as $row) {
+        $date = (string) ($row['date'] ?? '');
+        if ($date === '' || isset($usedDates[$date])) {
+            continue;
+        }
+        if ($next === null) {
+            $next = $row;
+            continue;
+        }
+        if ($after === null) {
+            $after = $row;
+            break;
         }
     }
-    if (isset($byDate[$today]) && empty($usedDates[$today])) {
-        $slots[] = ['role' => 'today', 'row' => $byDate[$today]];
-        $usedDates[$today] = true;
-        if ($byDate[$today]['food'] !== '') {
-            $usedFoods[$byDate[$today]['food']] = true;
-        }
+    if ($next !== null) {
+        $slots[] = ['role' => 'next', 'row' => $next];
     }
-    $need = 3 - count($slots);
-    $take = function ($allowSameFood, $allowDisliked) use (&$ranked, &$usedDates, &$usedFoods, &$slots, &$need) {
-        foreach ($ranked as $row) {
-            if ($need <= 0) {
-                return;
-            }
-            if (isset($usedDates[$row['date']]) || $row['food'] === '') {
-                continue;
-            }
-            if (!$allowDisliked && $row['disliked']) {
-                continue;
-            }
-            if (!$allowSameFood && isset($usedFoods[$row['food']])) {
-                continue;
-            }
-            $slots[] = ['role' => 'other', 'row' => $row];
-            $usedDates[$row['date']] = true;
-            $usedFoods[$row['food']] = true;
-            $need--;
-        }
-    };
-    $take(false, false);
-    $take(true, false);
-    $take(true, true);
+    if ($after !== null) {
+        $slots[] = ['role' => 'after', 'row' => $after];
+    }
     return $slots;
 }
 
 function recommend_slot_title($role) {
     if ($role === 'week' || $role === 'week-today') {
-        return '今週いちばんのおすすめ';
+        return '⭐ 今週のイチオシ定食';
     }
-    if ($role === 'today') {
-        return '今日の定食';
+    if ($role === 'next' || $role === 'today') {
+        return '🍱 次の営業日のおすすめ';
     }
-    return 'もう一つのおすすめ';
+    return '🍚 その次の営業日のおすすめ';
+}
+
+function recommend_rank_score($user, $food, $votes, $impressions) {
+    $score = is_array($user) ? recommend_personal_score($user, $food, $votes) : 0;
+    if (!is_array($user) || $food === '') {
+        return $score;
+    }
+    $userId = (string) ($user['userId'] ?? '');
+    $repeats = recommend_repeat_count($impressions, $userId, $food);
+    $tryNew = is_array($user['followups'] ?? null) ? (string) ($user['followups']['try_new'] ?? '') : '';
+    if ($repeats >= 2) {
+        $score -= $tryNew === 'yes' ? 2 : 1;
+    } elseif ($repeats === 0 && $tryNew === 'yes') {
+        $score += 1;
+    }
+    return $score;
 }
 
 function recommend_visible_dates($user) {
     $votes = [];
+    $impressions = [];
     $feedback = recommend_load_doc(recommend_feedback_file(), recommend_feedback_default());
     if (is_array($feedback)) {
         $feedback = recommend_normalize_feedback($feedback);
         $votes = $feedback['votes'];
+        $impressions = $feedback['impressions'];
     }
     $dates = [];
-    $scoreOf = function ($food) use ($user, $votes) {
-        return is_array($user) ? recommend_personal_score($user, $food, $votes) : 0;
+    $scoreOf = function ($food) use ($user, $votes, $impressions) {
+        return recommend_rank_score($user, $food, $votes, $impressions);
     };
     foreach (recommend_choose_slots(recommend_week_rows($user), date('Y-m-d'), $scoreOf) as $slot) {
         $dates[(string) $slot['row']['date']] = true;
@@ -776,15 +841,87 @@ function recommend_delta_from_votes($votes, $userId, $food) {
         if ($kind !== 'down') {
             continue;
         }
-        if ($reason === 'had_before' && !$same) {
+        if (($reason === 'had_before' || $reason === 'want_other') && !$same) {
             continue;
         }
         $down++;
-        if ($reason === 'disliked_ingredient') {
+        if ($reason === 'disliked_ingredient' || $reason === 'dislike_ingredient' || $reason === 'dislike_dish') {
             $down++;
         }
     }
     return min(3, $up) - min(3, $down);
+}
+
+function recommend_style_words() {
+    return [
+        '和食' => ['味噌', '煮付け', '焼き魚', '刺身', '生姜', '納豆', '磯部', '南蛮', '塩焼', '親子', 'さば', 'サバ', '鮭', 'イワシ', '煮魚'],
+        '洋食' => ['ハンバーグ', 'カレー', 'オムライス', 'ハヤシ', 'パスタ', 'ソテー', 'グラタン', 'ドリア', 'コロッケ'],
+        '中華' => ['チャーハン', '炒飯', 'やきめし', 'ラーメン', '餃子', '酢豚', '麻婆', '中華'],
+        '辛い料理' => ['辛', 'ラー油', 'キムチ', 'からい', '麻婆'],
+        'さっぱり' => ['刺身', '南蛮', '塩焼', 'サラダ', 'うどん', 'そば', '煮付け'],
+        'こってり' => ['とんかつ', '豚カツ', 'マヨ', '唐揚', 'から揚', 'ハンバーグ', '豚骨', 'カレー'],
+    ];
+}
+
+function recommend_style_matches($food, $style) {
+    $words = recommend_style_words();
+    $keys = $words[$style] ?? [$style];
+    foreach ($keys as $word) {
+        if ($word !== '' && mb_strpos($food, $word) !== false) {
+            return true;
+        }
+    }
+    return false;
+}
+
+function recommend_matched_styles($user, $food) {
+    $matched = [];
+    foreach ((array) ($user['styles'] ?? []) as $style) {
+        $style = trim((string) $style);
+        if ($style !== '' && recommend_style_matches($food, $style)) {
+            $matched[] = $style;
+        }
+    }
+    return $matched;
+}
+
+function recommend_style_bonus($user, $food) {
+    $bonus = 0;
+    foreach (recommend_matched_styles($user, $food) as $style) {
+        $bonus += 2;
+        if ($bonus >= 4) {
+            break;
+        }
+    }
+    return $bonus;
+}
+
+function recommend_followup_bonus($user, $food) {
+    $followups = is_array($user['followups'] ?? null) ? $user['followups'] : [];
+    $bonus = 0;
+    $meat = line_food_matches($food, '肉');
+    $fish = line_food_matches($food, '魚');
+    $choice = (string) ($followups['meat_fish'] ?? '');
+    if ($choice === 'meat' && $meat && !$fish) {
+        $bonus += 1;
+    } elseif ($choice === 'fish' && $fish && !$meat) {
+        $bonus += 1;
+    } elseif ($choice === 'both' && ($meat || $fish)) {
+        $bonus += 1;
+    }
+    $spicy = recommend_style_matches($food, '辛い料理');
+    if (($followups['spicy'] ?? '') === 'yes' && $spicy) {
+        $bonus += 1;
+    } elseif (($followups['spicy'] ?? '') === 'no' && $spicy) {
+        $bonus -= 2;
+    }
+    $hearty = recommend_style_matches($food, 'こってり');
+    if (($followups['hearty'] ?? '') === 'yes' && $hearty) {
+        $bonus += 1;
+    } elseif (($followups['hearty'] ?? '') === 'no' && $hearty) {
+        $bonus -= 1;
+    }
+    return $bonus;
 }
 
 function recommend_personal_score($user, $food, $votes) {
@@ -792,18 +929,115 @@ function recommend_personal_score($user, $food, $votes) {
         return 0;
     }
     $base = line_score_user($user, $food) - recommend_times_bonus($user);
+    foreach ((array) ($user['allergies'] ?? []) as $allergy) {
+        $allergy = trim((string) $allergy);
+        if ($allergy !== '' && line_allergy_matches($food, $allergy)) {
+            $base += 8;
+        }
+    }
+    $base += recommend_style_bonus($user, $food);
+    $base += recommend_followup_bonus($user, $food);
     return $base + recommend_delta_from_votes($votes, (string) ($user['userId'] ?? ''), $food);
+}
+
+function recommend_menu_allergens($food) {
+    static $rows = null;
+    if ($rows === null) {
+        $data = line_read_json(line_data_dir() . '/allergies.json', []);
+        $rows = is_array($data['allergies'] ?? null) ? $data['allergies'] : [];
+    }
+    $core = recommend_core_name($food);
+    $partial = null;
+    foreach ($rows as $row) {
+        if (!is_array($row)) {
+            continue;
+        }
+        $menu = trim((string) ($row['menu'] ?? ''));
+        if ($menu === '') {
+            continue;
+        }
+        $allergens = is_array($row['allergens'] ?? null) ? $row['allergens'] : [];
+        if ($menu === $food || $menu === $core) {
+            return $allergens;
+        }
+        if ($partial === null && mb_strlen($menu) >= 2 && (mb_strpos($food, $menu) !== false || ($core !== '' && mb_strpos($core, $menu) !== false))) {
+            $partial = $allergens;
+        }
+    }
+    return $partial;
 }
 
 function recommend_allergy_hits($user, $food) {
     $hits = [];
+    $listed = recommend_menu_allergens($food);
     foreach ((array) ($user['allergies'] ?? []) as $allergy) {
         $allergy = trim((string) $allergy);
-        if ($allergy !== '' && line_allergy_matches($food, $allergy)) {
+        if ($allergy === '') {
+            continue;
+        }
+        $hit = line_allergy_matches($food, $allergy);
+        if (!$hit && is_array($listed)) {
+            foreach ($listed as $item) {
+                $item = trim((string) $item);
+                if ($item === '') {
+                    continue;
+                }
+                if ($item === $allergy || mb_strpos($item, $allergy) !== false || mb_strpos($allergy, $item) !== false || line_allergy_matches($item, $allergy)) {
+                    $hit = true;
+                    break;
+                }
+            }
+        }
+        if ($hit) {
             $hits[] = $allergy;
         }
     }
     return $hits;
+}
+
+function recommend_allergy_unconfirmed($user, $food) {
+    if (!is_array($user)) {
+        return false;
+    }
+    $has = false;
+    foreach ((array) ($user['allergies'] ?? []) as $allergy) {
+        if (trim((string) $allergy) !== '') {
+            $has = true;
+            break;
+        }
+    }
+    if (!$has || recommend_allergy_hits($user, $food)) {
+        return false;
+    }
+    return recommend_menu_allergens($food) === null;
+}
+
+function recommend_score_label($fit, $score) {
+    if ($fit === 'blocked') {
+        return '対象外';
+    }
+    if ($fit === 'holiday') {
+        return '休業日';
+    }
+    if ($fit === 'empty') {
+        return '未定';
+    }
+    if ($fit === 'plain') {
+        return 'おすすめ';
+    }
+    if ($score >= 5) {
+        return 'とてもおすすめ';
+    }
+    if ($score >= 3) {
+        return 'おすすめ';
+    }
+    if ($score >= 1) {
+        return 'ややおすすめ';
+    }
+    if ($score < 0) {
+        return '控えめ';
+    }
+    return '新しい出会い';
 }
 
 function recommend_matched_likes($user, $food) {
@@ -847,7 +1081,8 @@ function recommend_feedback_example($votes, $userId, $food, $kind) {
         if ($other !== $food && !recommend_foods_related($other, $food)) {
             continue;
         }
-        if ($kind === 'down' && (string) ($vote['reason'] ?? '') === 'had_before' && $other !== $food) {
+        $downReason = (string) ($vote['reason'] ?? '');
+        if ($kind === 'down' && ($downReason === 'had_before' || $downReason === 'want_other') && $other !== $food) {
             continue;
         }
         $found = $vote;
@@ -866,36 +1101,45 @@ function recommend_reason_text($user, $food, $votes, $repeatCount) {
     $upFood = recommend_feedback_example($votes, $userId, $food, 'up');
     $downFood = recommend_feedback_example($votes, $userId, $food, 'down');
     $score = recommend_personal_score($user, $food, $votes);
+    $styles = recommend_matched_styles($user, $food);
     if ($avoids && $score < 0) {
-        $text = 'アンケートで「' . $avoids[0] . '」が苦手と答えているため、今回はおすすめ度を下げています。';
+        $text = 'あなたは' . $avoids[0] . 'が苦手と答えているので、今回の' . $food . 'はおすすめ度を下げています。';
     } elseif (is_array($upFood)) {
         if ((string) ($upFood['food'] ?? '') === $food) {
-            $text = '以前、この定食に高い評価をつけていたため、今回もおすすめしています。';
+            $text = '以前、この定食に「好き」と答えていたので、今回の' . $food . 'もおすすめです。';
         } else {
             $label = recommend_shared_label((string) ($upFood['food'] ?? ''), $food);
             if ($label !== '') {
-                $text = '以前、' . $label . 'のおすすめに高い評価をつけていたため、今回はこちらを選びました。';
+                $text = '以前、' . $label . 'に高評価を付けていたので、今回の' . $food . 'もおすすめです。';
             } else {
-                $text = '以前、似た定食に高い評価をつけていたため、今回はこちらを選びました。';
+                $text = '以前、似た定食に高評価を付けていたので、今回の' . $food . 'もおすすめです。';
             }
         }
     } elseif ($likes && $score > 0) {
         $shown = array_slice($likes, 0, 2);
-        $text = 'あなたはアンケートで' . implode('、', $shown) . 'が好きと回答していたため、このメニューをおすすめしています。';
+        $text = 'あなたは' . implode('と', $shown) . 'が好きなので、今回の' . $food . 'は特におすすめです。';
+    } elseif ($styles && $score > 0) {
+        $text = 'あなたは' . $styles[0] . 'が好きなので、今回の' . $food . 'をおすすめします。';
     } elseif (is_array($downFood)) {
         $downName = (string) ($downFood['food'] ?? '');
-        if ((string) ($downFood['reason'] ?? '') === 'had_before' && $downName === $food) {
-            $text = '以前、この定食はもう食べたと答えていたため、少し控えめにしています。';
+        $downReason = (string) ($downFood['reason'] ?? '');
+        if (($downReason === 'had_before' || $downReason === 'want_other') && $downName === $food) {
+            $text = '以前、この定食は別の料理がよかったと答えていたので、少し控えめにしています。';
         } elseif ($downName === $food) {
-            $text = '以前、この定食にあまり合わないと答えていたため、おすすめ度を少し下げています。';
+            $text = '以前、この定食は好みじゃないと答えていたので、おすすめ度を少し下げています。';
         } else {
-            $text = '以前、' . $downName . 'にあまり合わないと答えていたため、おすすめ度を少し下げています。';
+            $text = '以前、' . $downName . 'は好みじゃないと答えていたので、おすすめ度を少し下げています。';
         }
+    } elseif ($score > 0) {
+        $text = 'これまでの回答から、今回の' . $food . 'は合いそうです。';
     } else {
-        $text = 'アンケートの好きな料理とはまだ重ならないので、新しい定食として紹介しています。';
+        $text = 'まだ好みの情報が少ないので、新しい定食として紹介しています。';
     }
     if ($repeatCount >= 2 && $score >= 0) {
-        $text .= '最近も同じ定食を紹介しているので、評価は次のメニューにも使います。';
+        $text .= '同じ定食ばかりにならないよう、ほかの日も見ています。';
+    }
+    if (recommend_allergy_unconfirmed($user, $food)) {
+        $text .= 'この定食の原材料データがないため、アレルギーが大丈夫とは判断できません。食べる前に確認してください。';
     }
     return $text;
 }
@@ -961,6 +1205,33 @@ function recommend_image_payload($image) {
     return $empty;
 }
 
+function recommend_image_plan_version() {
+    return 2;
+}
+
+function recommend_image_log($food, $event, $detail) {
+    $food = str_replace(["\r", "\n", "\t"], ' ', (string) $food);
+    $detail = str_replace(["\r", "\n", "\t"], ' ', (string) $detail);
+    if (preg_match('/key|token|secret|bearer|api[_-]?key/i', $detail)) {
+        $detail = 'redacted';
+    }
+    $file = line_data_dir() . '/image-search.log';
+    $line = date('c') . "\t" . $event . "\t" . $food . "\t" . $detail . "\n";
+    $size = @filesize($file);
+    if ($size !== false && $size > 200000) {
+        $tail = @file_get_contents($file, false, null, max(0, $size - 120000));
+        if (is_string($tail)) {
+            $cut = strpos($tail, "\n");
+            if ($cut !== false) {
+                $tail = substr($tail, $cut + 1);
+            }
+            @file_put_contents($file, $tail . $line, LOCK_EX);
+            return;
+        }
+    }
+    @file_put_contents($file, $line, FILE_APPEND | LOCK_EX);
+}
+
 function recommend_image_fresh($image) {
     if (!is_array($image)) {
         return false;
@@ -971,6 +1242,9 @@ function recommend_image_fresh($image) {
     }
     $until = (int) ($image['until'] ?? 0);
     if (($status === 'skipped' || $status === 'error') && $until > time()) {
+        if ((int) ($image['plan'] ?? 0) < recommend_image_plan_version()) {
+            return false;
+        }
         return true;
     }
     return false;
@@ -1053,17 +1327,21 @@ function recommend_repeat_count($impressions, $userId, $food) {
 }
 
 function recommend_my_vote($votes, $userId, $date, $food) {
+    $fallback = null;
     foreach ((array) $votes as $vote) {
         if (!is_array($vote)) {
             continue;
         }
-        if ((string) ($vote['userId'] ?? '') === $userId
-            && (string) ($vote['date'] ?? '') === $date
-            && (string) ($vote['food'] ?? '') === $food) {
-            return recommend_public_vote($vote);
+        if ((string) ($vote['userId'] ?? '') !== $userId || (string) ($vote['food'] ?? '') !== $food) {
+            continue;
         }
+        $public = recommend_public_vote($vote);
+        if ((string) ($vote['date'] ?? '') === $date) {
+            return $public;
+        }
+        $fallback = $public;
     }
-    return null;
+    return $fallback;
 }
 
 function recommend_card($date, $when, $user, $votes, $impressions) {
@@ -1079,6 +1357,8 @@ function recommend_card($date, $when, $user, $votes, $impressions) {
         'blurb' => '',
         'reason' => '',
         'fit' => 'holiday',
+        'score' => null,
+        'scoreLabel' => '休業日',
         'image' => recommend_image_payload(null),
         'vote' => null,
         'canVote' => false,
@@ -1094,6 +1374,7 @@ function recommend_card($date, $when, $user, $votes, $impressions) {
     $food = line_daily_food($date);
     if ($food === '') {
         $base['fit'] = 'empty';
+        $base['scoreLabel'] = '未定';
         $base['blurb'] = 'この日の定食は、まだ決まっていません。';
         $base['reason'] = '定食が登録されたあとで、あなた向けの理由を出します。';
         $base['image'] = recommend_image_payload(['status' => 'skipped', 'method' => 'none']);
@@ -1105,6 +1386,7 @@ function recommend_card($date, $when, $user, $votes, $impressions) {
     $userId = is_array($user) ? (string) ($user['userId'] ?? '') : '';
     if (!is_array($user) || $userId === '') {
         $base['fit'] = 'plain';
+        $base['scoreLabel'] = 'おすすめ';
         $base['reason'] = 'あなた向けの理由を出すには、LINEのトークからこのページを開いてください。';
         $base['image'] = recommend_image_payload(null);
         $cached = recommend_cached_image($food);
@@ -1115,9 +1397,14 @@ function recommend_card($date, $when, $user, $votes, $impressions) {
     }
     $repeat = recommend_repeat_count($impressions, $userId, $food);
     $base['fit'] = recommend_fit($user, $food, $votes);
+    $base['score'] = recommend_personal_score($user, $food, $votes);
+    $base['scoreLabel'] = recommend_score_label($base['fit'], $base['score']);
     $base['reason'] = recommend_reason_text($user, $food, $votes, $repeat);
     $base['vote'] = recommend_my_vote($votes, $userId, $date, $food);
-    $base['canVote'] = true;
+    $base['canVote'] = $base['fit'] !== 'blocked';
+    if ($base['fit'] === 'blocked') {
+        $base['reserve'] = 'later';
+    }
     $base['image'] = recommend_image_payload(null);
     $cached = recommend_cached_image($food);
     if ($cached !== null) {
@@ -1162,6 +1449,7 @@ function recommend_payload($user) {
             'personalized' => is_array($user) && !empty($user['userId']),
             'name' => is_array($user) ? (string) ($user['name'] ?? '') : '',
             'cards' => [],
+            'followup' => null,
             'menuError' => '保存している定食を読み込めませんでした。時間をおいて、もう一度開いてください。',
         ];
     }
@@ -1176,8 +1464,8 @@ function recommend_payload($user) {
     $cards = [];
     $slots = [];
     $today = date('Y-m-d');
-    $scoreOf = function ($food) use ($user, $votes) {
-        return is_array($user) ? recommend_personal_score($user, $food, $votes) : 0;
+    $scoreOf = function ($food) use ($user, $votes, $impressions) {
+        return recommend_rank_score(is_array($user) ? $user : null, $food, $votes, $impressions);
     };
     foreach (recommend_choose_slots(recommend_week_rows(is_array($user) ? $user : null), $today, $scoreOf) as $picked) {
         $row = $picked['row'];
@@ -1223,8 +1511,86 @@ function recommend_payload($user) {
         'ok' => true,
         'personalized' => is_array($user) && !empty($user['userId']),
         'name' => is_array($user) ? (string) ($user['name'] ?? '') : '',
+        'followup' => is_array($user) ? recommend_followup_question($user) : null,
         'cards' => $cards,
     ];
+}
+
+function recommend_user_mentions($user, $words) {
+    $bag = array_merge(
+        (array) ($user['likes'] ?? []),
+        (array) ($user['avoids'] ?? []),
+        (array) ($user['styles'] ?? [])
+    );
+    foreach ($bag as $label) {
+        $label = (string) $label;
+        foreach ($words as $word) {
+            if ($label !== '' && $word !== '' && mb_strpos($label, $word) !== false) {
+                return true;
+            }
+        }
+    }
+    return false;
+}
+
+function recommend_followup_question($user) {
+    if (!is_array($user) || empty($user['userId']) || !line_survey_finished($user)) {
+        return null;
+    }
+    $asked = strtotime((string) ($user['followupAskedAt'] ?? ''));
+    if ($asked && $asked > time() - 7 * 86400) {
+        return null;
+    }
+    $done = is_array($user['followups'] ?? null) ? $user['followups'] : [];
+    $meat = recommend_user_mentions($user, ['肉', '豚', '鶏', 'から揚', '唐揚', 'カツ', 'ハンバーグ']);
+    $fish = recommend_user_mentions($user, ['魚', 'サバ', '鮭', '刺身']);
+    if (!isset($done['meat_fish']) && ($meat === $fish)) {
+        return [
+            'id' => 'meat_fish',
+            'prompt' => '肉料理と魚料理、どちらが好き？',
+            'choices' => [
+                ['id' => 'meat', 'label' => '肉料理'],
+                ['id' => 'fish', 'label' => '魚料理'],
+                ['id' => 'both', 'label' => 'どっちも'],
+                ['id' => 'skip', 'label' => '今は答えない'],
+            ],
+        ];
+    }
+    $knowsSpicy = recommend_user_mentions($user, ['辛']);
+    if (!isset($done['spicy']) && !$knowsSpicy) {
+        return [
+            'id' => 'spicy',
+            'prompt' => '辛い料理は好き？',
+            'choices' => [
+                ['id' => 'yes', 'label' => '好き'],
+                ['id' => 'no', 'label' => '苦手'],
+                ['id' => 'skip', 'label' => '今は答えない'],
+            ],
+        ];
+    }
+    if (!isset($done['hearty'])) {
+        return [
+            'id' => 'hearty',
+            'prompt' => 'ボリュームのある料理は好き？',
+            'choices' => [
+                ['id' => 'yes', 'label' => '好き'],
+                ['id' => 'no', 'label' => '軽めがいい'],
+                ['id' => 'skip', 'label' => '今は答えない'],
+            ],
+        ];
+    }
+    if (!isset($done['try_new'])) {
+        return [
+            'id' => 'try_new',
+            'prompt' => '新しい料理も紹介していい？',
+            'choices' => [
+                ['id' => 'yes', 'label' => '紹介して'],
+                ['id' => 'no', 'label' => 'いつものがいい'],
+                ['id' => 'skip', 'label' => '今は答えない'],
+            ],
+        ];
+    }
+    return null;
 }
 
 function recommend_record_impressions($user, $cards) {
@@ -1276,10 +1642,10 @@ function recommend_record_impressions($user, $cards) {
 
 function recommend_reason_allowed($vote) {
     if ($vote === 'up') {
-        return ['liked_food', 'want_to_try', 'fits_me'];
+        return ['liked_food', 'want_to_try', 'fits_me', ''];
     }
     if ($vote === 'down') {
-        return ['disliked_ingredient', 'not_my_taste', 'had_before', 'not_interested', 'other'];
+        return ['dislike_dish', 'dislike_ingredient', 'dislike_seasoning', 'want_other', 'other', 'disliked_ingredient', 'not_my_taste', 'had_before', 'not_interested', ''];
     }
     return [];
 }
@@ -1335,9 +1701,7 @@ function recommend_submit_feedback($input) {
             if (!is_array($row)) {
                 continue;
             }
-            if ((string) ($row['userId'] ?? '') === $userId
-                && (string) ($row['date'] ?? '') === $date
-                && (string) ($row['food'] ?? '') === $food) {
+            if ((string) ($row['userId'] ?? '') === $userId && (string) ($row['food'] ?? '') === $food) {
                 $data['votes'][$index] = $next;
                 $replaced = true;
                 break;
@@ -1363,6 +1727,10 @@ function recommend_reason_label($code) {
         'liked_food' => '好きな料理だった',
         'want_to_try' => '食べてみたいと思った',
         'fits_me' => '自分に合っていると思った',
+        'dislike_dish' => '料理が苦手',
+        'dislike_ingredient' => '食材が苦手',
+        'dislike_seasoning' => '味付けが好みではない',
+        'want_other' => '今日は別の料理が食べたい',
         'disliked_ingredient' => '苦手な食材が含まれている',
         'not_my_taste' => '自分の好みとは違った',
         'had_before' => '以前にも食べたことがある',
@@ -1620,19 +1988,31 @@ function recommend_pixabay_search($query, $lang) {
 }
 
 function recommend_collect_hits($food, $cached) {
-    if (is_array($cached) && (int) ($cached['until'] ?? 0) > time() && isset($cached['hits']) && is_array($cached['hits'])) {
-        return [$cached, array_slice($cached['hits'], 0, 10)];
+    $version = recommend_image_plan_version();
+    if (is_array($cached)
+        && (int) ($cached['plan'] ?? 0) >= $version
+        && (int) ($cached['until'] ?? 0) > time()
+        && isset($cached['hits'])
+        && is_array($cached['hits'])) {
+        return [$cached, array_slice($cached['hits'], 0, 8)];
     }
     if (trim(app_env('PIXABAY_API_KEY')) === '') {
-        return [['until' => 0, 'queries' => [], 'hits' => [], 'error' => 'no-key'], []];
+        recommend_image_log($food, 'search', 'no-key');
+        return [['until' => 0, 'plan' => $version, 'queries' => [], 'hits' => [], 'error' => 'no-key'], []];
     }
     $plan = recommend_search_plan($food);
     $hits = [];
     $queries = [];
     $error = '';
-    $japanese = null;
     foreach ($plan as $item) {
-        if ($item['lang'] === 'en' && is_array($japanese) && !recommend_search_is_weak($food, $japanese)) {
+        $best = -100;
+        foreach ($hits as $hit) {
+            $score = recommend_hit_score($food, $hit);
+            if ($score > $best) {
+                $best = $score;
+            }
+        }
+        if ($item['lang'] === 'en' && $best >= 8 && count($hits) >= 3) {
             continue;
         }
         $result = recommend_pixabay_search($item['q'], $item['lang']);
@@ -1649,17 +2029,20 @@ function recommend_collect_hits($food, $cached) {
         if (!$result['ok'] && $result['error'] !== '') {
             $error = $result['error'];
         }
-        if ($item['lang'] === 'ja') {
-            $japanese = $result['hits'];
-        }
         foreach ($result['hits'] as $hit) {
             $hits[(int) $hit['id']] = $hit;
         }
-        if (count($hits) >= 10) {
-            break;
-        }
     }
-    $list = array_slice(array_values($hits), 0, 10);
+    $list = array_values($hits);
+    usort($list, function ($a, $b) use ($food) {
+        return recommend_hit_score($food, $b) <=> recommend_hit_score($food, $a);
+    });
+    $list = array_slice($list, 0, 8);
+    $summary = [];
+    foreach ($queries as $query) {
+        $summary[] = $query['lang'] . ':' . $query['count'];
+    }
+    recommend_image_log($food, 'search', implode(',', $summary) . ($error !== '' ? ' error=' . $error : ''));
     if ($error === '429') {
         $until = time() + 3600;
     } elseif ($error !== '' && !count($list)) {
@@ -1669,6 +2052,7 @@ function recommend_collect_hits($food, $cached) {
     }
     return [[
         'until' => $until,
+        'plan' => $version,
         'queries' => $queries,
         'hits' => $list,
         'error' => $error,
@@ -1899,6 +2283,7 @@ function recommend_blank_image($method, $status, $until, $note) {
         'downloadUrl' => '',
         'menuId' => '',
         'note' => $note,
+        'plan' => recommend_image_plan_version(),
     ];
 }
 
@@ -1925,6 +2310,7 @@ function recommend_image_from_hit($food, $hit, $method, $confidence) {
         'downloadUrl' => $download,
         'menuId' => sha1($food),
         'note' => '',
+        'plan' => recommend_image_plan_version(),
     ];
 }
 
@@ -2062,17 +2448,18 @@ function recommend_generate_image($food, $row) {
     if ($vision['mode'] === 'high' && is_array($vision['hit'] ?? null)) {
         $chosen = recommend_image_from_hit($food, $vision['hit'], 'openai-vision', 'high');
         $chosen = recommend_transfer_image($food, $chosen);
+        recommend_image_log($food, 'pick', 'vision status=' . (string) ($chosen['status'] ?? ''));
         return ['image' => $chosen, 'search' => $search];
-    }
-    if ($vision['mode'] === 'low') {
-        return ['image' => recommend_blank_image('openai-vision', 'skipped', time() + 7 * 86400, 'low-confidence'), 'search' => $search];
     }
     $scored = recommend_score_pick($food, $hits);
     if ($scored === null) {
-        return ['image' => recommend_blank_image('score', 'skipped', time() + 86400, 'low-score'), 'search' => $search];
+        $note = $vision['mode'] === 'low' ? 'low-confidence' : 'low-score';
+        recommend_image_log($food, 'skip', $note . ' vision=' . (string) ($vision['mode'] ?? ''));
+        return ['image' => recommend_blank_image('score', 'skipped', time() + 86400, $note), 'search' => $search];
     }
     $chosen = recommend_image_from_hit($food, $scored, 'score', 'high');
     $chosen = recommend_transfer_image($food, $chosen);
+    recommend_image_log($food, 'pick', 'score status=' . (string) ($chosen['status'] ?? '') . ' vision=' . (string) ($vision['mode'] ?? ''));
     return ['image' => $chosen, 'search' => $search];
 }
 
@@ -2104,9 +2491,33 @@ function recommend_claim_image($food) {
     });
 }
 
+function recommend_food_allowed($food) {
+    if (recommend_food_is_current($food)) {
+        return true;
+    }
+    $core = recommend_core_name($food);
+    if ($core === '') {
+        return false;
+    }
+    foreach (line_menus() as $menu) {
+        if (!is_array($menu)) {
+            continue;
+        }
+        $name = trim((string) ($menu['name'] ?? ''));
+        if ($name === '') {
+            continue;
+        }
+        $menuCore = recommend_core_name($name);
+        if ($name === $food || $name === $core || $menuCore === $food || $menuCore === $core) {
+            return true;
+        }
+    }
+    return false;
+}
+
 function recommend_ensure_image($food) {
     $food = trim((string) $food);
-    if ($food === '' || mb_strlen($food) > 80 || !recommend_food_is_current($food)) {
+    if ($food === '' || mb_strlen($food) > 80 || !recommend_food_allowed($food)) {
         return ['ok' => false, 'status' => 400, 'error' => 'この定食の画像は用意していません。', 'image' => recommend_image_payload(['status' => 'skipped'])];
     }
     $claim = recommend_claim_image($food);
@@ -2168,6 +2579,7 @@ function recommend_self_check_open_days() {
 
 function recommend_self_check_slots() {
     $rows = [
+        ['date' => '2026-11-29', 'food' => '昨日の定食', 'disliked' => false],
         ['date' => '2026-11-30', 'food' => '納豆定食', 'disliked' => true],
         ['date' => '2026-12-01', 'food' => '豚カツ定食', 'disliked' => false],
         ['date' => '2026-12-02', 'food' => '唐揚げ定食', 'disliked' => false],
@@ -2183,31 +2595,37 @@ function recommend_self_check_slots() {
         }
         return 1;
     });
-    $foods = [];
     $dates = [];
     foreach ($slots as $slot) {
-        $foods[] = $slot['row']['food'];
         $dates[] = $slot['row']['date'];
     }
     $bestToday = recommend_choose_slots($rows, '2026-12-03', function ($food) {
         return $food === '親子丼' ? 9 : 1;
     });
     $bestFoods = [];
+    $bestDates = [];
     foreach ($bestToday as $slot) {
         $bestFoods[] = $slot['row']['food'];
+        $bestDates[] = $slot['row']['date'];
     }
+    $titles = recommend_slot_title('week') . recommend_slot_title('next') . recommend_slot_title('after');
     return count($slots) === 3
         && $slots[0]['role'] === 'week'
         && $slots[0]['row']['food'] === '親子丼'
-        && $slots[1]['role'] === 'today'
-        && $slots[1]['row']['food'] === '納豆定食'
-        && $slots[2]['row']['food'] === '唐揚げ定食'
+        && $slots[1]['role'] === 'next'
+        && $slots[1]['row']['date'] === '2026-11-30'
+        && $slots[2]['role'] === 'after'
+        && $slots[2]['row']['date'] === '2026-12-01'
         && count(array_unique($dates)) === 3
-        && count(array_unique($foods)) === 3
+        && !in_array('2026-11-29', $dates, true)
         && $bestToday[0]['role'] === 'week-today'
         && $bestToday[0]['row']['date'] === '2026-12-03'
         && !in_array('親子丼', array_slice($bestFoods, 1), true)
-        && count($bestToday) === 3;
+        && !in_array('2026-11-30', $bestDates, true)
+        && count($bestToday) === 2
+        && mb_strpos($titles, 'イチオシ') !== false
+        && mb_strpos($titles, '次の営業日') !== false
+        && mb_strpos($titles, 'もう一つのおすすめ') === false;
 }
 
 function recommend_self_check() {
@@ -2279,6 +2697,14 @@ function recommend_self_check() {
         'reason_uses_avoid' => mb_strpos($reasonB, '苦手') !== false && mb_strpos($reasonB, '好きと回答') === false,
         'allergy_blocks' => mb_strpos($reasonEgg, 'おすすめしません') !== false && recommend_fit($eggUser, '卵焼き定食', []) === 'blocked',
         'english_query' => $english !== '' && mb_strlen($english) <= 100 && strpos($english, 'teriyaki') !== false,
+        'english_mayo' => strpos(recommend_english_query('豚マヨ定食'), 'mayonnaise') !== false,
+        'english_bonito' => strpos(recommend_english_query('カツオのたたき'), 'bonito') !== false
+            && strpos(recommend_english_query('カツオのたたき'), 'cutlet') === false,
+        'span_15' => (line_span_dates('2026-11-28', 0)[0] ?? '') === '2026-11-21'
+            && (line_span_dates('2026-11-28', 0)[7] ?? '') === '2026-11-28'
+            && (line_span_dates('2026-11-28', 0)[14] ?? '') === '2026-12-05'
+            && count(line_span_dates('2026-01-02', 0)) === 15
+            && (line_span_dates('2026-01-02', 0)[0] ?? '') === '2025-12-26',
         'core_short' => mb_strlen(recommend_core_name($chicken)) <= 100 && recommend_core_name($chicken) === '鶏の照り焼き',
         'score_picks_match' => is_array($picked) && (int) $picked['id'] === 2,
         'score_rejects_unrelated' => $weak === null,

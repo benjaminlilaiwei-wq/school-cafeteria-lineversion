@@ -1315,15 +1315,36 @@ function line_user_by_key($key) {
     return null;
 }
 
-function line_calendar($user) {
+function line_span_dates($today, $offset = 0) {
+    $today = (string) $today;
+    $stamp = strtotime($today . ' 00:00:00');
+    if ($stamp === false) {
+        $stamp = strtotime(date('Y-m-d') . ' 00:00:00');
+    }
+    $offset = (int) $offset;
+    if ($offset > 180) {
+        $offset = 180;
+    }
+    if ($offset < -180) {
+        $offset = -180;
+    }
+    $anchor = strtotime(($offset >= 0 ? '+' : '') . $offset . ' day', $stamp);
+    $start = strtotime('-7 day', $anchor);
+    $dates = [];
+    for ($i = 0; $i < 15; $i++) {
+        $dates[] = date('Y-m-d', strtotime('+' . $i . ' day', $start));
+    }
+    return $dates;
+}
+
+function line_calendar($user, $offset = 0) {
     $today = date('Y-m-d');
-    $year = (int) date('Y');
-    $month = (int) date('n');
-    $last = (int) date('t');
+    $dates = line_span_dates($today, $offset);
     $events = line_events();
+    $names = ['日', '月', '火', '水', '木', '金', '土'];
     $days = [];
-    for ($day = 1; $day <= $last; $day++) {
-        $date = sprintf('%04d-%02d-%02d', $year, $month, $day);
+    foreach ($dates as $date) {
+        $when = strtotime($date . ' 00:00:00');
         $food = line_daily_food($date);
         $holiday = line_holiday($date);
         $liked = false;
@@ -1332,21 +1353,37 @@ function line_calendar($user) {
         }
         $days[] = [
             'date' => $date,
-            'day' => $day,
+            'day' => (int) date('j', $when),
+            'month' => (int) date('n', $when),
+            'year' => (int) date('Y', $when),
+            'weekday' => $names[(int) date('w', $when)],
             'food' => $food,
             'holiday' => $holiday,
             'event' => $events[$date] ?? '',
             'liked' => $liked,
             'today' => $date === $today,
+            'past' => $date < $today,
         ];
     }
     $name = '';
     if (is_array($user) && isset($user['name'])) {
         $name = (string) $user['name'];
     }
+    $offset = (int) $offset;
+    if ($offset > 180) {
+        $offset = 180;
+    }
+    if ($offset < -180) {
+        $offset = -180;
+    }
     return [
-        'year' => $year,
-        'month' => $month,
+        'mode' => 'span',
+        'offset' => $offset,
+        'today' => $today,
+        'start' => $dates[0],
+        'end' => $dates[count($dates) - 1],
+        'year' => (int) date('Y'),
+        'month' => (int) date('n'),
         'name' => $name,
         'days' => $days,
     ];
@@ -1895,7 +1932,7 @@ function line_is_survey_return_word($text) {
 
 function line_survey_invite($user) {
     $name = trim((string) ($user['name'] ?? ''));
-    $note = "アンケートはこのボタンのページで答えてね。\n名前は空白だと送れないよ。姓と名を入れてね。\n例: 瀬尾 太郎\n好きなもの、苦手、アレルギーはボタンで選べるよ。ないものは自分で書けるよ。\n送り終わったら、このトークに戻るだけで大丈夫。「答えた」と送らなくていいよ。";
+    $note = "最初のアンケートは3つだけだよ。\n好きな料理、苦手（任意）、料理のタイプをボタンで選んでね。\n名前は姓と名。例: 瀬尾 太郎\nアレルギーは好き嫌いとは別に、ページの下で登録できるよ。\n送り終わったら、このトークに戻るだけで大丈夫。「答えた」と送らなくていいよ。";
     if ($name !== '') {
         $note = "いまの名前: " . $name . "\n" . $note;
     }
@@ -1948,18 +1985,107 @@ function line_with_ack($user, $messages) {
     return array_merge(line_survey_ack_messages($user), $messages);
 }
 
+function line_favorite_aliases() {
+    return [
+        '肉' => ['肉', '肉料理', 'から揚げ', 'とんかつ', 'ハンバーグ', '生姜焼き', '焼肉', '鶏肉'],
+        '魚' => ['魚', '魚料理', '焼き魚', '刺身', '煮魚', 'サバ'],
+        'カレー' => ['カレー'],
+        '麺' => ['麺', '麺類', 'ラーメン', 'うどん', 'そば', 'パスタ'],
+        '揚げ物' => ['揚げ物', 'から揚げ', 'とんかつ'],
+        '野菜' => ['野菜', '野菜料理', 'サラダ'],
+    ];
+}
+
+function line_favorite_choices() {
+    return [
+        ['id' => '肉', 'label' => '肉料理'],
+        ['id' => '魚', 'label' => '魚料理'],
+        ['id' => 'カレー', 'label' => 'カレー'],
+        ['id' => '麺', 'label' => '麺類'],
+        ['id' => '揚げ物', 'label' => '揚げ物'],
+        ['id' => '野菜', 'label' => '野菜料理'],
+    ];
+}
+
+function line_style_choices() {
+    return ['和食', '洋食', '中華', '辛い料理', 'さっぱり', 'こってり'];
+}
+
+function line_followup_choices() {
+    return [
+        'meat_fish' => ['meat', 'fish', 'both', 'skip'],
+        'spicy' => ['yes', 'no', 'skip'],
+        'hearty' => ['yes', 'no', 'skip'],
+        'try_new' => ['yes', 'no', 'skip'],
+    ];
+}
+
+function line_merge_favorites($existing, $selected, $custom) {
+    $aliases = line_favorite_aliases();
+    $picked = [];
+    foreach ((array) $selected as $id) {
+        $id = (string) $id;
+        if (isset($aliases[$id]) && !in_array($id, $picked, true)) {
+            $picked[] = $id;
+        }
+    }
+    $managed = [];
+    foreach ($aliases as $names) {
+        foreach ($names as $name) {
+            $managed[$name] = true;
+        }
+    }
+    $likes = [];
+    foreach ($picked as $id) {
+        $likes[] = $id;
+        foreach ((array) $existing as $like) {
+            $like = trim((string) $like);
+            if ($like !== '' && $like !== $id && in_array($like, $aliases[$id], true) && !in_array($like, $likes, true)) {
+                $likes[] = $like;
+            }
+        }
+    }
+    foreach ((array) $existing as $like) {
+        $like = trim((string) $like);
+        if ($like === '' || isset($managed[$like]) || in_array($like, $likes, true)) {
+            continue;
+        }
+        $likes[] = $like;
+    }
+    foreach ((array) $custom as $like) {
+        $like = trim((string) $like);
+        if ($like !== '' && !in_array($like, $likes, true)) {
+            $likes[] = $like;
+        }
+    }
+    return array_slice(array_values($likes), 0, 12);
+}
+
 function line_survey_public($user) {
+    $followups = is_array($user['followups'] ?? null) ? $user['followups'] : [];
+    $cleanFollowups = [];
+    foreach (line_followup_choices() as $id => $allowed) {
+        $value = (string) ($followups[$id] ?? '');
+        if (in_array($value, $allowed, true)) {
+            $cleanFollowups[$id] = $value;
+        }
+    }
     return [
         'ok' => true,
         'name' => (string) ($user['name'] ?? ''),
         'likes' => array_values(is_array($user['likes'] ?? null) ? $user['likes'] : []),
         'avoids' => array_values(is_array($user['avoids'] ?? null) ? $user['avoids'] : []),
         'allergies' => array_values(is_array($user['allergies'] ?? null) ? $user['allergies'] : []),
+        'styles' => array_values(is_array($user['styles'] ?? null) ? $user['styles'] : []),
+        'followups' => $cleanFollowups,
         'timesPerWeek' => (string) ($user['timesPerWeek'] ?? ''),
         'done' => ($user['step'] ?? '') === 'done',
         'createdAt' => (string) ($user['createdAt'] ?? ''),
         'updatedAt' => (string) ($user['updatedAt'] ?? ''),
         'groups' => line_like_groups(),
+        'favoriteChoices' => line_favorite_choices(),
+        'favoriteAliases' => line_favorite_aliases(),
+        'styleChoices' => line_style_choices(),
         'timeChoices' => line_times_labels(),
         'avoidChoices' => line_avoid_labels(),
         'allergyChoices' => line_allergy_labels(),
@@ -1967,25 +2093,66 @@ function line_survey_public($user) {
     ];
 }
 
+function line_apply_followup($user, $input) {
+    if (!is_array($user) || !is_array($input)) {
+        return [false, '送れなかったよ。もう一度押してね。', $user];
+    }
+    $id = (string) ($input['question'] ?? '');
+    $answer = (string) ($input['answer'] ?? '');
+    $spec = line_followup_choices();
+    if (!isset($spec[$id]) || !in_array($answer, $spec[$id], true)) {
+        return [false, '質問の答えをもう一度選んでね。', $user];
+    }
+    $followups = is_array($user['followups'] ?? null) ? $user['followups'] : [];
+    $followups[$id] = $answer;
+    $user['followups'] = $followups;
+    $user['followupAskedAt'] = date('c');
+    $user['updatedAt'] = date('c');
+    line_store_user($user);
+    return [true, '', $user];
+}
+
 function line_apply_survey($user, $input) {
     if (!is_array($input)) {
         return [false, '送れなかったよ。もう一度押してね。', $user];
+    }
+    if (($input['mode'] ?? '') === 'skip') {
+        if (empty($user['createdAt'])) {
+            $user['createdAt'] = date('c');
+        }
+        if (empty($user['viewKey'])) {
+            $user['viewKey'] = bin2hex(random_bytes(8));
+        }
+        $user['step'] = 'done';
+        $user['surveySkipped'] = true;
+        $user['updatedAt'] = date('c');
+        $user['active'] = true;
+        $user['needsLineAck'] = false;
+        line_store_user($user);
+        return [true, '', $user];
     }
     $name = line_normalize_name($input['name'] ?? '');
     $error = line_full_name_error($name);
     if ($error !== '') {
         return [false, $error, $user];
     }
-    $likes = line_collect_choices($input['likes'] ?? [], 12);
+    if (array_key_exists('favorites', $input)) {
+        $selected = line_collect_choices($input['favorites'] ?? [], 8);
+        $custom = line_collect_choices($input['customLikes'] ?? [], 8);
+        $likes = line_merge_favorites($user['likes'] ?? [], $selected, $custom);
+    } else {
+        $likes = line_collect_choices($input['likes'] ?? [], 12);
+    }
     if (!count($likes)) {
-        return [false, '好きな食べ方を、1つ以上選ぶか、自分で書いてね。', $user];
+        return [false, '好きな料理を、1つ以上選ぶか、自分で書いてね。', $user];
     }
     $times = (string) ($input['timesPerWeek'] ?? '');
-    if (!in_array($times, line_times_labels(), true)) {
-        return [false, '週に何回来るか、1つ押してね。', $user];
+    if ($times !== '' && !in_array($times, line_times_labels(), true)) {
+        return [false, '週に何回来るか、もう一度選んでね。', $user];
     }
-    $avoids = line_collect_choices($input['avoids'] ?? [], 8);
-    $allergies = line_collect_choices($input['allergies'] ?? [], 8);
+    $avoids = array_key_exists('avoids', $input)
+        ? line_collect_choices($input['avoids'] ?? [], 8)
+        : (is_array($user['avoids'] ?? null) ? $user['avoids'] : []);
     if (empty($user['createdAt'])) {
         $user['createdAt'] = date('c');
     }
@@ -1994,11 +2161,26 @@ function line_apply_survey($user, $input) {
     }
     $user['name'] = $name;
     $user['likes'] = $likes;
-    $user['timesPerWeek'] = $times;
+    if ($times !== '') {
+        $user['timesPerWeek'] = $times;
+    }
     $user['avoids'] = $avoids;
-    $user['allergies'] = $allergies;
+    if (array_key_exists('allergies', $input)) {
+        $user['allergies'] = line_collect_choices($input['allergies'] ?? [], 8);
+    }
+    if (array_key_exists('styles', $input)) {
+        $styles = [];
+        foreach ((array) $input['styles'] as $style) {
+            $style = line_clean_choice($style);
+            if ($style !== '' && in_array($style, line_style_choices(), true) && !in_array($style, $styles, true)) {
+                $styles[] = $style;
+            }
+        }
+        $user['styles'] = $styles;
+    }
     $user['updatedAt'] = date('c');
     $user['step'] = 'done';
+    $user['surveySkipped'] = false;
     $user['active'] = true;
     $user['needsLineAck'] = false;
     $user['pendingFood'] = '';

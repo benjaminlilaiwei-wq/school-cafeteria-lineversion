@@ -13,6 +13,21 @@ if (($_SERVER['REQUEST_METHOD'] ?? 'GET') !== 'GET') {
 
 @set_time_limit(70);
 $food = isset($_GET['food']) ? trim((string) $_GET['food']) : '';
+if (isset($_GET['cache']) && (string) $_GET['cache'] === '1') {
+    if ($food === '' || mb_strlen($food) > 80 || !recommend_food_allowed($food)) {
+        echo json_encode([
+            'ok' => true,
+            'image' => recommend_image_payload(['status' => 'skipped', 'method' => 'none']),
+        ], JSON_UNESCAPED_UNICODE);
+        exit;
+    }
+    $cached = recommend_cached_image($food);
+    echo json_encode([
+        'ok' => true,
+        'image' => $cached !== null ? $cached : recommend_image_payload(null),
+    ], JSON_UNESCAPED_UNICODE);
+    exit;
+}
 $result = recommend_ensure_image($food);
 if (empty($result['ok'])) {
     http_response_code((int) ($result['status'] ?? 400));

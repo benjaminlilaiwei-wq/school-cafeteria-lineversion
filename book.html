@@ -261,6 +261,72 @@
       font-weight: 800;
     }
 
+    .menu-cards {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+      gap: 12px;
+    }
+
+    .food-card {
+      display: flex;
+      flex-direction: column;
+      text-align: left;
+      padding: 0;
+      border: 2px solid var(--border-color);
+      border-radius: 16px;
+      background: #fff;
+      overflow: hidden;
+      cursor: pointer;
+      min-height: 44px;
+      color: var(--text-main);
+    }
+
+    .food-card.selected {
+      border-color: var(--primary);
+      box-shadow: 0 0 0 3px var(--primary-light);
+    }
+
+    .food-card.soldout {
+      cursor: not-allowed;
+      opacity: 0.72;
+    }
+
+    .food-card img,
+    .food-fallback {
+      width: 100%;
+      aspect-ratio: 4 / 3;
+      object-fit: cover;
+      background: var(--accent-beige-light, #f6f1e7);
+    }
+
+    .food-fallback {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 2.4rem;
+    }
+
+    .food-card-body {
+      padding: 10px 12px 12px;
+    }
+
+    .food-card-name {
+      font-weight: 800;
+      line-height: 1.4;
+    }
+
+    .food-card-meta {
+      margin-top: 4px;
+      color: var(--text-muted);
+      font-size: 0.86rem;
+    }
+
+    .selected-food {
+      margin-top: 8px;
+      font-weight: 800;
+      color: var(--primary);
+    }
+
     /* 予約状況 */
     .status-preview {
       background: var(--accent-sun-light);
@@ -380,13 +446,21 @@
           </div>
 
           <div class="form-group">
+            <label>写真から選ぶ</label>
+            <div id="menu-cards" class="menu-cards" aria-live="polite">
+              <p>メニューを読み込み中...</p>
+            </div>
+            <p id="selected-food" class="selected-food">まだメニューを選んでいません</p>
+          </div>
+
+          <div class="form-group">
             <label for="food">
               ご希望のメニュー <span class="required">*</span>
             </label>
             <select id="food" required>
               <option value="">-- 読み込み中... --</option>
             </select>
-            <small>※ 在庫がないメニューは選択できません</small>
+            <small>写真とこの欄は同じメニューになります。在庫がないメニューは選べません。</small>
           </div>
 
           <div class="form-actions">
@@ -401,15 +475,6 @@
 
         <!-- 結果表示エリア -->
         <div id="result-box" class="result-box"></div>
-
-        <!-- メニュー一覧 -->
-        <div class="menu-preview">
-          <h3>🍱 いま選べるメニュー</h3>
-          <div id="menu-display" class="loading">
-            <div class="spinner"></div>
-            <p>メニューを読み込み中...</p>
-          </div>
-        </div>
 
         <!-- 今日の予約状況 -->
         <div class="status-preview">
@@ -559,6 +624,152 @@
       }
     }
 
+    function menuTitle(name) {
+      return String(name || '').replace(/（[^）]*）/g, '').trim();
+    }
+
+    function menuPrice(name) {
+      const match = String(name || '').match(/（(\d+)円）/);
+      return match ? match[1] + '円' : '';
+    }
+
+    function foodMark(name) {
+      const text = String(name || '');
+      if (/カツオ|かつお|魚|鮭|サバ|鯖|イワシ/.test(text)) return '🐟';
+      if (/カレー/.test(text)) return '🍛';
+      if (/ラーメン|うどん|そば|麺/.test(text)) return '🍜';
+      if (/カツ|とんかつ|唐揚|から揚|揚/.test(text)) return '🍤';
+      if (/丼|飯|めし|ライス|ハヤシ/.test(text)) return '🍚';
+      if (/豚|牛|鶏|肉/.test(text)) return '🍖';
+      return '🍱';
+    }
+
+    function imageFoodName(menuName, dailyFood) {
+      if (String(menuName).indexOf('日替わり') !== -1 && dailyFood) return dailyFood;
+      return menuTitle(menuName);
+    }
+
+    function syncFoodSelection(name) {
+      const select = document.getElementById('food');
+      const note = document.getElementById('selected-food');
+      if (select && name != null) {
+        const option = Array.from(select.options).find(function (item) {
+          return item.value === name && !item.disabled;
+        });
+        if (option) select.value = name;
+      }
+      const current = select ? select.value : '';
+      document.querySelectorAll('.food-card').forEach(function (card) {
+        const selected = card.getAttribute('data-food') === current;
+        card.classList.toggle('selected', selected);
+        card.setAttribute('aria-pressed', selected ? 'true' : 'false');
+      });
+      if (note) {
+        note.textContent = current ? '選択中: ' + current : 'まだメニューを選んでいません';
+      }
+    }
+
+    function paintFoodFallback(holder, name) {
+      holder.innerHTML = '';
+      const fallback = document.createElement('div');
+      fallback.className = 'food-fallback';
+      fallback.textContent = foodMark(name);
+      fallback.setAttribute('role', 'img');
+      fallback.setAttribute('aria-label', name + 'の写真はありません');
+      holder.appendChild(fallback);
+    }
+
+    function loadFoodImage(name, holder) {
+      const apiName = name;
+      return resolveApiBase().then(function (apiBase) {
+        return fetch(apiBase + 'recommend-image.php?cache=1&food=' + encodeURIComponent(apiName), { cache: 'no-store' });
+      })
+        .then(function (res) { return res.json(); })
+        .then(function (data) {
+          const image = data && data.image ? data.image : {};
+          if (image.status === 'ready' && image.url) {
+            const img = document.createElement('img');
+            img.alt = apiName;
+            img.src = image.url;
+            img.addEventListener('error', function () { paintFoodFallback(holder, apiName); });
+            holder.innerHTML = '';
+            holder.appendChild(img);
+            return;
+          }
+          if (image.status === 'skipped' || image.status === 'error') {
+            paintFoodFallback(holder, apiName);
+            return;
+          }
+          return resolveApiBase().then(function (apiBase) {
+            return fetch(apiBase + 'recommend-image.php?food=' + encodeURIComponent(apiName), { cache: 'no-store' });
+          })
+            .then(function (res) { return res.json(); })
+            .then(function (generated) {
+              const ready = generated && generated.image ? generated.image : {};
+              if (ready.status === 'ready' && ready.url) {
+                const img = document.createElement('img');
+                img.alt = apiName;
+                img.src = ready.url;
+                img.addEventListener('error', function () { paintFoodFallback(holder, apiName); });
+                holder.innerHTML = '';
+                holder.appendChild(img);
+                return;
+              }
+              paintFoodFallback(holder, apiName);
+            });
+        })
+        .catch(function () { paintFoodFallback(holder, apiName); });
+    }
+
+    function renderFoodCards(menus, dailyFood) {
+      const host = document.getElementById('menu-cards');
+      if (!host) return;
+      host.innerHTML = '';
+      const queue = [];
+      menus.forEach(function (menu) {
+        const soldout = menu.stock !== -1 && menu.stock <= 0;
+        const button = document.createElement('button');
+        button.type = 'button';
+        button.className = 'food-card' + (soldout ? ' soldout' : '');
+        button.setAttribute('data-food', menu.name);
+        button.setAttribute('aria-pressed', 'false');
+        if (soldout) button.disabled = true;
+        const photo = document.createElement('div');
+        const body = document.createElement('div');
+        body.className = 'food-card-body';
+        const title = document.createElement('div');
+        title.className = 'food-card-name';
+        title.textContent = menuTitle(menu.name);
+        const meta = document.createElement('div');
+        meta.className = 'food-card-meta';
+        const bits = [];
+        const price = menuPrice(menu.name);
+        if (price) bits.push(price);
+        if (menu.stock === -1) bits.push('在庫制限なし');
+        else if (soldout) bits.push('売り切れ');
+        else bits.push('残り' + menu.stock + '食');
+        if (String(menu.name).indexOf('日替わり') !== -1 && dailyFood) bits.push('きょう: ' + dailyFood);
+        meta.textContent = bits.join(' / ');
+        body.appendChild(title);
+        body.appendChild(meta);
+        button.appendChild(photo);
+        button.appendChild(body);
+        if (!soldout) {
+          button.addEventListener('click', function () { syncFoodSelection(menu.name); });
+        }
+        host.appendChild(button);
+        paintFoodFallback(photo, imageFoodName(menu.name, dailyFood));
+        queue.push({ name: imageFoodName(menu.name, dailyFood), photo: photo });
+      });
+      let index = 0;
+      function nextImage() {
+        if (index >= queue.length) return;
+        const item = queue[index++];
+        Promise.resolve(loadFoodImage(item.name, item.photo)).finally(nextImage);
+      }
+      nextImage();
+    }
+
     function applyBookingPreset(foodSelect) {
       let params;
       try { params = new URLSearchParams(window.location.search); } catch (e) { return; }
@@ -576,7 +787,7 @@
 
     async function loadMenuAndStatus() {
       const foodSelect = document.getElementById('food');
-      const menuDisplay = document.getElementById('menu-display');
+      const cards = document.getElementById('menu-cards');
       const reservationsDisplay = document.getElementById('reservations-display');
       const reservationHoursDisplay = document.getElementById('reservation-hours-display');
       const todayClosedEl = document.getElementById('today-closed-message');
@@ -606,10 +817,18 @@
         }
 
         await loadReservationTimesSettings();
-        const [menuRes, resRes] = await Promise.all([
+        const [menuRes, resRes, dailyRes] = await Promise.all([
           fetch(apiBase + 'menu.php', { cache: 'no-store' }),
-          fetch(apiBase + 'sales-data.php?reservations=true', { cache: 'no-store' })
+          fetch(apiBase + 'sales-data.php?reservations=true', { cache: 'no-store' }),
+          fetch(apiBase + 'daily-menu.php', { cache: 'no-store' }).catch(function () { return null; })
         ]);
+        let dailyFood = '';
+        if (dailyRes && dailyRes.ok) {
+          const rows = await dailyRes.json().catch(function () { return []; });
+          const today = getTodayIso();
+          const row = (rows || []).find(function (item) { return item && item.date === today; });
+          dailyFood = row && row.food ? row.food : '';
+        }
 
         if (reservationHoursDisplay && !closed) {
           const text = getReservationHoursDisplayText();
@@ -637,36 +856,15 @@
                 }).join('');
               applyBookingPreset(foodSelect);
             }
-
-            if (menuDisplay) {
-              menuDisplay.innerHTML = '<div class="menu-list">' +
-                menus.map(m => {
-                  let stockClass = '';
-                  let stockText = '';
-                  if (m.stock === -1) {
-                    stockClass = 'unlimited';
-                    stockText = '無制限';
-                  } else if (m.stock <= 0) {
-                    stockClass = 'soldout';
-                    stockText = '売り切れ';
-                  } else {
-                    stockText = `残り${m.stock}食`;
-                  }
-                  return `
-                    <div class="menu-item">
-                      <div class="menu-item-name">${escapeHtml(m.name)}</div>
-                      <div class="menu-item-stock ${stockClass}">${stockText}</div>
-                    </div>
-                  `;
-                }).join('') + '</div>';
-            }
+            renderFoodCards(menus, dailyFood);
+            syncFoodSelection(foodSelect ? foodSelect.value : '');
           } else {
             if (foodSelect) foodSelect.innerHTML = '<option value="">メニューが登録されていません</option>';
-            if (menuDisplay) menuDisplay.innerHTML = '<p>メニューが登録されていません。</p>';
+            if (cards) cards.innerHTML = '<p>メニューが登録されていません。</p>';
           }
         } else {
           if (foodSelect) foodSelect.innerHTML = '<option value="">メニューの読み込みに失敗しました</option>';
-          if (menuDisplay) menuDisplay.innerHTML = '<p style="color: var(--accent-orange);">メニューの読み込みに失敗しました。</p>';
+          if (cards) cards.innerHTML = '<p style="color: var(--accent-orange);">メニューの読み込みに失敗しました。プルダウンからも選べます。</p>';
         }
 
         if (resRes.ok) {
@@ -723,6 +921,7 @@
 
     function resetForm() {
       document.getElementById('booking-form').reset();
+      syncFoodSelection('');
       hideResult();
     }
 
@@ -864,6 +1063,13 @@
 
     document.addEventListener('DOMContentLoaded', function () {
       loadMenuAndStatus();
+
+      const foodSelect = document.getElementById('food');
+      if (foodSelect) {
+        foodSelect.addEventListener('change', function () {
+          syncFoodSelection(foodSelect.value);
+        });
+      }
 
       const form = document.getElementById('booking-form');
       if (form) {
